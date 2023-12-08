@@ -1,0 +1,13 @@
+# -*- makefile -*-
+WHACKFILE=${OUTPUTS}/ikev2client.record.${ARCH}
+CONNNAME=cpe
+UNITTESTARGS=-r ${WHACKFILE} ${CONNNAME}
+
+TESTNAME=dnscpeI1
+ENDNAME=dnsdelayclient
+
+EXTRAOBJS+=${OBJDIRTOP}/programs/pluto/adns.o
+EXTRALIBS+=-lresolv
+
+pcapupdate:
+	@true

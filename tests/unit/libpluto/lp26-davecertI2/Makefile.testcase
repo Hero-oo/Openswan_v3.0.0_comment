@@ -1,0 +1,17 @@
+# -*- makefile -*-
+CONNNAME=home
+PCAPOUTPUT=${TESTNAME}.pcap
+UNITTEST1ARGS=-r ${WHACKFILE} ${CONNNAME} OUTPUT/${PCAPOUTPUT} certreplydaveR1.pcap
+ENDNAME=davecert
+
+TESTNAME=davecertI2
+
+EXTRAOBJS+=${OBJDIRTOP}/programs/pluto/x509keys.o
+
+pcapupdate:
+	cp ../lp70-certreplydaveR1/OUTPUT/certreplydaveR1.pcap certreplydaveR1.pcap
+	@true
+
+
+
+

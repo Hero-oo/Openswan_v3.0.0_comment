@@ -1,0 +1,15 @@
+# -*- makefile -*-
+CONNNAME=parker1--jj2
+ENDNAME=parker
+UNITTEST1ARGS=${WHACKFILE} ${CONNNAME} OUTPUT/nattI2.pcap nattR1.pcap
+WHACKFILE=${OUTPUTS}/ikev2client.record.${ARCH}
+
+TESTNAME=nattI2
+
+PCAPDEPENDENCIES = ../lp62-nattR1/OUTPUT/nattR1.pcap
+include ../Makefile.pcapupdate
+
+pcapupdate: ${PCAPDEPENDENCIES}
+	cp ../lp62-nattR1/OUTPUT/nattR1.pcap nattR1.pcap
+
+

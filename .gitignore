@@ -1,0 +1,17 @@
+*~
+\.\#*
+\#*\#
+OBJ.*
+*.rej
+*.orig
+*.bak
+*.sw?
+TAGS
+tags
+UMLPOOL
+modobj26
+testing/*/OUTPUT/*
+testing/*/*/OUTPUT
+umlsetup.sh
+osxApp/build
+Makefile.inc.local

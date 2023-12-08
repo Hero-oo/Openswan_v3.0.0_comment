@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# this explicitely builds with LIBNSS into a different OBJDIR.
+# it used by tests/build/b02-libnss/, but also by developers to
+# validate libnss builds.
+
+${MAKE-make} --no-print-directory USE_LIBNSS=true USE_LIBNSS=true programs
+

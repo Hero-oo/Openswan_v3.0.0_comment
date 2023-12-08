@@ -1,0 +1,21 @@
+# -*- makefile -*-
+# -*- makefile -*-
+TESTNAME=davecertR2-id
+CONNNAME=rw-dave
+UNITTEST1PCAP=OUTPUT/${TESTNAME}.pcap
+UNITTEST1ARGS=${WHACKFILE} ${CONNNAME} ${UNITTEST1PCAP} davecertI1-id.pcap davecertI2-id.pcap
+ENDNAME=gatewaycert-id
+
+PCAPDEPENDENCIES = ../lp52-davecert-gatewayID-I1/OUTPUT/davecertI1-id.pcap ../lp54-davecert-gatewayID-I2/OUTPUT/davecertI2-id.pcap
+include ../Makefile.pcapupdate
+
+pcapupdate: ${PCAPDEPENDENCIES}
+	cp ../lp52-davecert-gatewayID-I1/OUTPUT/davecertI1-id.pcap .
+	cp ../lp54-davecert-gatewayID-I2/OUTPUT/davecertI2-id.pcap .
+
+
+# Local Variables:
+# gdb-command: ""
+# End Variables:
+#
+
