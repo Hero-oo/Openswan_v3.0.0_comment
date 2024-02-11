@@ -17,33 +17,36 @@
  */
 
 #ifndef OSW_FD_SETSIZE
-#define OSW_FD_SETSIZE	8192
+#define OSW_FD_SETSIZE 8192
 #endif
 
-#define OSW_NFDBITS   (8 * sizeof (long int))
-#define OSW_FDELT(d)  ((d) / OSW_NFDBITS)
-#define OSW_FDMASK(d) ((long int) (1UL << ((d) % OSW_NFDBITS)))
-#define OSW_FD_SETCOUNT	((OSW_FD_SETSIZE + OSW_NFDBITS - 1) / OSW_NFDBITS)
+#define OSW_NFDBITS (8 * sizeof(long int))
+#define OSW_FDELT(d) ((d) / OSW_NFDBITS)
+#define OSW_FDMASK(d) ((long int)(1UL << ((d) % OSW_NFDBITS)))
+#define OSW_FD_SETCOUNT ((OSW_FD_SETSIZE + OSW_NFDBITS - 1) / OSW_NFDBITS)
 
 typedef struct {
-	long int	__osfds_bits[OSW_FD_SETCOUNT];
+	long int __osfds_bits[OSW_FD_SETCOUNT];
 } osw_fd_set;
 
 #define OSW_FDS_BITS(set) ((set)->__osfds_bits)
 
-#define OSW_FD_ZERO(set) \
-	do { \
-		unsigned int __i; \
-		osw_fd_set *__arr = (set); \
+#define OSW_FD_ZERO(set)                                    \
+	do {                                                \
+		unsigned int __i;                           \
+		osw_fd_set *__arr = (set);                  \
 		for (__i = 0; __i < OSW_FD_SETCOUNT; __i++) \
-			OSW_FDS_BITS (__arr)[__i] = 0; \
-	} while(0)
+			OSW_FDS_BITS(__arr)                 \
+		[__i] = 0;                                  \
+	} while (0)
 
-#define OSW_FD_SET(d, s)     (OSW_FDS_BITS (s)[OSW_FDELT(d)] |= OSW_FDMASK(d))
-#define OSW_FD_CLR(d, s)     (OSW_FDS_BITS (s)[OSW_FDELT(d)] &= ~OSW_FDMASK(d))
-#define OSW_FD_ISSET(d, s)   ((OSW_FDS_BITS (s)[OSW_FDELT(d)] & OSW_FDMASK(d)) != 0)
+#define OSW_FD_SET(d, s) (OSW_FDS_BITS(s)[OSW_FDELT(d)] |= OSW_FDMASK(d))
+#define OSW_FD_CLR(d, s) (OSW_FDS_BITS(s)[OSW_FDELT(d)] &= ~OSW_FDMASK(d))
+#define OSW_FD_ISSET(d, s) \
+	((OSW_FDS_BITS(s)[OSW_FDELT(d)] & OSW_FDMASK(d)) != 0)
 
-#define osw_select(max, r, f, e, t) \
-		select(max, (fd_set *)(void *)(r), (fd_set *)(void *)(f), (fd_set *)(void *)(e), t)
+#define osw_select(max, r, f, e, t)                               \
+	select(max, (fd_set *)(void *)(r), (fd_set *)(void *)(f), \
+	       (fd_set *)(void *)(e), t)
 
 #endif /* _OSW_SELECT_H_ */

@@ -40,7 +40,7 @@
 
 #include <glob.h>
 #ifndef GLOB_ABORTED
-# define GLOB_ABORTED    GLOB_ABEND	/* fix for old versions */
+#define GLOB_ABORTED GLOB_ABEND /* fix for old versions */
 #endif
 
 #include <openswan.h>
@@ -66,46 +66,44 @@
  * compute an RSA signature with PKCS#1 padding: Note that this assumes that any DER encoding is
  *    **INCLUDED** as part of the hash_val/hash_len.
  */
-void
-sign_hash(const struct private_key_stuff *pks
-	  , const u_char *hash_val, size_t hash_len
-	  , u_char *sig_val, size_t sig_len)
+void sign_hash(const struct private_key_stuff *pks, const u_char *hash_val,
+	       size_t hash_len, u_char *sig_val, size_t sig_len)
 {
-    chunk_t ch;
-    mpz_t t1;
-    size_t padlen;
-    u_char *p = sig_val;
-    const struct RSA_private_key *k = &pks->u.RSA_private_key;
+	chunk_t ch;
+	mpz_t t1;
+	size_t padlen;
+	u_char *p = sig_val;
+	const struct RSA_private_key *k = &pks->u.RSA_private_key;
 
-    DBG(DBG_CONTROL | DBG_CRYPT,
-	DBG_log("signing hash with RSA Key *%s", pks->pub->u.rsa.keyid)
-        );
+	DBG(DBG_CONTROL | DBG_CRYPT,
+	    DBG_log("signing hash with RSA Key *%s", pks->pub->u.rsa.keyid));
 
-    /* PKCS#1 v1.5 8.1 encryption-block formatting */
-    *p++ = 0x00;
-    *p++ = 0x01;	/* BT (block type) 01 */
-    padlen = sig_len - 3 - hash_len;
-    memset(p, 0xFF, padlen);
-    p += padlen;
-    *p++ = 0x00;
-    memcpy(p, hash_val, hash_len);
-    passert(p + hash_len - sig_val == (ptrdiff_t)sig_len);
+	/* PKCS#1 v1.5 8.1 encryption-block formatting */
+	*p++ = 0x00;
+	*p++ = 0x01; /* BT (block type) 01 */
+	padlen = sig_len - 3 - hash_len;
+	memset(p, 0xFF, padlen);
+	p += padlen;
+	*p++ = 0x00;
+	memcpy(p, hash_val, hash_len);
+	passert(p + hash_len - sig_val == (ptrdiff_t)sig_len);
 
-    /* PKCS#1 v1.5 8.2 octet-string-to-integer conversion */
-    n_to_mpz(t1, sig_val, sig_len);	/* (could skip leading 0x00) */
+	/* PKCS#1 v1.5 8.2 octet-string-to-integer conversion */
+	n_to_mpz(t1, sig_val, sig_len); /* (could skip leading 0x00) */
 
-    /* PKCS#1 v1.5 8.3 RSA computation y = x^c mod n
+	/* PKCS#1 v1.5 8.3 RSA computation y = x^c mod n
      * Better described in PKCS#1 v2.0 5.1 RSADP.
      * There are two methods, depending on the form of the private key.
      * We use the one based on the Chinese Remainder Theorem.
      */
-    oswcrypto.rsa_mod_exp_crt(t1, t1, &k->p, &k->dP, &k->q, &k->dQ, &k->qInv);
-    /* PKCS#1 v1.5 8.4 integer-to-octet-string conversion */
-    ch = mpz_to_n(t1, sig_len);
-    memcpy(sig_val, ch.ptr, sig_len);
-    pfree(ch.ptr);
+	oswcrypto.rsa_mod_exp_crt(t1, t1, &k->p, &k->dP, &k->q, &k->dQ,
+				  &k->qInv);
+	/* PKCS#1 v1.5 8.4 integer-to-octet-string conversion */
+	ch = mpz_to_n(t1, sig_len);
+	memcpy(sig_val, ch.ptr, sig_len);
+	pfree(ch.ptr);
 
-    mpz_clear(t1);
+	mpz_clear(t1);
 }
 
 /*
@@ -116,65 +114,64 @@ sign_hash(const struct private_key_stuff *pks
  *   sig_val  is actual signature blob.
  *
  */
-err_t verify_signed_hash(const struct RSA_public_key *k
-                         , u_char *s, unsigned int s_max_octets
-                         , u_char **psig
-                         , size_t hash_len
-                         , const u_char *sig_val, size_t sig_len)
+err_t verify_signed_hash(const struct RSA_public_key *k, u_char *s,
+			 unsigned int s_max_octets, u_char **psig,
+			 size_t hash_len, const u_char *sig_val, size_t sig_len)
 {
-    unsigned int padlen;
+	unsigned int padlen;
 
-    /* actual exponentiation; see PKCS#1 v2.0 5.1 */
-    {
-	chunk_t temp_s;
-	MP_INT c;
+	/* actual exponentiation; see PKCS#1 v2.0 5.1 */
+	{
+		chunk_t temp_s;
+		MP_INT c;
 
-	n_to_mpz(&c, sig_val, sig_len);
-	oswcrypto.mod_exp(&c, &c, &k->e, &k->n);
+		n_to_mpz(&c, sig_val, sig_len);
+		oswcrypto.mod_exp(&c, &c, &k->e, &k->n);
 
-	temp_s = mpz_to_n(&c, sig_len);	/* back to octets */
-        if(s_max_octets < sig_len) {
-            return "2""exponentiation failed; too many octets";
-        }
-	memcpy(s, temp_s.ptr, sig_len);
-	pfree(temp_s.ptr);
-	mpz_clear(&c);
-    }
+		temp_s = mpz_to_n(&c, sig_len); /* back to octets */
+		if (s_max_octets < sig_len) {
+			return "2"
+			       "exponentiation failed; too many octets";
+		}
+		memcpy(s, temp_s.ptr, sig_len);
+		pfree(temp_s.ptr);
+		mpz_clear(&c);
+	}
 
-    /* check signature contents */
-    /* verify padding (not including any DER digest info! */
-    padlen = sig_len - 3 - hash_len;
-    /* now check padding */
+	/* check signature contents */
+	/* verify padding (not including any DER digest info! */
+	padlen = sig_len - 3 - hash_len;
+	/* now check padding */
 
-    DBG(DBG_CRYPT,
-	DBG_dump("verify_sh decrypted SIG1:", s, sig_len));
-    DBG(DBG_CRYPT, DBG_log("pad_len calculated: %d hash_len: %d", padlen, (int)hash_len));
+	DBG(DBG_CRYPT, DBG_dump("verify_sh decrypted SIG1:", s, sig_len));
+	DBG(DBG_CRYPT, DBG_log("pad_len calculated: %d hash_len: %d", padlen,
+			       (int)hash_len));
 
-    /* skip padding */
-    if(s[0]    != 0x00
-       || s[1] != 0x01
-       || s[padlen+2] != 0x00) {
-	return "3""SIG padding does not check out";
-    }
+	/* skip padding */
+	if (s[0] != 0x00 || s[1] != 0x01 || s[padlen + 2] != 0x00) {
+		return "3"
+		       "SIG padding does not check out";
+	}
 
-    /* signature starts after ASN wrapped padding [00,01,FF..FF,00] */
-    (*psig) = s + padlen + 3;
+	/* signature starts after ASN wrapped padding [00,01,FF..FF,00] */
+	(*psig) = s + padlen + 3;
 
-    /* verify padding contents */
-    {
-        const u_char *p;
-        size_t cnt_ffs = 0;
+	/* verify padding contents */
+	{
+		const u_char *p;
+		size_t cnt_ffs = 0;
 
-        for (p = s+2; p < s+padlen+2; p++)
-            if (*p == 0xFF)
-                cnt_ffs ++;
+		for (p = s + 2; p < s + padlen + 2; p++)
+			if (*p == 0xFF)
+				cnt_ffs++;
 
-        if (cnt_ffs != padlen)
-            return "4" "invalid Padding String";
-    }
+		if (cnt_ffs != padlen)
+			return "4"
+			       "invalid Padding String";
+	}
 
-    /* return SUCCESS */
-    return NULL;
+	/* return SUCCESS */
+	return NULL;
 }
 
 /*

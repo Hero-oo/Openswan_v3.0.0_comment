@@ -16,7 +16,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 #include <linux/kernel.h> /* printk() */
@@ -24,15 +24,15 @@
 #include "freeswan/ipsec_param.h"
 
 #include <linux/slab.h> /* kmalloc() */
-#include <linux/errno.h>  /* error codes */
-#include <linux/types.h>  /* size_t */
+#include <linux/errno.h> /* error codes */
+#include <linux/types.h> /* size_t */
 #include <linux/interrupt.h> /* mark_bh */
 
-#include <linux/netdevice.h>   /* struct device, and other headers */
+#include <linux/netdevice.h> /* struct device, and other headers */
 #include <linux/etherdevice.h> /* eth_type_trans */
-#include <linux/ip.h>          /* struct iphdr */
+#include <linux/ip.h> /* struct iphdr */
 #include <linux/skbuff.h>
-#include <linux/random.h>	/* get_random_bytes() */
+#include <linux/random.h> /* get_random_bytes() */
 #include <freeswan.h>
 #include <linux/spinlock.h> /* *lock* */
 

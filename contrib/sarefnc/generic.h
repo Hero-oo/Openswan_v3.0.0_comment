@@ -22,7 +22,7 @@
    960217 + nextstep: version 1.5
 */
 
-#ifndef GENERIC_H		/* only run through this once */
+#ifndef GENERIC_H /* only run through this once */
 #define GENERIC_H
 
 /* =============================== */
@@ -34,7 +34,7 @@
 #define VOID_MALLOC
 
 /* notably from fwtk/firewall.h: posix locking? */
-#define HAVE_FLOCK		/* otherwise it's lockf() */
+#define HAVE_FLOCK /* otherwise it's lockf() */
 
 /* if you don't have setsid(), you might have setpgrp(). */
 #define HAVE_SETSID
@@ -102,9 +102,9 @@
 #define HAVE_SELECT_H
 
 /* assorted others */
-#define HAVE_PARAM_H		/* in sys/ */
-#define HAVE_SYSMACROS_H	/* in sys/ */
-#define HAVE_TTYENT_H		/* securetty et al */
+#define HAVE_PARAM_H /* in sys/ */
+#define HAVE_SYSMACROS_H /* in sys/ */
+#define HAVE_TTYENT_H /* securetty et al */
 
 /* ==================== */
 
@@ -157,7 +157,7 @@ SIGINFO
 SIGTSTP SIGTTOU SIGWINCH
 SPX?
 SYSV_TERMIO -- covered elsewhere, I hope
-TIOCEXT TIOCFLUSH TIOC[GS]WINSIZ 
+TIOCEXT TIOCFLUSH TIOC[GS]WINSIZ
 NEWINIT: something about init cleaning up dead login processes [telnet?]
 PARENT_DOES_UTMP, too  [telnet]
 VDISCARD
@@ -230,7 +230,7 @@ There's a BIG swamp lurking where network code of any sort lives.
 #undef UTMPX
 #undef HAVE_SYSINFO
 #undef HAVE_UNISTD_H
-#undef HAVE_DIRENT_H	/* unless you have the k00l little wrapper from L5!! */
+#undef HAVE_DIRENT_H /* unless you have the k00l little wrapper from L5!! */
 #undef HAVE_STRINGS_H
 #undef HAVE_LASTLOG_H
 #undef HAVE_PATHS_H
@@ -261,7 +261,7 @@ There's a BIG swamp lurking where network code of any sort lives.
 /* has UTMPX */
 #undef HAVE_RANDOM
 #undef HAVE_SETPRIORITY
-#undef HAVE_STRINGS_H	/* this is genuinely the case, go figure */
+#undef HAVE_STRINGS_H /* this is genuinely the case, go figure */
 #undef HAVE_PATHS_H
 #undef HAVE_SELECT_H
 #undef HAVE_TTYENT_H
@@ -271,7 +271,7 @@ There's a BIG swamp lurking where network code of any sort lives.
 #ifdef AIX
 #undef UTMPX
 #undef HAVE_LASTLOG_H
-#define HAVE_LOGIN_H	/* "special", in the educational sense */
+#define HAVE_LOGIN_H /* "special", in the educational sense */
 #endif /* aix */
 
 /* linux, which is trying as desperately as the gnu folks can to be
@@ -300,7 +300,7 @@ There's a BIG swamp lurking where network code of any sort lives.
 #undef HAVE_SYSINFO
 #undef HAVE_LASTLOG_H
 #undef HAVE_SYSMACROS_H
-#undef HAVE_SELECT_H	/* actually a lie, but only for kernel */
+#undef HAVE_SELECT_H /* actually a lie, but only for kernel */
 #endif /* freebsd */
 
 /* Originally from the sidewinder site, of all places, but subsequently
@@ -323,9 +323,9 @@ There's a BIG swamp lurking where network code of any sort lives.
 
 /* Hpux 9.0x, from BBN and various patches sent in */
 #ifdef HPUX
-#undef HAVE_RANDOM	/* but *does* have ?rand48 -- need to consider.. */
+#undef HAVE_RANDOM /* but *does* have ?rand48 -- need to consider.. */
 #undef HAVE_UTMPX
-#undef HAVE_LASTLOG_H	/* has utmp/wtmp/btmp nonsense, and pututline() */
+#undef HAVE_LASTLOG_H /* has utmp/wtmp/btmp nonsense, and pututline() */
 #undef HAVE_PATHS_H
 #undef HAVE_SELECT_H
 #undef HAVE_TTYENT_H
@@ -349,7 +349,7 @@ There's a BIG swamp lurking where network code of any sort lives.
 /* A/UX 3.1.x from darieb@sandia.gov */
 #ifdef AUX
 #undef HAVE_RANDOM
-#undef HAVE_SELECT_H	/* xxx: untested */
+#undef HAVE_SELECT_H /* xxx: untested */
 #endif /* a/ux */
 
 /* NeXTSTEP 3.2 motorola mudge@l0pht.com xxx should also work with
@@ -363,7 +363,7 @@ There's a BIG swamp lurking where network code of any sort lives.
 /* Make some "generic" assumptions if all else fails */
 #ifdef GENERIC
 #undef HAVE_FLOCK
-#if defined(SYSV) && (SYSV < 4)  /* TW leftover: old SV doesnt have symlinks */
+#if defined(SYSV) && (SYSV < 4) /* TW leftover: old SV doesnt have symlinks */
 #undef HAVE_LSTAT
 #endif /* old SYSV */
 #undef HAVE_TERMIOS
@@ -374,4 +374,3 @@ There's a BIG swamp lurking where network code of any sort lives.
 
 /* ================ */
 #endif /* GENERIC_H */
-

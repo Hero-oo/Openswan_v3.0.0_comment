@@ -19,11 +19,11 @@
 
 #include <stdio.h>
 
-#define	MAXLOOP	100		/* loop-detection limit */
+#define MAXLOOP 100 /* loop-detection limit */
 
 /* internal work area */
 struct work {
-#	define	LOTS	1024
+#define LOTS 1024
 	char buf[LOTS];
 	char *line;
 	char *pending;
@@ -37,13 +37,13 @@ static char *of_getline(FILE *, char *, size_t);
  - optionsfrom - add some options, taken from a file, to argc/argv
  * If errsto is non-NULL, does not return in event of error.
  */
-const char *			/* NULL for success, else string literal */
-optionsfrom(filename, argcp, argvp, optind, errsto)
-const char *filename;
-int *argcp;			/* pointer to argc */
-char ***argvp;			/* pointer to argv */
-int optind;			/* current optind, number of next argument */
-FILE *errsto;			/* where to report errors (NULL means return) */
+const char * /* NULL for success, else string literal */
+	optionsfrom(filename, argcp, argvp, optind, errsto) const
+	char *filename;
+int *argcp; /* pointer to argc */
+char ***argvp; /* pointer to argv */
+int optind; /* current optind, number of next argument */
+FILE *errsto; /* where to report errors (NULL means return) */
 {
 	const char *e;
 	static int nuses = 0;
@@ -72,30 +72,29 @@ FILE *errsto;			/* where to report errors (NULL means return) */
  * Does not alter the existing arguments, but does relocate and alter
  * the argv pointer vector.
  */
-static const char *		/* NULL for success, else string literal */
-dowork(filename, argcp, argvp, optind)
-const char *filename;
-int *argcp;			/* pointer to argc */
-char ***argvp;			/* pointer to argv */
-int optind;			/* current optind, number of next argument */
+static const char * /* NULL for success, else string literal */
+	dowork(filename, argcp, argvp, optind) const char *filename;
+int *argcp; /* pointer to argc */
+char ***argvp; /* pointer to argv */
+int optind; /* current optind, number of next argument */
 {
 	char **newargv;
 	char **tmp;
 	int newargc;
-	int next;		/* place for next argument */
-	int room;		/* how many more new arguments we can hold */
-#	define	SOME	10	/* first guess at how many we'll need */
+	int next; /* place for next argument */
+	int room; /* how many more new arguments we can hold */
+#define SOME 10 /* first guess at how many we'll need */
 	FILE *f;
 	int i;
 	const char *p;
-	struct work wa;		/* for getanarg() */
+	struct work wa; /* for getanarg() */
 
 	f = fopen(filename, "r");
 	if (f == NULL)
 		return "unable to open file";
 
 	newargc = *argcp + SOME;
-	newargv = malloc((newargc+1) * sizeof(char *));
+	newargv = malloc((newargc + 1) * sizeof(char *));
 	if (newargv == NULL) {
 		fclose(f);
 		return "unable to allocate memory";
@@ -109,10 +108,10 @@ int optind;			/* current optind, number of next argument */
 	while ((p = getanarg(f, &wa, &newargv[next])) == NULL) {
 		if (room == 0) {
 			newargc += SOME;
-			tmp = realloc(newargv, (newargc+1) * sizeof(char *));
+			tmp = realloc(newargv, (newargc + 1) * sizeof(char *));
 			if (tmp == NULL) {
 				p = "out of space for new argv";
-				break;		/* NOTE BREAK OUT */
+				break; /* NOTE BREAK OUT */
 			}
 			newargv = tmp;
 			room += SOME;
@@ -120,8 +119,8 @@ int optind;			/* current optind, number of next argument */
 		next++;
 		room--;
 	}
-	if (p != NULL && !feof(f)) {	/* error of some kind */
-		for (i = optind+1; i <= next; i++)
+	if (p != NULL && !feof(f)) { /* error of some kind */
+		for (i = optind + 1; i <= next; i++)
 			if (newargv[i] != NULL)
 				free(newargv[i]);
 		free(newargv);
@@ -131,7 +130,7 @@ int optind;			/* current optind, number of next argument */
 
 	fclose(f);
 	memcpy(newargv + next, *argvp + optind,
-					(*argcp+1-optind) * sizeof(char *));
+	       (*argcp + 1 - optind) * sizeof(char *));
 	*argcp += next - optind;
 	*argvp = newargv;
 	return NULL;
@@ -140,21 +139,21 @@ int optind;			/* current optind, number of next argument */
 /*
  - getanarg - get a malloced argument from the file
  */
-static const char *		/* NULL for success, else string literal */
+static const char * /* NULL for success, else string literal */
 getanarg(f, w, linep)
 FILE *f;
 struct work *w;
-char **linep;			/* where to store pointer if successful */
+char **linep; /* where to store pointer if successful */
 {
 	size_t len;
 	char *p;
 	char *endp;
 
-	while (w->pending == NULL) {	/* no pending line */
+	while (w->pending == NULL) { /* no pending line */
 		if ((w->line = of_getline(f, w->buf, sizeof(w->buf))) == NULL)
-			return "error in line read";	/* caller checks EOF */
+			return "error in line read"; /* caller checks EOF */
 		if (w->line[0] != '#' &&
-				*(w->line + strspn(w->line, " \t")) != '\0')
+		    *(w->line + strspn(w->line, " \t")) != '\0')
 			w->pending = w->line;
 	}
 
@@ -163,7 +162,7 @@ char **linep;			/* where to store pointer if successful */
 		w->pending = NULL;
 		p = w->line;
 		endp = p + strlen(p);
-		if (*p == '"' && endp > p+1 && *(endp-1) == '"') {
+		if (*p == '"' && endp > p + 1 && *(endp - 1) == '"') {
 			p++;
 			endp--;
 			*endp = '\0';
@@ -173,7 +172,7 @@ char **linep;			/* where to store pointer if successful */
 			if (*linep == NULL)
 				return "out of memory for new line";
 			strcpy(*linep, p);
-		} else			/* of_getline already malloced it */
+		} else /* of_getline already malloced it */
 			*linep = p;
 		return NULL;
 	}
@@ -207,11 +206,11 @@ char **linep;			/* where to store pointer if successful */
 /*
  - of_getline - read a line from the file, trim newline off
  */
-static char *			/* pointer to line, NULL for eof/error */
+static char * /* pointer to line, NULL for eof/error */
 of_getline(f, buf, bufsize)
 FILE *f;
-char *buf;			/* buffer to use, if convenient */
-size_t bufsize;			/* size of buf */
+char *buf; /* buffer to use, if convenient */
+size_t bufsize; /* size of buf */
 {
 	size_t len;
 
@@ -219,9 +218,9 @@ size_t bufsize;			/* size of buf */
 		return NULL;
 	len = strlen(buf);
 
-	if (len < bufsize-1 || buf[bufsize-1] == '\n') {
+	if (len < bufsize - 1 || buf[bufsize - 1] == '\n') {
 		/* it fit */
-		buf[len-1] = '\0';
+		buf[len - 1] = '\0';
 		return buf;
 	}
 
@@ -230,25 +229,19 @@ size_t bufsize;			/* size of buf */
 	return NULL;
 }
 
-
-
 #ifdef TEST
 
 #include <getopt.h>
 
 char usage[] = "Usage: tester [--foo] [--bar] [--optionsfrom file] arg ...";
 struct option opts[] = {
-	"foo",		0,	NULL,	'f',
-	"bar",		0,	NULL,	'b',
-	"builtin",	0,	NULL,	'B',
-	"optionsfrom",	1,	NULL,	'+',
-	"help",		0,	NULL,	'h',
-	"version",	0,	NULL,	'v',
-	0,		0,	NULL,	0,
+	"foo",	   0, NULL, 'f', "bar",		0, NULL, 'b',
+	"builtin", 0, NULL, 'B', "optionsfrom", 1, NULL, '+',
+	"help",	   0, NULL, 'h', "version",	0, NULL, 'v',
+	0,	   0, NULL, 0,
 };
 
-int
-main(argc, argv)
+int main(argc, argv)
 int argc;
 char *argv[];
 {
@@ -268,19 +261,19 @@ char *argv[];
 		case 'B':
 			errs = stderr;
 			break;
-		case '+':	/* optionsfrom */
+		case '+': /* optionsfrom */
 			p = optionsfrom(optarg, &argc, &argv, optind, errs);
 			if (p != NULL) {
 				fprintf(stderr, "%s: optionsfrom error: %s\n",
-								argv[0], p);
+					argv[0], p);
 				exit(1);
 			}
 			break;
-		case 'h':	/* help */
+		case 'h': /* help */
 			printf("%s\n", usage);
 			exit(0);
 			break;
-		case 'v':	/* version */
+		case 'v': /* version */
 			printf("1\n");
 			exit(0);
 			break;
@@ -298,6 +291,5 @@ char *argv[];
 		printf("%d: `%s'\n", i, argv[i]);
 	exit(0);
 }
-
 
 #endif /* TEST */

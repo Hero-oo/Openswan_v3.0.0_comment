@@ -6,4 +6,4 @@
  *
  */
 extern size_t endclienttot(const struct end *end, char *buf, size_t buflen);
-#define	ENDCLIENTTOT_BUF	(SUBNETTOT_BUF+5+3+2+1)
+#define ENDCLIENTTOT_BUF (SUBNETTOT_BUF + 5 + 3 + 2 + 1)

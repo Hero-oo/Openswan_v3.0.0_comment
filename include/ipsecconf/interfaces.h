@@ -15,10 +15,9 @@
 #ifndef _STARTER_INTERFACES_H_
 #define _STARTER_INTERFACES_H_
 
-void starter_ifaces_init (void);
+void starter_ifaces_init(void);
 int starter_iface_find(char *iface, int af, ip_address *dst, ip_address *nh);
-int starter_ifaces_load (char **ifaces, unsigned int omtu, int nat_t);
-void starter_ifaces_clear (void);
+int starter_ifaces_load(char **ifaces, unsigned int omtu, int nat_t);
+void starter_ifaces_clear(void);
 
 #endif /* _STARTER_INTERFACES_H_ */
-

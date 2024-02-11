@@ -81,24 +81,23 @@ documentation and/or software.
  */
 
 #ifdef HAVE_LIBNSS
-# include <nss.h>
-# include <pk11pub.h>
+#include <nss.h>
+#include <pk11pub.h>
 #endif
 
 /* MD5 context. */
 typedef struct {
 #ifdef HAVE_LIBNSS
-  PK11Context* ctx_nss;
+	PK11Context *ctx_nss;
 #else
-  UINT4 state[4];                                   /* state (ABCD) */
-  UINT4 count[2];        /* number of bits, modulo 2^64 (lsb first) */
-  unsigned char buffer[64];                         /* input buffer */
+	UINT4 state[4]; /* state (ABCD) */
+	UINT4 count[2]; /* number of bits, modulo 2^64 (lsb first) */
+	unsigned char buffer[64]; /* input buffer */
 #endif
 } MD5_CTX;
 
-void osMD5Init PROTO_LIST ((void *));
-void osMD5Update PROTO_LIST
-  ((void *, const unsigned char *, long unsigned int));
-void osMD5Final PROTO_LIST ((unsigned char [16], void *));
+void osMD5Init PROTO_LIST((void *));
+void osMD5Update PROTO_LIST((void *, const unsigned char *, long unsigned int));
+void osMD5Final PROTO_LIST((unsigned char[16], void *));
 
 #endif /* _MD5_H_ */

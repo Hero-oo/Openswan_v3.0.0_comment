@@ -22,23 +22,20 @@
 
 static void init_local_interface(void)
 {
-    init_parker_interface(TRUE);
+	init_parker_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/parker.secrets"
-			       , NULL, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/parker.secrets", NULL, NULL);
 }
 
 bool no_cr_send = FALSE;
 
 #include "../lp02-parentI1/parentI1_main.c"
 
-
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

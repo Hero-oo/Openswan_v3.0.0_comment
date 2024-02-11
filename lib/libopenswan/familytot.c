@@ -20,17 +20,17 @@
  */
 const char *family2str(unsigned int family)
 {
-  static char inetnamebuf[64];
+	static char inetnamebuf[64];
 
-  switch (family) {
-  case AF_INET:
-    return "inet";
+	switch (family) {
+	case AF_INET:
+		return "inet";
 
-  case AF_INET6:
-    return "inet6";
+	case AF_INET6:
+		return "inet6";
 
-  default:
-    sprintf(inetnamebuf, "family:%u", family);
-    return inetnamebuf;
-  }
+	default:
+		sprintf(inetnamebuf, "family:%u", family);
+		return inetnamebuf;
+	}
 }

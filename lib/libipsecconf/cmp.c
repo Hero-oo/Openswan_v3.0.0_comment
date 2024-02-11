@@ -23,18 +23,31 @@
 #include "ipsecconf/confread.h"
 #include "ipsecconf/cmp.h"
 
-#define streqn(a,b) (a)?((b)?(strcmp(a,b)):(-1)):(b!=NULL)
+#define streqn(a, b) (a) ? ((b) ? (strcmp(a, b)) : (-1)) : (b != NULL)
 
-#define STRCMP(obj)  if (streqn(c1->obj,c2->obj)) return -1
-#define STRCMPU(obj) if (streqn((char *)c1->obj, (char *)c2->obj)) return -1
-#define VARCMP(obj) if (c1->obj!=c2->obj) return -1
-#define MEMCMP(obj) if (memcmp(&c1->obj,&c2->obj,sizeof(c1->obj))) return -1
-#define ADDCMP(obj) if (addrcmp(&c1->obj,&c2->obj)) return -1
-#define SUBCMP(obj) if (samesubnet(&c1->obj,&c2->obj)==0) return -1
+#define STRCMP(obj)                   \
+	if (streqn(c1->obj, c2->obj)) \
+	return -1
+#define STRCMPU(obj)                                  \
+	if (streqn((char *)c1->obj, (char *)c2->obj)) \
+	return -1
+#define VARCMP(obj)             \
+	if (c1->obj != c2->obj) \
+	return -1
+#define MEMCMP(obj)                                      \
+	if (memcmp(&c1->obj, &c2->obj, sizeof(c1->obj))) \
+	return -1
+#define ADDCMP(obj)                      \
+	if (addrcmp(&c1->obj, &c2->obj)) \
+	return -1
+#define SUBCMP(obj)                              \
+	if (samesubnet(&c1->obj, &c2->obj) == 0) \
+	return -1
 
-static int starter_cmp_end (struct starter_end *c1, struct starter_end *c2)
+static int starter_cmp_end(struct starter_end *c1, struct starter_end *c2)
 {
-	if ((!c1) || (!c2)) return -1;
+	if ((!c1) || (!c2))
+		return -1;
 	VARCMP(end_addr_family);
 	VARCMP(tunnel_addr_family);
 	ADDCMP(addr);
@@ -54,9 +67,10 @@ static int starter_cmp_end (struct starter_end *c1, struct starter_end *c2)
 	return 0;
 }
 
-int starter_cmp_conn (struct starter_conn *c1, struct starter_conn *c2)
+int starter_cmp_conn(struct starter_conn *c1, struct starter_conn *c2)
 {
-	if ((!c1) || (!c2)) return -1;
+	if ((!c1) || (!c2))
+		return -1;
 	STRCMP(name);
 	VARCMP(policy);
 	VARCMP(options[KBF_IKELIFETIME]);
@@ -64,26 +78,30 @@ int starter_cmp_conn (struct starter_conn *c1, struct starter_conn *c2)
 	VARCMP(options[KBF_REKEYMARGIN]);
 	VARCMP(options[KBF_REKEYFUZZ]);
 	VARCMP(options[KBF_KEYINGTRIES]);
-	if (starter_cmp_end(&c1->left,&c2->left)) return -1;
-	if (starter_cmp_end(&c1->right,&c2->right)) return -1;
+	if (starter_cmp_end(&c1->left, &c2->left))
+		return -1;
+	if (starter_cmp_end(&c1->right, &c2->right))
+		return -1;
 	VARCMP(options[KBF_AUTO]);
 	STRCMP(esp);
 	STRCMP(ike);
 	return 0;
 }
 
-int starter_cmp_klips (struct starter_config *c1, struct starter_config *c2)
+int starter_cmp_klips(struct starter_config *c1, struct starter_config *c2)
 {
-	if ((!c1) || (!c2)) return -1;
+	if ((!c1) || (!c2))
+		return -1;
 	VARCMP(setup.options[KBF_KLIPSDEBUG]);
 	VARCMP(setup.options[KBF_FRAGICMP]);
 	VARCMP(setup.options[KBF_HIDETOS]);
 	return 0;
 }
 
-int starter_cmp_pluto (struct starter_config *c1, struct starter_config *c2)
+int starter_cmp_pluto(struct starter_config *c1, struct starter_config *c2)
 {
-	if ((!c1) || (!c2)) return -1;
+	if ((!c1) || (!c2))
+		return -1;
 	VARCMP(setup.options[KBF_PLUTODEBUG]);
 	STRCMP(setup.strings[KSF_PREPLUTO]);
 	STRCMP(setup.strings[KSF_POSTPLUTO]);
@@ -102,4 +120,3 @@ int starter_cmp_pluto (struct starter_config *c1, struct starter_config *c2)
 #endif
 	return 0;
 }
-

@@ -13,15 +13,14 @@
  * License for more details.
  */
 
-#define	V	"@IPSECVERSION@"	/* substituted in by Makefile */
+#define V "@IPSECVERSION@" /* substituted in by Makefile */
 static const char ipsecpolicy_number[] = V;
 static const char ipsecpolicy_string[] = "Linux Openswan policylib " V;
 
 /*
  - ipsec_version_code - return IPsec version number/code, as string
  */
-const char *
-ipsec_version_code(void)
+const char *ipsec_version_code(void)
 {
 	return ipsecpolicy_number;
 }
@@ -29,8 +28,7 @@ ipsec_version_code(void)
 /*
  - ipsec_version_string - return full version string
  */
-const char *
-ipsec_version_string(void)
+const char *ipsec_version_string(void)
 {
 	return ipsecpolicy_string;
 }

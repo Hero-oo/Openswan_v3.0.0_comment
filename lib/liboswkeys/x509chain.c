@@ -50,23 +50,20 @@
 #include "paths.h"
 
 /* Maximum length of ASN.1 distinquished name */
-#define ASN1_BUF_LEN	      512
+#define ASN1_BUF_LEN 512
 
 /*
  * Filter eliminating the directory entries starting with .,
  * and also "CVS" (thus eliminating '.' and '..')
  */
-int
-file_select(
+int file_select(
 #ifdef SCANDIR_HAS_CONST
-	    const
+	const
 #endif
-	    struct dirent *entry)
+	struct dirent *entry)
 {
-  return (entry->d_name[0] != '.' &&
-	  strcmp(entry->d_name, "CVS")!=0 &&
-	  strcmp(entry->d_name, "RCS")!=0);
-
+	return (entry->d_name[0] != '.' && strcmp(entry->d_name, "CVS") != 0 &&
+		strcmp(entry->d_name, "RCS") != 0);
 }
 
 /*
@@ -76,170 +73,152 @@ static x509cert_t *x509authcerts = NULL;
 
 /*const*/ x509cert_t *x509_get_authcerts_chain(void)
 {
-    return x509authcerts;
+	return x509authcerts;
 }
 
 /*
  *  get a X.509 authority certificate with a given subject or keyid
  */
-x509cert_t*
-get_authcert(chunk_t subject, chunk_t serial, chunk_t keyid, u_char auth_flags)
+x509cert_t *get_authcert(chunk_t subject, chunk_t serial, chunk_t keyid,
+			 u_char auth_flags)
 {
-    x509cert_t *cert = x509authcerts;
-    x509cert_t *prev_cert = NULL;
+	x509cert_t *cert = x509authcerts;
+	x509cert_t *prev_cert = NULL;
 
-    while (cert != NULL)
-    {
-	if (cert->authority_flags & auth_flags
-	&& ((keyid.ptr != NULL) ? same_keyid(keyid, cert->subjectKeyID)
-	    : (same_dn(subject, cert->subject)
-	       && same_serial(serial, cert->serialNumber))))
-	{
-	    if (cert != x509authcerts)
-	    {
-		/* bring the certificate up front */
-		prev_cert->next = cert->next;
-		cert->next = x509authcerts;
-		x509authcerts = cert;
-	    }
-	    return cert;
+	while (cert != NULL) {
+		if (cert->authority_flags & auth_flags &&
+		    ((keyid.ptr != NULL) ?
+			     same_keyid(keyid, cert->subjectKeyID) :
+			     (same_dn(subject, cert->subject) &&
+			      same_serial(serial, cert->serialNumber)))) {
+			if (cert != x509authcerts) {
+				/* bring the certificate up front */
+				prev_cert->next = cert->next;
+				cert->next = x509authcerts;
+				x509authcerts = cert;
+			}
+			return cert;
+		}
+		prev_cert = cert;
+		cert = cert->next;
 	}
-	prev_cert = cert;
-	cert = cert->next;
-    }
-    return NULL;
+	return NULL;
 }
 /*
  *  free the first authority certificate in the chain
  */
-static void
-free_first_authcert(void)
+static void free_first_authcert(void)
 {
-    x509cert_t *first = x509authcerts;
-    x509authcerts = first->next;
-    free_x509cert(first);
+	x509cert_t *first = x509authcerts;
+	x509authcerts = first->next;
+	free_x509cert(first);
 }
 
 /*
  *  free  all CA certificates
  */
-void
-free_authcerts(void)
+void free_authcerts(void)
 {
-    lock_authcert_list("free_authcerts");
+	lock_authcert_list("free_authcerts");
 
-    while (x509authcerts != NULL)
-        free_first_authcert();
+	while (x509authcerts != NULL)
+		free_first_authcert();
 
-    unlock_authcert_list("free_authcerts");
+	unlock_authcert_list("free_authcerts");
 }
 
 /*
  * add an authority certificate to the chained list
  */
-void
-add_authcert(x509cert_t *cert, u_char auth_flags)
+void add_authcert(x509cert_t *cert, u_char auth_flags)
 {
-    x509cert_t *old_cert;
+	x509cert_t *old_cert;
 
-    /* set authority flags */
-    cert->authority_flags |= auth_flags;
+	/* set authority flags */
+	cert->authority_flags |= auth_flags;
 
-    lock_authcert_list("add_authcert");
+	lock_authcert_list("add_authcert");
 
-    old_cert = get_authcert(cert->subject, cert->serialNumber
-	, cert->subjectKeyID, auth_flags);
+	old_cert = get_authcert(cert->subject, cert->serialNumber,
+				cert->subjectKeyID, auth_flags);
 
-    if (old_cert != NULL)
-    {
-	if (same_x509cert(cert, old_cert))
-	{
-	    /* cert is already present, just add additional authority flags */
-	    old_cert->authority_flags |= cert->authority_flags;
-	    DBG(DBG_X509 | DBG_PARSING ,
-		DBG_log("  authcert is already present and identical")
-	    )
-	    unlock_authcert_list("add_authcert");
+	if (old_cert != NULL) {
+		if (same_x509cert(cert, old_cert)) {
+			/* cert is already present, just add additional authority flags */
+			old_cert->authority_flags |= cert->authority_flags;
+			DBG(DBG_X509 | DBG_PARSING,
+			    DBG_log("  authcert is already present and identical"))
+			unlock_authcert_list("add_authcert");
 
-	    free_x509cert(cert);
-	    return;
+			free_x509cert(cert);
+			return;
+		} else {
+			/* cert is already present but will be replaced by new cert */
+			free_first_authcert();
+			DBG(DBG_X509 | DBG_PARSING,
+			    DBG_log("  existing authcert deleted"))
+		}
 	}
-	else
-	{
-	    /* cert is already present but will be replaced by new cert */
-	    free_first_authcert();
-	    DBG(DBG_X509 | DBG_PARSING ,
-		DBG_log("  existing authcert deleted")
-	    )
-	}
-    }
 
-    /* add new authcert to chained list */
-    cert->next = x509authcerts;
-    x509authcerts = cert;
-    share_x509cert(cert);  /* set count to one */
-    DBG(DBG_X509 | DBG_PARSING,
-	DBG_log("  authcert inserted")
-    )
-    unlock_authcert_list("add_authcert");
+	/* add new authcert to chained list */
+	cert->next = x509authcerts;
+	x509authcerts = cert;
+	share_x509cert(cert); /* set count to one */
+	DBG(DBG_X509 | DBG_PARSING, DBG_log("  authcert inserted"))
+	unlock_authcert_list("add_authcert");
 }
 
 /*
  *  Loads authority certificates
  */
-void
-load_authcerts(const char *type, const char *path, u_char auth_flags)
+void load_authcerts(const char *type, const char *path, u_char auth_flags)
 {
-    struct dirent **filelist;
-    char buf[ASN1_BUF_LEN];
-    char *save_dir;
-    int n;
+	struct dirent **filelist;
+	char buf[ASN1_BUF_LEN];
+	char *save_dir;
+	int n;
 
-    /* change directory to specified path */
-    save_dir = getcwd(buf, ASN1_BUF_LEN);
+	/* change directory to specified path */
+	save_dir = getcwd(buf, ASN1_BUF_LEN);
 
-    if (chdir(path))
-    {
-	openswan_log("Could not change to directory '%s': %s", path, strerror(errno));
-    }
-    else
-    {
-	DBG(DBG_CONTROL, DBG_log("Changed path to directory '%s'", path));
-	n = scandir(".", &filelist, (void *) file_select, alphasort);
+	if (chdir(path)) {
+		openswan_log("Could not change to directory '%s': %s", path,
+			     strerror(errno));
+	} else {
+		DBG(DBG_CONTROL,
+		    DBG_log("Changed path to directory '%s'", path));
+		n = scandir(".", &filelist, (void *)file_select, alphasort);
 
-	if (n < 0){
-	    char buff[256];
-	    strerror_r(errno, buff, 256 );
-	    openswan_log("  scandir() ./ error: %s", buff);
-	}
-	else
-	{
-	    while (n--)
-	    {
-		cert_t cert;
+		if (n < 0) {
+			char buff[256];
+			strerror_r(errno, buff, 256);
+			openswan_log("  scandir() ./ error: %s", buff);
+		} else {
+			while (n--) {
+				cert_t cert;
 
-		if (load_cert(CERT_NONE, filelist[n]->d_name,
+				if (load_cert(
+					    CERT_NONE, filelist[n]->d_name,
 #ifdef SINGLE_CONF_DIR
-			FALSE, /* too verbose in single conf dir */
+					    FALSE, /* too verbose in single conf dir */
 #else
-			TRUE,
+					    TRUE,
 #endif
-			      type, &cert))
-		    add_authcert(cert.u.x509, auth_flags);
+					    type, &cert))
+					add_authcert(cert.u.x509, auth_flags);
 
-		free(filelist[n]);
-	    }
-	    free(filelist);
+				free(filelist[n]);
+			}
+			free(filelist);
+		}
+
+		/* restore directory path */
+		if (chdir(save_dir) != 0) {
+			char buff[256];
+			strerror_r(errno, buff, 256);
+			openswan_log("  chdir() ./ error: %s", buff);
+		}
 	}
-
-	/* restore directory path */
-	if(chdir(save_dir) != 0) {
-	    char buff[256];
-	    strerror_r(errno, buff, 256 );
-	    openswan_log("  chdir() ./ error: %s", buff);
-	}
-    }
-
 }
 
 /********************** auth cert lists **********/
@@ -250,93 +229,88 @@ load_authcerts(const char *type, const char *path, u_char auth_flags)
  * if by_name==TURE lookup a's cert by name,
  * if by_name==FALSE lookup a's cert by keyid.
  */
-static bool
-__trusted_ca(const char *caller, chunk_t a, chunk_t b, int *pathlen, bool by_name)
+static bool __trusted_ca(const char *caller, chunk_t a, chunk_t b, int *pathlen,
+			 bool by_name)
 {
-    bool match = FALSE;
-    char abuf[ASN1_BUF_LEN], bbuf[ASN1_BUF_LEN];
+	bool match = FALSE;
+	char abuf[ASN1_BUF_LEN], bbuf[ASN1_BUF_LEN];
 
-    dntoa(abuf, ASN1_BUF_LEN, a);
-    dntoa(bbuf, ASN1_BUF_LEN, b);
+	dntoa(abuf, ASN1_BUF_LEN, a);
+	dntoa(bbuf, ASN1_BUF_LEN, b);
 
-    DBG(DBG_X509 | DBG_CONTROLMORE
-        , DBG_log("  %s called with a=%s b=%s"
-                  , caller, abuf, bbuf));
+	DBG(DBG_X509 | DBG_CONTROLMORE,
+	    DBG_log("  %s called with a=%s b=%s", caller, abuf, bbuf));
 
-    /* no CA b specified -> any CA a is accepted */
-    if (b.ptr == NULL)
-    {
-	*pathlen = (a.ptr == NULL)? 0 : MAX_CA_PATH_LEN;
-	return TRUE;
-    }
+	/* no CA b specified -> any CA a is accepted */
+	if (b.ptr == NULL) {
+		*pathlen = (a.ptr == NULL) ? 0 : MAX_CA_PATH_LEN;
+		return TRUE;
+	}
 
-    /* no CA a specified -> trust cannot be established */
-    if (a.ptr == NULL)
-    {
-	*pathlen = MAX_CA_PATH_LEN;
-	return FALSE;
-    }
+	/* no CA a specified -> trust cannot be established */
+	if (a.ptr == NULL) {
+		*pathlen = MAX_CA_PATH_LEN;
+		return FALSE;
+	}
 
-    *pathlen = 0;
+	*pathlen = 0;
 
-    /* CA a equals CA b -> we have a match */
-    if (same_dn(a, b))
-	return TRUE;
+	/* CA a equals CA b -> we have a match */
+	if (same_dn(a, b))
+		return TRUE;
 
-    /* CA a might be a subordinate CA of b */
-    lock_authcert_list(caller);
+	/* CA a might be a subordinate CA of b */
+	lock_authcert_list(caller);
 
-    while ((*pathlen)++ < MAX_CA_PATH_LEN)
-    {
-        x509cert_t *cacert;
+	while ((*pathlen)++ < MAX_CA_PATH_LEN) {
+		x509cert_t *cacert;
 
-        if (by_name)
-            /* lookup by name */
-            cacert = get_authcert(a, empty_chunk, empty_chunk, AUTH_CA);
-        else
-            /* lookup by keyid */
-            cacert = get_authcert(empty_chunk, empty_chunk, a, AUTH_CA);
+		if (by_name)
+			/* lookup by name */
+			cacert = get_authcert(a, empty_chunk, empty_chunk,
+					      AUTH_CA);
+		else
+			/* lookup by keyid */
+			cacert = get_authcert(empty_chunk, empty_chunk, a,
+					      AUTH_CA);
 
-	/* cacert not found or self-signed root cacert-> exit */
-	if (cacert == NULL || same_dn(cacert->issuer, a))
-	    break;
+		/* cacert not found or self-signed root cacert-> exit */
+		if (cacert == NULL || same_dn(cacert->issuer, a))
+			break;
 
-	/* does the issuer of CA a match CA b? */
-	match = same_dn(cacert->issuer, b);
+		/* does the issuer of CA a match CA b? */
+		match = same_dn(cacert->issuer, b);
 
-	/* we have a match and exit the loop */
-	if (match)
-	    break;
+		/* we have a match and exit the loop */
+		if (match)
+			break;
 
-	/* go one level up in the CA chain */
-	a = cacert->issuer;
-	by_name = TRUE;
+		/* go one level up in the CA chain */
+		a = cacert->issuer;
+		by_name = TRUE;
 
-        dntoa(abuf, ASN1_BUF_LEN, a);
-        DBG(DBG_X509 | DBG_CONTROLMORE
-            , DBG_log("  %s a->issuer %s"
-                      , caller, abuf));
-    }
+		dntoa(abuf, ASN1_BUF_LEN, a);
+		DBG(DBG_X509 | DBG_CONTROLMORE,
+		    DBG_log("  %s a->issuer %s", caller, abuf));
+	}
 
-    unlock_authcert_list(caller);
+	unlock_authcert_list(caller);
 
-    DBG(DBG_X509 | DBG_CONTROLMORE
-        , DBG_log("  %s returning with %s"
-                  , caller, match ? "match" : "failed"));
+	DBG(DBG_X509 | DBG_CONTROLMORE,
+	    DBG_log("  %s returning with %s", caller,
+		    match ? "match" : "failed"));
 
-    return match;
+	return match;
 }
 
-bool
-trusted_ca_by_name(chunk_t a, chunk_t b, int *pathlen)
+bool trusted_ca_by_name(chunk_t a, chunk_t b, int *pathlen)
 {
-    return __trusted_ca(__func__, a, b, pathlen, TRUE);
+	return __trusted_ca(__func__, a, b, pathlen, TRUE);
 }
 
-bool
-trusted_ca_by_keyid(chunk_t a, chunk_t b, int *pathlen)
+bool trusted_ca_by_keyid(chunk_t a, chunk_t b, int *pathlen)
 {
-    return __trusted_ca(__func__, a, b, pathlen, FALSE);
+	return __trusted_ca(__func__, a, b, pathlen, FALSE);
 }
 
 /*  Checks if the current certificate is revoked. It goes through the
@@ -345,238 +319,212 @@ trusted_ca_by_keyid(chunk_t a, chunk_t b, int *pathlen)
  */
 bool x509_check_revocation(const x509crl_t *crl, chunk_t serial)
 {
-    revokedCert_t *revokedCert = crl->revokedCertificates;
-    char tbuf[TIMETOA_BUF];
+	revokedCert_t *revokedCert = crl->revokedCertificates;
+	char tbuf[TIMETOA_BUF];
 
-    DBG(DBG_X509,
-	DBG_dump_chunk("serial number:", serial)
-    )
+	DBG(DBG_X509, DBG_dump_chunk("serial number:", serial))
 
-    while(revokedCert != NULL)
-    {
-	/* compare serial numbers */
-	if (revokedCert->userCertificate.len == serial.len &&
-	    memcmp(revokedCert->userCertificate.ptr, serial.ptr, serial.len) == 0)
-	{
-	    openswan_log("certificate was revoked on %s",
-			 timetoa(&revokedCert->revocationDate, TRUE, tbuf, sizeof(tbuf)));
-	    return TRUE;
+	while (revokedCert != NULL) {
+		/* compare serial numbers */
+		if (revokedCert->userCertificate.len == serial.len &&
+		    memcmp(revokedCert->userCertificate.ptr, serial.ptr,
+			   serial.len) == 0) {
+			openswan_log("certificate was revoked on %s",
+				     timetoa(&revokedCert->revocationDate, TRUE,
+					     tbuf, sizeof(tbuf)));
+			return TRUE;
+		}
+		revokedCert = revokedCert->next;
 	}
-	revokedCert = revokedCert->next;
-    }
-    DBG(DBG_X509,
-	DBG_log("certificate not revoked")
-    )
-    return FALSE;
+	DBG(DBG_X509, DBG_log("certificate not revoked"))
+	return FALSE;
 }
-
 
 /*
  * check if any crls are about to expire
  */
-void
-check_crls(void)
+void check_crls(void)
 {
 #ifdef HAVE_THREADS
-    x509crl_t *crl;
-    time_t current_time = time(NULL);
+	x509crl_t *crl;
+	time_t current_time = time(NULL);
 
-    lock_crl_list("check_crls");
-    crl = x509crls;
+	lock_crl_list("check_crls");
+	crl = x509crls;
 
-    while (crl != NULL)
-    {
-	time_t time_left = crl->nextUpdate - current_time;
-	u_char buf[ASN1_BUF_LEN];
+	while (crl != NULL) {
+		time_t time_left = crl->nextUpdate - current_time;
+		u_char buf[ASN1_BUF_LEN];
 
-	DBG(DBG_X509,
-	    dntoa(buf, ASN1_BUF_LEN, crl->issuer);
-	    DBG_log("issuer: '%s'",buf);
-	    if (crl->authKeyID.ptr != NULL)
-	    {
-		datatot(crl->authKeyID.ptr, crl->authKeyID.len, ':'
-		    , buf, ASN1_BUF_LEN);
-		DBG_log("authkey: %s", buf);
-	    }
-	    DBG_log("%ld seconds left", time_left)
-	)
-	if (time_left < 2*crl_check_interval)
-	    add_crl_fetch_request(crl->issuer, crl->distributionPoints);
-	crl = crl->next;
-    }
-    unlock_crl_list("check_crls");
+		DBG(
+			DBG_X509, dntoa(buf, ASN1_BUF_LEN, crl->issuer);
+			DBG_log("issuer: '%s'", buf);
+			if (crl->authKeyID.ptr != NULL) {
+				datatot(crl->authKeyID.ptr, crl->authKeyID.len,
+					':', buf, ASN1_BUF_LEN);
+				DBG_log("authkey: %s", buf);
+			} DBG_log("%ld seconds left", time_left))
+		if (time_left < 2 * crl_check_interval)
+			add_crl_fetch_request(crl->issuer,
+					      crl->distributionPoints);
+		crl = crl->next;
+	}
+	unlock_crl_list("check_crls");
 #endif
 }
 
 /*
  * get a cacert with a given subject or keyid from an alternative list
  */
-static const x509cert_t*
-get_alt_cacert(chunk_t subject, chunk_t serial, chunk_t keyid
-    , const x509cert_t *cert)
+static const x509cert_t *get_alt_cacert(chunk_t subject, chunk_t serial,
+					chunk_t keyid, const x509cert_t *cert)
 {
-    while (cert != NULL)
-    {
-       if ((keyid.ptr != NULL) ? same_keyid(keyid, cert->subjectKeyID)
-           : (same_dn(subject, cert->subject)
-              && same_serial(serial, cert->serialNumber)))
-       {
-           return cert;
-       }
-       cert = cert->next;
-    }
-    return NULL;
+	while (cert != NULL) {
+		if ((keyid.ptr != NULL) ?
+			    same_keyid(keyid, cert->subjectKeyID) :
+			    (same_dn(subject, cert->subject) &&
+			     same_serial(serial, cert->serialNumber))) {
+			return cert;
+		}
+		cert = cert->next;
+	}
+	return NULL;
 }
-
 
 /* establish trust into a candidate authcert by going up the trust chain.
  * validity and revocation status are not checked.
  */
-bool
-trust_authcert_candidate(const x509cert_t *cert, const x509cert_t *alt_chain)
+bool trust_authcert_candidate(const x509cert_t *cert,
+			      const x509cert_t *alt_chain)
 {
-    int pathlen;
+	int pathlen;
 
-    lock_authcert_list("trust_authcert_candidate");
+	lock_authcert_list("trust_authcert_candidate");
 
-    for (pathlen = 0; pathlen < MAX_CA_PATH_LEN; pathlen++)
-    {
-       const x509cert_t *authcert = NULL;
+	for (pathlen = 0; pathlen < MAX_CA_PATH_LEN; pathlen++) {
+		const x509cert_t *authcert = NULL;
 
-       DBG(DBG_CONTROL,
-           char buf[ASN1_BUF_LEN];
-           dntoa(buf, ASN1_BUF_LEN, cert->subject);
-           DBG_log("subject: '%s'",buf);
-           dntoa(buf, ASN1_BUF_LEN, cert->issuer);
-           DBG_log("issuer:  '%s'",buf);
-           if (cert->authKeyID.ptr != NULL)
-           {
-               datatot(cert->authKeyID.ptr, cert->authKeyID.len, ':'
-                   , buf, ASN1_BUF_LEN);
-               DBG_log("authkey:  %s", buf);
-           }
-	   );
+		DBG(
+			DBG_CONTROL, char buf[ASN1_BUF_LEN];
+			dntoa(buf, ASN1_BUF_LEN, cert->subject);
+			DBG_log("subject: '%s'", buf);
+			dntoa(buf, ASN1_BUF_LEN, cert->issuer);
+			DBG_log("issuer:  '%s'", buf);
+			if (cert->authKeyID.ptr != NULL) {
+				datatot(cert->authKeyID.ptr,
+					cert->authKeyID.len, ':', buf,
+					ASN1_BUF_LEN);
+				DBG_log("authkey:  %s", buf);
+			});
 
-       /* search in alternative chain first */
-       authcert = get_alt_cacert(cert->issuer, cert->authKeySerialNumber
-           , cert->authKeyID, alt_chain);
+		/* search in alternative chain first */
+		authcert = get_alt_cacert(cert->issuer,
+					  cert->authKeySerialNumber,
+					  cert->authKeyID, alt_chain);
 
-       if (authcert != NULL)
-       {
-           DBG(DBG_CONTROL,
-               DBG_log("issuer cacert found in alternative chain")
-           )
-       }
-       else
-       {
-           /* search in trusted chain */
-           authcert = get_authcert(cert->issuer, cert->authKeySerialNumber
-               , cert->authKeyID, AUTH_CA);
+		if (authcert != NULL) {
+			DBG(DBG_CONTROL,
+			    DBG_log("issuer cacert found in alternative chain"))
+		} else {
+			/* search in trusted chain */
+			authcert = get_authcert(cert->issuer,
+						cert->authKeySerialNumber,
+						cert->authKeyID, AUTH_CA);
 
-           if (authcert != NULL)
-           {
-               DBG(DBG_CONTROL,
-                   DBG_log("issuer cacert found")
-               )
-           }
-           else
-           {
-               plog("issuer cacert not found");
-               unlock_authcert_list("trust_authcert_candidate");
-               return FALSE;
-           }
-       }
+			if (authcert != NULL) {
+				DBG(DBG_CONTROL, DBG_log("issuer cacert found"))
+			} else {
+				plog("issuer cacert not found");
+				unlock_authcert_list(
+					"trust_authcert_candidate");
+				return FALSE;
+			}
+		}
 
-       if (!check_signature(cert->tbsCertificate, cert->signature,
-                            cert->algorithm, authcert))
-       {
-           plog("invalid certificate signature");
-           unlock_authcert_list("trust_authcert_candidate");
-           return FALSE;
-       }
-       DBG(DBG_CONTROL,
-           DBG_log("valid certificate signature")
-       )
+		if (!check_signature(cert->tbsCertificate, cert->signature,
+				     cert->algorithm, authcert)) {
+			plog("invalid certificate signature");
+			unlock_authcert_list("trust_authcert_candidate");
+			return FALSE;
+		}
+		DBG(DBG_CONTROL, DBG_log("valid certificate signature"))
 
-       /* check if cert is a self-signed root ca */
-       if (pathlen > 0 && same_dn(cert->issuer, cert->subject))
-       {
-           DBG(DBG_CONTROL,
-               DBG_log("reached self-signed root ca")
-           )
-           unlock_authcert_list("trust_authcert_candidate");
-           return TRUE;
-       }
+		/* check if cert is a self-signed root ca */
+		if (pathlen > 0 && same_dn(cert->issuer, cert->subject)) {
+			DBG(DBG_CONTROL, DBG_log("reached self-signed root ca"))
+			unlock_authcert_list("trust_authcert_candidate");
+			return TRUE;
+		}
 
-       /* go up one step in the trust chain */
-       cert = authcert;
-    }
-    plog("maximum ca path length of %d levels exceeded", MAX_CA_PATH_LEN);
-    unlock_authcert_list("trust_authcert_candidate");
-    return FALSE;
+		/* go up one step in the trust chain */
+		cert = authcert;
+	}
+	plog("maximum ca path length of %d levels exceeded", MAX_CA_PATH_LEN);
+	unlock_authcert_list("trust_authcert_candidate");
+	return FALSE;
 }
 
 static time_t fakenow = 0;
 
-void
-set_fake_x509_time(time_t when)
+void set_fake_x509_time(time_t when)
 {
-    fakenow = when;
+	fakenow = when;
 }
 
 time_t get_time_maybe_fake(time_t *when)
 {
-    if(fakenow != 0) {
-        if(when) *when=fakenow;
-        return fakenow;
-    }
-    return time(when);
+	if (fakenow != 0) {
+		if (when)
+			*when = fakenow;
+		return fakenow;
+	}
+	return time(when);
 }
 
 /* verify the validity of a certificate by
  * checking the notBefore and notAfter dates
  */
-err_t
-check_validity(const x509cert_t *cert, time_t *until)
+err_t check_validity(const x509cert_t *cert, time_t *until)
 {
-    time_t current_time;
-    char curtime[TIMETOA_BUF];
+	time_t current_time;
+	char curtime[TIMETOA_BUF];
 
-    get_time_maybe_fake(&current_time);
-    timetoa(&current_time, TRUE, curtime, sizeof(curtime));
+	get_time_maybe_fake(&current_time);
+	timetoa(&current_time, TRUE, curtime, sizeof(curtime));
 
-    DBG(DBG_X509,
-	char tbuf[TIMETOA_BUF];
+	DBG(DBG_X509, char tbuf[TIMETOA_BUF];
 
-	DBG_log("  not before  : %s"
-		, timetoa(&cert->notBefore, TRUE, tbuf, sizeof(tbuf)));
-	DBG_log("  current time: %s", curtime);
-	DBG_log("  not after   : %s"
-		, timetoa(&cert->notAfter, TRUE, tbuf, sizeof(tbuf)));
-	);
+	    DBG_log("  not before  : %s",
+		    timetoa(&cert->notBefore, TRUE, tbuf, sizeof(tbuf)));
+	    DBG_log("  current time: %s", curtime);
+	    DBG_log("  not after   : %s",
+		    timetoa(&cert->notAfter, TRUE, tbuf, sizeof(tbuf))););
 
-    if (cert->notAfter < *until) *until = cert->notAfter;
+	if (cert->notAfter < *until)
+		*until = cert->notAfter;
 
-    if (current_time < cert->notBefore) {
-	char tbuf[TIMETOA_BUF];
+	if (current_time < cert->notBefore) {
+		char tbuf[TIMETOA_BUF];
 
-	return builddiag("X.509 certificate is not valid until %s (it is now=%s)"
-			 , timetoa(&cert->notBefore, TRUE, tbuf, sizeof(tbuf))
-			 , curtime);
-    }
+		return builddiag(
+			"X.509 certificate is not valid until %s (it is now=%s)",
+			timetoa(&cert->notBefore, TRUE, tbuf, sizeof(tbuf)),
+			curtime);
+	}
 
-    if (current_time > cert->notAfter) {
-	char tbuf[TIMETOA_BUF];
+	if (current_time > cert->notAfter) {
+		char tbuf[TIMETOA_BUF];
 
-	DBG_log("  aftercheck : %ld > %ld", (unsigned long)current_time
-		, (unsigned long)cert->notAfter);
-	return builddiag("X.509 certificate expired at %s (it is now %s)"
-			 , timetoa(&cert->notAfter, TRUE, tbuf, sizeof(tbuf))
-			 , curtime);
-    }
+		DBG_log("  aftercheck : %ld > %ld", (unsigned long)current_time,
+			(unsigned long)cert->notAfter);
+		return builddiag(
+			"X.509 certificate expired at %s (it is now %s)",
+			timetoa(&cert->notAfter, TRUE, tbuf, sizeof(tbuf)),
+			curtime);
+	}
 
-    else
-	return NULL;
+	else
+		return NULL;
 }
 
 /*
@@ -584,30 +532,28 @@ check_validity(const x509cert_t *cert, time_t *until)
  *
  * used for IKEv1 CERTREQ lookup, requested_ca is a list of CA names.
  */
-bool
-match_requested_ca_name(const generalName_t *requested_ca, chunk_t our_ca_name,
-			int *our_pathlen)
+bool match_requested_ca_name(const generalName_t *requested_ca,
+			     chunk_t our_ca_name, int *our_pathlen)
 {
-    /* if no ca is requested than any ca will match */
-    if (requested_ca == NULL)
-    {
-	*our_pathlen = 0;
-	return TRUE;
-    }
+	/* if no ca is requested than any ca will match */
+	if (requested_ca == NULL) {
+		*our_pathlen = 0;
+		return TRUE;
+	}
 
-    *our_pathlen = MAX_CA_PATH_LEN + 1;
+	*our_pathlen = MAX_CA_PATH_LEN + 1;
 
-    while (requested_ca != NULL)
-    {
-	int pathlen;
+	while (requested_ca != NULL) {
+		int pathlen;
 
-	if (trusted_ca_by_name(our_ca_name, requested_ca->name, &pathlen)
-	&& pathlen < *our_pathlen)
-	    *our_pathlen = pathlen;
-	requested_ca = requested_ca->next;
-    }
+		if (trusted_ca_by_name(our_ca_name, requested_ca->name,
+				       &pathlen) &&
+		    pathlen < *our_pathlen)
+			*our_pathlen = pathlen;
+		requested_ca = requested_ca->next;
+	}
 
-    return *our_pathlen <= MAX_CA_PATH_LEN;
+	return *our_pathlen <= MAX_CA_PATH_LEN;
 }
 
 /*
@@ -615,49 +561,49 @@ match_requested_ca_name(const generalName_t *requested_ca, chunk_t our_ca_name,
  *
  * used for IKEv2 CERTREQ lookup, requested_keys is a list of CA key IDs.
  */
-bool
-match_requested_ca_keyid(const generalName_t *requested_keys, chunk_t our_ca_name,
-                         int *our_pathlen)
+bool match_requested_ca_keyid(const generalName_t *requested_keys,
+			      chunk_t our_ca_name, int *our_pathlen)
 {
-    x509cert_t *cacert;
-    const generalName_t *gn;
+	x509cert_t *cacert;
+	const generalName_t *gn;
 
-    /* if no ca is requested then any ca will match */
-    if (!requested_keys) {
-        *our_pathlen = 0;
-        return TRUE;
-    }
+	/* if no ca is requested then any ca will match */
+	if (!requested_keys) {
+		*our_pathlen = 0;
+		return TRUE;
+	}
 
-    *our_pathlen = MAX_CA_PATH_LEN + 1;
+	*our_pathlen = MAX_CA_PATH_LEN + 1;
 
-    /* lookup our CA by name */
-    cacert = get_authcert(our_ca_name, empty_chunk, empty_chunk, AUTH_CA);
+	/* lookup our CA by name */
+	cacert = get_authcert(our_ca_name, empty_chunk, empty_chunk, AUTH_CA);
 
-    /* if we don't have a CA, then nothing will match */
-    if (!cacert) {
-        char name[ASN1_BUF_LEN];
-        dntoa(name, ASN1_BUF_LEN, our_ca_name);
-        DBG_log("  match_requested_ca_keyid passed CA name '%s', which was not found",
-                name);
-        return FALSE;
-    }
+	/* if we don't have a CA, then nothing will match */
+	if (!cacert) {
+		char name[ASN1_BUF_LEN];
+		dntoa(name, ASN1_BUF_LEN, our_ca_name);
+		DBG_log("  match_requested_ca_keyid passed CA name '%s', which was not found",
+			name);
+		return FALSE;
+	}
 
-    /* bogus input will not match anything */
-    if (cacert->subjectKeyID.len != SHA1_DIGEST_SIZE) {
-        DBG_log("  match_requested_ca_keyid passed CA keyid with len %lu (expected %u)",
-                cacert->subjectKeyID.len, SHA1_DIGEST_SIZE);
-        return FALSE;
-    }
+	/* bogus input will not match anything */
+	if (cacert->subjectKeyID.len != SHA1_DIGEST_SIZE) {
+		DBG_log("  match_requested_ca_keyid passed CA keyid with len %lu (expected %u)",
+			cacert->subjectKeyID.len, SHA1_DIGEST_SIZE);
+		return FALSE;
+	}
 
-    for (gn = requested_keys; gn; gn = gn->next) {
-        int pathlen;
+	for (gn = requested_keys; gn; gn = gn->next) {
+		int pathlen;
 
-        if (trusted_ca_by_keyid(cacert->subjectKeyID, gn->name, &pathlen)
-            && pathlen < *our_pathlen)
-            *our_pathlen = pathlen;
-    }
+		if (trusted_ca_by_keyid(cacert->subjectKeyID, gn->name,
+					&pathlen) &&
+		    pathlen < *our_pathlen)
+			*our_pathlen = pathlen;
+	}
 
-    return *our_pathlen <= MAX_CA_PATH_LEN;
+	return *our_pathlen <= MAX_CA_PATH_LEN;
 }
 
 /*
@@ -666,4 +612,3 @@ match_requested_ca_keyid(const generalName_t *requested_keys, chunk_t our_ca_nam
  * c-style: pluto
  * End:
  */
-

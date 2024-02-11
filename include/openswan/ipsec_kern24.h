@@ -28,28 +28,29 @@ static inline void random_ether_addr(u8 *addr)
 	addr[0] |= 0x02;
 }
 
-#define ip_hdr(skb)	((skb)->nh.iph)
+#define ip_hdr(skb) ((skb)->nh.iph)
 
 #ifdef NET_26
 #error "ipsec_kern24.h should not be included directly or at all on 2.6 kernels"
 #endif
 
-#define sk_receive_queue  receive_queue
-#define sk_destruct       destruct
-#define sk_reuse          reuse
-#define sk_zapped         zapped
-#define sk_family         family
-#define sk_protocol       protocol
-#define sk_protinfo       protinfo
-#define sk_sleep          sleep
-#define sk_state_change   state_change
-#define sk_shutdown       shutdown
-#define sk_err            err
-#define sk_stamp          stamp
-#define sk_socket         socket
-#define sk_sndbuf         sndbuf
-#define sock_flag(sk, flag)  sk->dead
-#define sk_for_each(sk, node, plist) for(sk=*plist; sk!=NULL; sk = sk->next)
+#define sk_receive_queue receive_queue
+#define sk_destruct destruct
+#define sk_reuse reuse
+#define sk_zapped zapped
+#define sk_family family
+#define sk_protocol protocol
+#define sk_protinfo protinfo
+#define sk_sleep sleep
+#define sk_state_change state_change
+#define sk_shutdown shutdown
+#define sk_err err
+#define sk_stamp stamp
+#define sk_socket socket
+#define sk_sndbuf sndbuf
+#define sock_flag(sk, flag) sk->dead
+#define sk_for_each(sk, node, plist) \
+	for (sk = *plist; sk != NULL; sk = sk->next)
 
 /* deal with 2.4 vs 2.6 issues with module counts */
 
@@ -81,9 +82,8 @@ static inline void *skb_header_pointer(const struct sk_buff *skb, int offset,
 
 static inline struct ethhdr *eth_hdr(const struct sk_buff *skb)
 {
-    return (struct ethhdr *)skb_mac_header(skb);
+	return (struct ethhdr *)skb_mac_header(skb);
 }
 #define _IPSEC_KERN24_H 1
 
 #endif /* _IPSEC_KERN24_H */
-

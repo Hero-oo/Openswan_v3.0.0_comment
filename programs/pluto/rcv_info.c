@@ -31,19 +31,19 @@
 #include "constants.h"
 #include "defs.h"
 #include "id.h"
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "foodgroups.h"
-#include "whack.h"	/* needs connections.h */
+#include "whack.h" /* needs connections.h */
 #include "packet.h"
-#include "demux.h"	/* needs packet.h */
+#include "demux.h" /* needs packet.h */
 #include "pluto/state.h"
-#include "ipsec_doi.h"	/* needs demux.h and state.h */
-#include "kernel.h"	/* needs connections.h */
+#include "ipsec_doi.h" /* needs demux.h and state.h */
+#include "kernel.h" /* needs connections.h */
 #include "rcv_whack.h"
 #include "log.h"
 #include "keys.h"
-#include "adns.h"	/* needs <resolv.h> */
-#include "dnskey.h"	/* needs keys.h and adns.h */
+#include "adns.h" /* needs <resolv.h> */
+#include "dnskey.h" /* needs keys.h and adns.h */
 #include "pluto/server.h"
 
 #include "openswan/ipsec_policy.h"
@@ -58,162 +58,148 @@ int info_fd = -1;
  * @param IPsec Policy Query
  * @return void
  */
-static void
-info_lookuphostpair(struct ipsec_policy_cmd_query *ipcq)
+static void info_lookuphostpair(struct ipsec_policy_cmd_query *ipcq)
 {
-    struct connection *c;
-    struct state *p1st, *p2st;
+	struct connection *c;
+	struct state *p1st, *p2st;
 
-
-    /* default result: no crypto */
-    ipcq->strength  = IPSEC_PRIVACY_NONE;
-    ipcq->bandwidth = IPSEC_QOS_WIRESPEED;
-    ipcq->credential_count = 0;
+	/* default result: no crypto */
+	ipcq->strength = IPSEC_PRIVACY_NONE;
+	ipcq->bandwidth = IPSEC_QOS_WIRESPEED;
+	ipcq->credential_count = 0;
 
 #ifdef DEBUG
-    {
-	char sstr[ADDRTOT_BUF], dstr[ADDRTOT_BUF];
-
-	addrtot(&ipcq->query_local,  0, sstr, sizeof(sstr));
-	addrtot(&ipcq->query_remote, 0, dstr, sizeof(dstr));
-	DBG_log("info request for %s -> %s", sstr, dstr);
-    }
-#endif
-
-    /* okay, look up what connection handles this ip pair */
-
-    c = find_connection_for_clients(NULL,
-				    &ipcq->query_local,
-				    &ipcq->query_remote,
-				    ipcq->proto);
-    if (c == NULL)
-    {
-	/* try reversing it */
-	c = find_connection_for_clients(NULL,
-					&ipcq->query_remote,
-					&ipcq->query_local,
-					ipcq->proto);
-	if (c != NULL)
 	{
-	    ip_address tmp;
-	    /* If it is reversed, swap it */
-	    tmp = ipcq->query_local;
-	    ipcq->query_local = ipcq->query_remote;
-	    ipcq->query_remote = tmp;
+		char sstr[ADDRTOT_BUF], dstr[ADDRTOT_BUF];
+
+		addrtot(&ipcq->query_local, 0, sstr, sizeof(sstr));
+		addrtot(&ipcq->query_remote, 0, dstr, sizeof(dstr));
+		DBG_log("info request for %s -> %s", sstr, dstr);
 	}
-    }
-
-    if (c == NULL)
-    {
-#ifdef DEBUG
-	DBG_log("no connection found");
 #endif
-	return;	/* no crypto */
-    }
 
-    if (c->newest_ipsec_sa == SOS_NOBODY)
-    {
-	ip_subnet us, them;
+	/* okay, look up what connection handles this ip pair */
 
-	DBG_log("connection %s found, no ipsec state, looking again", c->name);
-	addrtosubnet(&ipcq->query_local, &us);
-	addrtosubnet(&ipcq->query_remote, &them);
-	c = find_client_connection(c, &us, &them, 0, 0, 0, 0);
+	c = find_connection_for_clients(NULL, &ipcq->query_local,
+					&ipcq->query_remote, ipcq->proto);
+	if (c == NULL) {
+		/* try reversing it */
+		c = find_connection_for_clients(NULL, &ipcq->query_remote,
+						&ipcq->query_local,
+						ipcq->proto);
+		if (c != NULL) {
+			ip_address tmp;
+			/* If it is reversed, swap it */
+			tmp = ipcq->query_local;
+			ipcq->query_local = ipcq->query_remote;
+			ipcq->query_remote = tmp;
+		}
+	}
 
-	if (c == NULL)
-	    return;	/* no crypto */
-    }
+	if (c == NULL) {
+#ifdef DEBUG
+		DBG_log("no connection found");
+#endif
+		return; /* no crypto */
+	}
 
-    DBG_log("connection %s[%ld] with state %u"
-	, c->name, c->instance_serial
-	, (unsigned int)c->newest_ipsec_sa);
+	if (c->newest_ipsec_sa == SOS_NOBODY) {
+		ip_subnet us, them;
 
-    if (c->newest_ipsec_sa == SOS_NOBODY)
-	return;	/* no crypto */
+		DBG_log("connection %s found, no ipsec state, looking again",
+			c->name);
+		addrtosubnet(&ipcq->query_local, &us);
+		addrtosubnet(&ipcq->query_remote, &them);
+		c = find_client_connection(c, &us, &them, 0, 0, 0, 0);
 
-    /* we found a connection, try to lookup the state */
-    p2st = state_with_serialno(c->newest_ipsec_sa);
+		if (c == NULL)
+			return; /* no crypto */
+	}
 
-    p1st = find_phase1_state(c, ISAKMP_SA_ESTABLISHED_STATES);
+	DBG_log("connection %s[%ld] with state %u", c->name, c->instance_serial,
+		(unsigned int)c->newest_ipsec_sa);
 
-    if (p1st == NULL || p2st == NULL)
-    {
-	DBG_log("connection %s[%ld] has missing states %s %s"
-	    , c->name, c->instance_serial
-	    , (p1st ? "phase1" : "")
-	    , (p2st ? "phase1" : ""));
-	return;	/* no crypto */
-    }
+	if (c->newest_ipsec_sa == SOS_NOBODY)
+		return; /* no crypto */
 
-    /* if we have AH present, then record minimal info */
-    if (p2st->st_ah.present)
-    {
-	ipcq->strength = IPSEC_PRIVACY_INTEGRAL;
-	ipcq->auth_detail = p2st->st_esp.attrs.transattrs.integ_hash;
-    }
+	/* we found a connection, try to lookup the state */
+	p2st = state_with_serialno(c->newest_ipsec_sa);
 
-    if (p2st->st_esp.present)
-    {
-	/*
+	p1st = find_phase1_state(c, ISAKMP_SA_ESTABLISHED_STATES);
+
+	if (p1st == NULL || p2st == NULL) {
+		DBG_log("connection %s[%ld] has missing states %s %s", c->name,
+			c->instance_serial, (p1st ? "phase1" : ""),
+			(p2st ? "phase1" : ""));
+		return; /* no crypto */
+	}
+
+	/* if we have AH present, then record minimal info */
+	if (p2st->st_ah.present) {
+		ipcq->strength = IPSEC_PRIVACY_INTEGRAL;
+		ipcq->auth_detail = p2st->st_esp.attrs.transattrs.integ_hash;
+	}
+
+	if (p2st->st_esp.present) {
+		/*
 	 * XXX-mcr Please do not shout at me about relative strengths
 	 *         here. I'm not a cryptographer. I just diddle bits.
 	 */
-	switch (p2st->st_esp.attrs.transattrs.encrypt)
-	{
-	case ESP_NULL:
-	    /* actually, do not change it if we set it from AH */
-	    break;
+		switch (p2st->st_esp.attrs.transattrs.encrypt) {
+		case ESP_NULL:
+			/* actually, do not change it if we set it from AH */
+			break;
 
-	case ESP_DES:
-	case ESP_DES_IV64:
-	case ESP_DES_IV32:
-	case ESP_RC4:
-	    ipcq->strength = IPSEC_PRIVACY_ROT13;
-	    break;
+		case ESP_DES:
+		case ESP_DES_IV64:
+		case ESP_DES_IV32:
+		case ESP_RC4:
+			ipcq->strength = IPSEC_PRIVACY_ROT13;
+			break;
 
-	case ESP_RC5:
-	case ESP_IDEA:
-	case ESP_CAST:
-	case ESP_BLOWFISH:
-	case ESP_3DES:
-	    ipcq->strength = IPSEC_PRIVACY_PRIVATE;
-	    ipcq->bandwidth = IPSEC_QOS_VOIP;
-	    break;
+		case ESP_RC5:
+		case ESP_IDEA:
+		case ESP_CAST:
+		case ESP_BLOWFISH:
+		case ESP_3DES:
+			ipcq->strength = IPSEC_PRIVACY_PRIVATE;
+			ipcq->bandwidth = IPSEC_QOS_VOIP;
+			break;
 
-	case ESP_3IDEA:
-	    ipcq->strength = IPSEC_PRIVACY_STRONG;
-	    ipcq->bandwidth = IPSEC_QOS_INTERACTIVE;
-	    break;
+		case ESP_3IDEA:
+			ipcq->strength = IPSEC_PRIVACY_STRONG;
+			ipcq->bandwidth = IPSEC_QOS_INTERACTIVE;
+			break;
 
-	case ESP_AES:
-	    ipcq->strength = IPSEC_PRIVACY_STRONG;
-	    ipcq->bandwidth = IPSEC_QOS_FTP;
-	    break;
-	default:
-		DBG_log("unsupported/unhandled ESP transform '%s' (%d)",
-			enum_name(&esp_transformid_names, p2st->st_esp.attrs.transattrs.encrypt),
-			p2st->st_esp.attrs.transattrs.encrypt);
+		case ESP_AES:
+			ipcq->strength = IPSEC_PRIVACY_STRONG;
+			ipcq->bandwidth = IPSEC_QOS_FTP;
+			break;
+		default:
+			DBG_log("unsupported/unhandled ESP transform '%s' (%d)",
+				enum_name(&esp_transformid_names,
+					  p2st->st_esp.attrs.transattrs.encrypt),
+				p2st->st_esp.attrs.transattrs.encrypt);
+		}
+		ipcq->esp_detail = p2st->st_esp.attrs.transattrs.encrypt;
 	}
-	ipcq->esp_detail = p2st->st_esp.attrs.transattrs.encrypt;
-    }
 
-    if (p2st->st_ipcomp.present)
-	ipcq->comp_detail = p2st->st_esp.attrs.transattrs.encrypt;
+	if (p2st->st_ipcomp.present)
+		ipcq->comp_detail = p2st->st_esp.attrs.transattrs.encrypt;
 
-    /* now! the credentails that were used */
-    /* for the moment we only have 1 credential, the DNS name,
+	/* now! the credentails that were used */
+	/* for the moment we only have 1 credential, the DNS name,
      * because the DNS servers do not return the chain of SIGs yet
      */
 
-    if(!c->spd.this.key_from_DNS_on_demand)
-    {
-	/* the key didn't come from the DNS in some way,
+	if (!c->spd.this.key_from_DNS_on_demand) {
+		/* the key didn't come from the DNS in some way,
 	 * so it must have been loaded locally.
 	 */
-	ipcq->credential_count = 1;
-	ipcq->credentials[0].ii_type   = c->spd.this.id.kind;
-	ipcq->credentials[0].ii_format = CERT_RAW_RSA;
-    }
+		ipcq->credential_count = 1;
+		ipcq->credentials[0].ii_type = c->spd.this.id.kind;
+		ipcq->credentials[0].ii_format = CERT_RAW_RSA;
+	}
 
 #if 0
     switch (c->spd.id.kind)
@@ -227,46 +213,54 @@ info_lookuphostpair(struct ipsec_policy_cmd_query *ipcq)
     }
 #endif
 
-    ipcq->credential_count = 1;
+	ipcq->credential_count = 1;
 
-    /* pull credentials out of gw_info */
+	/* pull credentials out of gw_info */
 
-    switch (p1st->st_peer_pubkey->dns_auth_level)
-    {
-    case DAL_UNSIGNED:
-    case DAL_NOTSEC:
-	/* these seem to be the same for this purpose */
-	ipcq->credentials[0].ii_type   = p1st->st_peer_pubkey->id.kind;
-	ipcq->credentials[0].ii_type   = CERT_NONE;
-	idtoa(&p1st->st_peer_pubkey->id
-	    , ipcq->credentials[0].ii_credential.ipsec_dns_signed.fqdn
-	    , sizeof(ipcq->credentials[0].ii_credential.ipsec_dns_signed.fqdn));
-	break;
+	switch (p1st->st_peer_pubkey->dns_auth_level) {
+	case DAL_UNSIGNED:
+	case DAL_NOTSEC:
+		/* these seem to be the same for this purpose */
+		ipcq->credentials[0].ii_type = p1st->st_peer_pubkey->id.kind;
+		ipcq->credentials[0].ii_type = CERT_NONE;
+		idtoa(&p1st->st_peer_pubkey->id,
+		      ipcq->credentials[0].ii_credential.ipsec_dns_signed.fqdn,
+		      sizeof(ipcq->credentials[0]
+				     .ii_credential.ipsec_dns_signed.fqdn));
+		break;
 
-    case DAL_SIGNED:
-	ipcq->credentials[0].ii_type   = p1st->st_peer_pubkey->id.kind;
-	ipcq->credentials[0].ii_format = CERT_DNS_SIGNED_KEY;
-	idtoa(&p1st->st_peer_pubkey->id
-	    , ipcq->credentials[0].ii_credential.ipsec_dns_signed.fqdn
-	    , sizeof(ipcq->credentials[0].ii_credential.ipsec_dns_signed.fqdn));
+	case DAL_SIGNED:
+		ipcq->credentials[0].ii_type = p1st->st_peer_pubkey->id.kind;
+		ipcq->credentials[0].ii_format = CERT_DNS_SIGNED_KEY;
+		idtoa(&p1st->st_peer_pubkey->id,
+		      ipcq->credentials[0].ii_credential.ipsec_dns_signed.fqdn,
+		      sizeof(ipcq->credentials[0]
+				     .ii_credential.ipsec_dns_signed.fqdn));
 
-	if (p1st->st_peer_pubkey->dns_sig != NULL)
-	{
-	    strncat(ipcq->credentials[0].ii_credential.ipsec_dns_signed.dns_sig
-		, p1st->st_peer_pubkey->dns_sig
-		, sizeof(ipcq->credentials[0].ii_credential.ipsec_dns_signed.dns_sig)
-		- strlen(ipcq->credentials[0].ii_credential.ipsec_dns_signed.dns_sig)-1);
+		if (p1st->st_peer_pubkey->dns_sig != NULL) {
+			strncat(ipcq->credentials[0]
+					.ii_credential.ipsec_dns_signed.dns_sig,
+				p1st->st_peer_pubkey->dns_sig,
+				sizeof(ipcq->credentials[0]
+					       .ii_credential.ipsec_dns_signed
+					       .dns_sig) -
+					strlen(ipcq->credentials[0]
+						       .ii_credential
+						       .ipsec_dns_signed
+						       .dns_sig) -
+					1);
+		}
+		break;
+
+	case DAL_LOCAL:
+		ipcq->credentials[0].ii_type = p1st->st_peer_pubkey->id.kind;
+		ipcq->credentials[0].ii_format = CERT_RAW_RSA;
+		idtoa(&p1st->st_peer_pubkey->id,
+		      ipcq->credentials[0].ii_credential.ipsec_raw_key.id_name,
+		      sizeof(ipcq->credentials[0]
+				     .ii_credential.ipsec_raw_key.id_name));
+		break;
 	}
-	break;
-
-    case DAL_LOCAL:
-	ipcq->credentials[0].ii_type   = p1st->st_peer_pubkey->id.kind;
-	ipcq->credentials[0].ii_format = CERT_RAW_RSA;
-	idtoa(&p1st->st_peer_pubkey->id
-	    , ipcq->credentials[0].ii_credential.ipsec_raw_key.id_name
-	    , sizeof(ipcq->credentials[0].ii_credential.ipsec_raw_key.id_name));
-	break;
-    }
 }
 
 /**
@@ -275,8 +269,7 @@ info_lookuphostpair(struct ipsec_policy_cmd_query *ipcq)
  * For now, we close the socket after answering the request.
  * @param infoctlfd File Descriptor for socket communication
  */
-void
-info_handle(int infoctlfd)
+void info_handle(int infoctlfd)
 {
 	struct sockaddr_un info_client_addr;
 	unsigned int info_addr_len = sizeof(info_client_addr);
@@ -286,22 +279,21 @@ info_handle(int infoctlfd)
 	struct ipsec_policy_cmd_query ipcq;
 	unsigned long fcntl_arg;
 
-	infofd = accept(infoctlfd, (struct sockaddr *)&info_client_addr
-			, &info_addr_len);
+	infofd = accept(infoctlfd, (struct sockaddr *)&info_client_addr,
+			&info_addr_len);
 
-	if (infofd < 0)
-	{
-	    log_errno((e, "accept() failed in info_handle()"));
-	    return;
+	if (infofd < 0) {
+		log_errno((e, "accept() failed in info_handle()"));
+		return;
 	}
 
-	err = ipsec_policy_readmsg(infofd, (unsigned char *)&ipcq, sizeof(ipcq));
+	err = ipsec_policy_readmsg(infofd, (unsigned char *)&ipcq,
+				   sizeof(ipcq));
 
-	if (err != NULL)
-	{
-	    log_errno((e, "readmsg said: %s", err));
-	    close(infofd);
-	    return;
+	if (err != NULL) {
+		log_errno((e, "readmsg said: %s", err));
+		close(infofd);
+		return;
 	}
 
 	/*
@@ -311,18 +303,17 @@ info_handle(int infoctlfd)
 	fcntl_arg |= FD_CLOEXEC;
 	fcntl(infofd, F_SETFD, fcntl_arg);
 
-	switch (ipcq.head.ipm_msg_type)
-	{
+	switch (ipcq.head.ipm_msg_type) {
 	case IPSEC_CMD_QUERY_HOSTPAIR:
-	    info_lookuphostpair(&ipcq);
-	    if(write(infofd, &ipcq, ipcq.head.ipm_msg_len) == -1 ) {
-            plog("info_handle: write error");
-	    }
-	    break;
+		info_lookuphostpair(&ipcq);
+		if (write(infofd, &ipcq, ipcq.head.ipm_msg_len) == -1) {
+			plog("info_handle: write error");
+		}
+		break;
 
 	default:
-	    plog("got unimplemented msg type: %d", ipcq.head.ipm_msg_type);
-	    break;
+		plog("got unimplemented msg type: %d", ipcq.head.ipm_msg_type);
+		break;
 	}
 
 	/* for now, close the socket */

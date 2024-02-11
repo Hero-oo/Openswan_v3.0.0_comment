@@ -17,11 +17,11 @@
 /*
  - rangetoa - convert address range to ASCII
  */
-size_t				/* space needed for full conversion */
+size_t /* space needed for full conversion */
 rangetoa(addrs, format, dst, dstlen)
 struct in_addr addrs[2];
-int format;			/* character */
-char *dst;			/* need not be valid if dstlen is 0 */
+int format; /* character */
+char *dst; /* need not be valid if dstlen is 0 */
 size_t dstlen;
 {
 	size_t len;
@@ -40,7 +40,7 @@ size_t dstlen;
 	len = addrtoa(addrs[0], 0, dst, dstlen);
 	if (len < dstlen)
 		for (p = dst + len - 1, n = 3; len < dstlen && n > 0;
-								p++, len++, n--)
+		     p++, len++, n--)
 			*p = '.';
 	else
 		p = NULL;

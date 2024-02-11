@@ -21,10 +21,9 @@
 #ifdef __KERNEL__
 
 /* note, kernel version ignores pfkey levels */
-# define DEBUGGING(level,args...) \
-         KLIPS_PRINT(debug_pfkey, "klips_debug:" args)
+#define DEBUGGING(level, args...) KLIPS_PRINT(debug_pfkey, "klips_debug:" args)
 
-# define ERROR(args...) printk(KERN_ERR "klips:" args)
+#define ERROR(args...) printk(KERN_ERR "klips:" args)
 
 #else
 
@@ -33,19 +32,22 @@ extern unsigned int pfkey_lib_debug;
 extern int (*pfkey_debug_func)(const char *message, ...) PRINTF_LIKE(1);
 extern int (*pfkey_error_func)(const char *message, ...) PRINTF_LIKE(1);
 
-#define DEBUGGING(level,args...)  if(pfkey_lib_debug & level) { \
-                              if(pfkey_debug_func != NULL) { \
-                                (*pfkey_debug_func)("pfkey_lib_debug:" args); \
-                              } else { \
-                                printf("pfkey_lib_debug:" args); \
-                              } }
+#define DEBUGGING(level, args...)                                     \
+	if (pfkey_lib_debug & level) {                                \
+		if (pfkey_debug_func != NULL) {                       \
+			(*pfkey_debug_func)("pfkey_lib_debug:" args); \
+		} else {                                              \
+			printf("pfkey_lib_debug:" args);              \
+		}                                                     \
+	}
 
-#define ERROR(args...)      if(pfkey_error_func != NULL) { \
-                                (*pfkey_error_func)("pfkey_lib_debug:" args); \
-                              }
+#define ERROR(args...)                                        \
+	if (pfkey_error_func != NULL) {                       \
+		(*pfkey_error_func)("pfkey_lib_debug:" args); \
+	}
 
-# define MALLOC(size) malloc(size)
-# define FREE(obj) free(obj)
+#define MALLOC(size) malloc(size)
+#define FREE(obj) free(obj)
 
 #endif
 

@@ -27,77 +27,78 @@ extern int EF_DISABLE_BANNER;
 
 int main(int argc, char *argv[])
 {
-    cert_t cacert,t1;
-    time_t until;
+	cert_t cacert, t1;
+	time_t until;
 
-    /* sadly, this is actually too late */
+	/* sadly, this is actually too late */
 #ifdef HAVE_EFENCE
-    EF_DISABLE_BANNER = 1;
+	EF_DISABLE_BANNER = 1;
 #endif
-    progname = argv[0];
-    leak_detective=1;
+	progname = argv[0];
+	leak_detective = 1;
 
-    tool_init_log();
-    load_oswcrypto();
+	tool_init_log();
+	load_oswcrypto();
 
-    set_debugging(DBG_X509|DBG_PARSING|DBG_CONTROL);
-    until =1421896274;
-    set_fake_x509_time(until);  /* Wed Jan 21 22:11:14 2015 */
+	set_debugging(DBG_X509 | DBG_PARSING | DBG_CONTROL);
+	until = 1421896274;
+	set_fake_x509_time(until); /* Wed Jan 21 22:11:14 2015 */
 
 #ifdef HAVE_LIBNSS
-    {
-	SECStatus nss_init_status= NSS_InitReadWrite("nss.d");
-	if (nss_init_status != SECSuccess) {
-	    fprintf(stderr, "NSS initialization failed (err %d)\n", PR_GetError());
-            exit(10);
-	} else {
-	    printf("NSS Initialized\n");
-	    PK11_SetPasswordFunc(getNSSPassword);
-        }
-    }
+	{
+		SECStatus nss_init_status = NSS_InitReadWrite("nss.d");
+		if (nss_init_status != SECSuccess) {
+			fprintf(stderr, "NSS initialization failed (err %d)\n",
+				PR_GetError());
+			exit(10);
+		} else {
+			printf("NSS Initialized\n");
+			PK11_SetPasswordFunc(getNSSPassword);
+		}
+	}
 #endif
 
-    if(argc < 3) {
-        fprintf(stderr, "Usage: nsscert CAcertfile.pem cert1.pem cert2.pem...\n");
-        exit(5);
-    }
+	if (argc < 3) {
+		fprintf(stderr,
+			"Usage: nsscert CAcertfile.pem cert1.pem cert2.pem...\n");
+		exit(5);
+	}
 
-    /* skip argv0 */
-    argc--;
-    argv++;
+	/* skip argv0 */
+	argc--;
+	argv++;
 
-    /* load CAcert */
-    if(!load_cert(CERT_NONE, argv[0], TRUE, "cacert", &cacert)) {
-        printf("could not load CA cert file: %s\n", argv[0]);
-        exit(1);
-    }
-    add_authcert(cacert.u.x509, AUTH_CA);
+	/* load CAcert */
+	if (!load_cert(CERT_NONE, argv[0], TRUE, "cacert", &cacert)) {
+		printf("could not load CA cert file: %s\n", argv[0]);
+		exit(1);
+	}
+	add_authcert(cacert.u.x509, AUTH_CA);
 
-    argc--;
-    argv++;
+	argc--;
+	argv++;
 
-    while(argc-- > 0) {
-        char *file = *argv++;
-        /* load target cert */
-        if(!load_cert(CERT_NONE, file, TRUE, "test1", &t1)) {
-            printf("could not load cert file: %s\n", file);
-            exit(1);
-        }
+	while (argc-- > 0) {
+		char *file = *argv++;
+		/* load target cert */
+		if (!load_cert(CERT_NONE, file, TRUE, "test1", &t1)) {
+			printf("could not load cert file: %s\n", file);
+			exit(1);
+		}
 
+		until += 86400;
+		if (verify_x509cert(t1.u.x509, FALSE, &until) == FALSE) {
+			printf("verify x509 failed\n");
+			exit(3);
+		}
+		printf("cert: %s is valid\n", file);
+		free_x509cert(t1.u.x509);
+	}
+	free_x509cert(cacert.u.x509);
 
-        until += 86400;
-        if(verify_x509cert(t1.u.x509, FALSE, &until) == FALSE) {
-            printf("verify x509 failed\n");
-            exit(3);
-        }
-        printf("cert: %s is valid\n", file);
-        free_x509cert(t1.u.x509);
-    }
-    free_x509cert(cacert.u.x509);
-
-    report_leaks();
-    tool_close_log();
-    exit(0);
+	report_leaks();
+	tool_close_log();
+	exit(0);
 }
 
 /*

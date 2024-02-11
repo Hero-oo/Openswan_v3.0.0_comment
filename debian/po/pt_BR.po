@@ -28,7 +28,7 @@ msgstr ""
 #. Description
 #: ../openswan.templates:1001
 msgid "Old runlevel management superseded"
-msgstr "Antigo nivel de execução substituido"
+msgstr "Antigo nivel de execuï¿½ï¿½o substituido"
 
 #. Type: note
 #. Description
@@ -42,14 +42,14 @@ msgid ""
 "changed your Openswan startup parameters, then please take a look at NEWS."
 "Debian for instructions on how to modify your setup accordingly."
 msgstr ""
-"Versões antigas do pacote Openswan davam a escolha entre três "
-"diferentesniveis inicialização. Devido a mudanças no procedimento de "
-"inicializaçãodo sistema padrão, isto não é mais nescessario ou útil.Para "
-"qualquer instalação nova ou antiga executando qualquer um dos modos "
-"predefinidos,salvo o nivel padrão agora será definido, Se você está "
-"atualizando uma versão antiga e modificou os paremetros de inicialização do "
-"seu Openswan, então porfavor leia NEWS.Debian para instruções de como "
-"modificar suasconfigurações correctamente"
+"Versï¿½es antigas do pacote Openswan davam a escolha entre trï¿½s "
+"diferentesniveis inicializaï¿½ï¿½o. Devido a mudanï¿½as no procedimento de "
+"inicializaï¿½ï¿½odo sistema padrï¿½o, isto nï¿½o ï¿½ mais nescessario ou ï¿½til.Para "
+"qualquer instalaï¿½ï¿½o nova ou antiga executando qualquer um dos modos "
+"predefinidos,salvo o nivel padrï¿½o agora serï¿½ definido, Se vocï¿½ estï¿½ "
+"atualizando uma versï¿½o antiga e modificou os paremetros de inicializaï¿½ï¿½o do "
+"seu Openswan, entï¿½o porfavor leia NEWS.Debian para instruï¿½ï¿½es de como "
+"modificar suasconfiguraï¿½ï¿½es correctamente"
 
 #. Type: boolean
 #. Description
@@ -67,13 +67,13 @@ msgid ""
 "existing connections and then bring them back up, so if you are using such "
 "an Openswan tunnel to connect for this update, restarting is not recommended."
 msgstr ""
-"É recomendável reiniciar o Openswan, uma vez que caso exista um correção "
-"para uma falha de segurança, o mesmo não será corrigido até que o daemon "
+"ï¿½ recomendï¿½vel reiniciar o Openswan, uma vez que caso exista um correï¿½ï¿½o "
+"para uma falha de seguranï¿½a, o mesmo nï¿½o serï¿½ corrigido atï¿½ que o daemon "
 "seja reiniciado. A maioria das pessoas esperam que o daemon seja reiniciado, "
-"portanto essa é geralmente uma boa ideia. Porém, reiniciar o Openswan pode "
-"derrubar conexões existentes, mas posteriormente trazê-las de volta. Então "
-"se você esta usando um túnel do Openswan para conectar a esta "
-"autalizaçãoreiniciar o Openswan não é recomendável"
+"portanto essa ï¿½ geralmente uma boa ideia. Porï¿½m, reiniciar o Openswan pode "
+"derrubar conexï¿½es existentes, mas posteriormente trazï¿½-las de volta. Entï¿½o "
+"se vocï¿½ esta usando um tï¿½nel do Openswan para conectar a esta "
+"autalizaï¿½ï¿½oreiniciar o Openswan nï¿½o ï¿½ recomendï¿½vel"
 
 #. Type: boolean
 #. Description
@@ -94,11 +94,11 @@ msgid ""
 "secure."
 msgstr ""
 "Um certificado X.509 para este host pode ser criado ou importado "
-"automaticamenteIsso pode ser usado para autenticar conexões IPsec outro host "
-"e é o melhor jeito de construir uma uma conexão ipsec segura. A outra "
-"possibilidade seria utilizar senhas compartilhadas(a mesma senha é utilizada "
-"nas duas pontas do túnel) paraautenticar a conexão,mas para um grande numero "
-"de conexões,a autenticação baseada chave é mais fácil de ser administrada e "
+"automaticamenteIsso pode ser usado para autenticar conexï¿½es IPsec outro host "
+"e ï¿½ o melhor jeito de construir uma uma conexï¿½o ipsec segura. A outra "
+"possibilidade seria utilizar senhas compartilhadas(a mesma senha ï¿½ utilizada "
+"nas duas pontas do tï¿½nel) paraautenticar a conexï¿½o,mas para um grande numero "
+"de conexï¿½es,a autenticaï¿½ï¿½o baseada chave ï¿½ mais fï¿½cil de ser administrada e "
 "mais segura"
 
 #. Type: boolean
@@ -108,7 +108,7 @@ msgid ""
 "Alternatively you can reject this option and later use the command \"dpkg-"
 "reconfigure openswan\" to come back."
 msgstr ""
-"Você pode rejeitar esta opção eventualmente e mais tarde utilizar o comando "
+"Vocï¿½ pode rejeitar esta opï¿½ï¿½o eventualmente e mais tarde utilizar o comando "
 "\"dpkg-reconfigure opensawn\" para voltar"
 
 #. Type: select
@@ -127,7 +127,7 @@ msgstr "importar"
 #. Description
 #: ../openswan.templates:4002
 msgid "Methods for using a X.509 certificate to authenticate this host:"
-msgstr "Métodos para utilizar um certificado X.509 para autenticar este host:"
+msgstr "Mï¿½todos para utilizar um certificado X.509 para autenticar este host:"
 
 #. Type: select
 #. Description
@@ -137,9 +137,9 @@ msgid ""
 "or to import an existing public and private key stored in PEM file(s) for "
 "authenticating IPsec connections."
 msgstr ""
-"É possível criar um novo certificado X.509 com as configuração definidas "
-"pelopelo usuário ou importar uma chave publica ou privada existente guardada "
-"no no arquivo PEM para autenticar conexões IPSEC"
+"ï¿½ possï¿½vel criar um novo certificado X.509 com as configuraï¿½ï¿½o definidas "
+"pelopelo usuï¿½rio ou importar uma chave publica ou privada existente guardada "
+"no no arquivo PEM para autenticar conexï¿½es IPSEC"
 
 #. Type: select
 #. Description
@@ -152,13 +152,13 @@ msgid ""
 "certificate and all the answers given must match exactly the requirements of "
 "the CA, otherwise the certificate request may be rejected."
 msgstr ""
-"Se você escolher criar um novo certificado X.509 primeiro será solicitado "
+"Se vocï¿½ escolher criar um novo certificado X.509 primeiro serï¿½ solicitado "
 "onumero de perguntas a serem feitas e que precisam ser respondias antes que "
-"sepossa começar a criar.Tenha em mente que se você quer uma chave publica "
-"seja assinada por uma autoridade certificadora você não deve seleccionar "
+"sepossa comeï¿½ar a criar.Tenha em mente que se vocï¿½ quer uma chave publica "
+"seja assinada por uma autoridade certificadora vocï¿½ nï¿½o deve seleccionar "
 "criar um certificadoauto-assinado e todas as respostas dadas devem "
-"correspondem exactamente às exigências da CA, caso o contrario a requisição "
-"do certificado será rejeitada"
+"correspondem exactamente ï¿½s exigï¿½ncias da CA, caso o contrario a requisiï¿½ï¿½o "
+"do certificado serï¿½ rejeitada"
 
 #. Type: select
 #. Description
@@ -172,13 +172,13 @@ msgid ""
 "for the X.509 certificates has to be PEM and that the private key must not "
 "be encrypted or the import procedure will fail."
 msgstr ""
-"Se você quer importar uma chave publica existente e uma chave privada "
-"serásolicitado pelos seus nomes (que podem ser idênticos se as duas partes "
-"sãoguardadas juntas em um único arquivo).Você também pode especificar um "
-"arquivoonde a(s) chave(s) publica do Autoridade do certificado são "
-"guardadas, mas estearquivo não pode ser o nomes que os anteriores. Esteja "
+"Se vocï¿½ quer importar uma chave publica existente e uma chave privada "
+"serï¿½solicitado pelos seus nomes (que podem ser idï¿½nticos se as duas partes "
+"sï¿½oguardadas juntas em um ï¿½nico arquivo).Vocï¿½ tambï¿½m pode especificar um "
+"arquivoonde a(s) chave(s) publica do Autoridade do certificado sï¿½o "
+"guardadas, mas estearquivo nï¿½o pode ser o nomes que os anteriores. Esteja "
 "ciente que o formato do certificado X.509 tem que ser PEM e que aquela chave "
-"privada não deve ser criptografia ou o processo de importação falhara"
+"privada nï¿½o deve ser criptografia ou o processo de importaï¿½ï¿½o falhara"
 
 #. Type: string
 #. Description
@@ -193,7 +193,7 @@ msgid ""
 "Please enter the location of the file containing your X.509 certificate in "
 "PEM format."
 msgstr ""
-"Por favor, informe a localização do arquivo contendo seu certificado X509 no "
+"Por favor, informe a localizaï¿½ï¿½o do arquivo contendo seu certificado X509 no "
 "formato PEM."
 
 #. Type: string
@@ -210,9 +210,9 @@ msgid ""
 "matching your X.509 certificate in PEM format. This can be the same file "
 "that contains the X.509 certificate."
 msgstr ""
-"Por favor, informe a localização do arquivo contendo a chave privada RSA que "
+"Por favor, informe a localizaï¿½ï¿½o do arquivo contendo a chave privada RSA que "
 "casa com seu certificado X509 no formato PEM. Este pode ser o mesmo arquivo "
-"que contém o certificado X509."
+"que contï¿½m o certificado X509."
 
 #. Type: string
 #. Description
@@ -230,10 +230,10 @@ msgid ""
 "Please note that it's not possible to store the RootCA in the same file as "
 "your X.509 certificate or private key."
 msgstr ""
-"Se desejar você pode adicionar agora a localização do arquivo que contem a "
+"Se desejar vocï¿½ pode adicionar agora a localizaï¿½ï¿½o do arquivo que contem a "
 "raizsua autoridade certificadora usada para para autenticar o seu "
-"certificado no formato PEM.SE você não possuir um ou não quiser utilizar um "
-"deixe o campo vazio.Note que não é possível adicionar a raiz da CA no mesmo "
+"certificado no formato PEM.SE vocï¿½ nï¿½o possuir um ou nï¿½o quiser utilizar um "
+"deixe o campo vazio.Note que nï¿½o ï¿½ possï¿½vel adicionar a raiz da CA no mesmo "
 "arquivo que o seu certificado X.509 ou chave privada"
 
 #. Type: string
@@ -250,11 +250,11 @@ msgid ""
 "considered insecure; anything more than 4096 bits slows down the "
 "authentication process and is not useful at present."
 msgstr ""
-"Por favor, informe o tamanho da chave RSA a ser criada. A mesma não deve ser "
+"Por favor, informe o tamanho da chave RSA a ser criada. A mesma nï¿½o deve ser "
 "menor que 1024 bits devido a uma chave de tamanho menor que esse ser "
-"considerada insegura. Você também não precisará de nada maior que 2048 "
-"porque isso somente deixaria o processo de autenticação mais lento e não "
-"seria necessário no momento."
+"considerada insegura. Vocï¿½ tambï¿½m nï¿½o precisarï¿½ de nada maior que 2048 "
+"porque isso somente deixaria o processo de autenticaï¿½ï¿½o mais lento e nï¿½o "
+"seria necessï¿½rio no momento."
 
 #. Type: boolean
 #. Description
@@ -275,13 +275,13 @@ msgid ""
 "Authority to create a trust path."
 msgstr ""
 "Este instalador pode criar automaticamente somente certificados X509 auto-"
-"assinados, devido a uma autoridade certificadora ser necessária para assinar "
-"a requisição de certificado. Caso você queira criar um certificado auto-"
-"assinado, você poderá usá-lo imediatamente para conexão com outros hosts "
-"IPSec que suportem certificados X509 para autenticação de conexões IPSec. "
-"Porém, caso você queira usar os novos recursos PKI do Openswan versão 1.91 "
-"ou superior, você precisará possuir todos seus certificados X509 assinados "
-"por uma única autoridade certificadora para criar um caminho de confiança."
+"assinados, devido a uma autoridade certificadora ser necessï¿½ria para assinar "
+"a requisiï¿½ï¿½o de certificado. Caso vocï¿½ queira criar um certificado auto-"
+"assinado, vocï¿½ poderï¿½ usï¿½-lo imediatamente para conexï¿½o com outros hosts "
+"IPSec que suportem certificados X509 para autenticaï¿½ï¿½o de conexï¿½es IPSec. "
+"Porï¿½m, caso vocï¿½ queira usar os novos recursos PKI do Openswan versï¿½o 1.91 "
+"ou superior, vocï¿½ precisarï¿½ possuir todos seus certificados X509 assinados "
+"por uma ï¿½nica autoridade certificadora para criar um caminho de confianï¿½a."
 
 #. Type: boolean
 #. Description
@@ -291,16 +291,16 @@ msgid ""
 "private key and the certificate request will be created, and you will have "
 "to sign the certificate request with your Certificate Authority."
 msgstr ""
-"Caso você não queira criar um certificado auto-assinado, este instalador irá "
-"somente criar a chave privada RSA e a requisição de certificado e você terá "
-"então que assinar a requisição de certificado junto a sua autoridade "
+"Caso vocï¿½ nï¿½o queira criar um certificado auto-assinado, este instalador irï¿½ "
+"somente criar a chave privada RSA e a requisiï¿½ï¿½o de certificado e vocï¿½ terï¿½ "
+"entï¿½o que assinar a requisiï¿½ï¿½o de certificado junto a sua autoridade "
 "certificadora."
 
 #. Type: string
 #. Description
 #: ../openswan.templates:10001
 msgid "Country code for the X.509 certificate request:"
-msgstr "Informe o código de país para a requisição de certificado X509:"
+msgstr "Informe o cï¿½digo de paï¿½s para a requisiï¿½ï¿½o de certificado X509:"
 
 #. Type: string
 #. Description
@@ -309,8 +309,8 @@ msgid ""
 "Please enter the two-letter code for the country the server resides in (such "
 "as \"AT\" for Austria)."
 msgstr ""
-"Por favor digite o código do pais onde o servidor esta com duas letras ( \"AT"
-"\" para Áustria por exemplo.)"
+"Por favor digite o cï¿½digo do pais onde o servidor esta com duas letras ( \"AT"
+"\" para ï¿½ustria por exemplo.)"
 
 #. Type: string
 #. Description
@@ -320,15 +320,15 @@ msgid ""
 "ISO-3166 country code; an empty field is allowed elsewhere in the X.509 "
 "certificate, but not here."
 msgstr ""
-"O Openssl ira se recusar a gerar um certificado a não ser que este sejaum "
-"código de pais valido na ISO-3166;um campo vazio é permitido em "
+"O Openssl ira se recusar a gerar um certificado a nï¿½o ser que este sejaum "
+"cï¿½digo de pais valido na ISO-3166;um campo vazio ï¿½ permitido em "
 "qualqueroutro lugar no certificado X.509, menos aqui."
 
 #. Type: string
 #. Description
 #: ../openswan.templates:11001
 msgid "State or province name for the X.509 certificate request:"
-msgstr "Nome do estado ou provincia para a requisição do certificado X.509:"
+msgstr "Nome do estado ou provincia para a requisiï¿½ï¿½o do certificado X.509:"
 
 #. Type: string
 #. Description
@@ -344,7 +344,7 @@ msgstr ""
 #. Description
 #: ../openswan.templates:12001
 msgid "Locality name for the X.509 certificate request:"
-msgstr "Informe o nome da localidade para a requisição do certificado X.509: "
+msgstr "Informe o nome da localidade para a requisiï¿½ï¿½o do certificado X.509: "
 
 #. Type: string
 #. Description
@@ -360,21 +360,21 @@ msgstr ""
 #. Description
 #: ../openswan.templates:13001
 msgid "Organization name for the X.509 certificate request:"
-msgstr "Informe o nome da organização para a requisição de certificado X.509: "
+msgstr "Informe o nome da organizaï¿½ï¿½o para a requisiï¿½ï¿½o de certificado X.509: "
 
 #. Type: string
 #. Description
 #: ../openswan.templates:13001
 msgid ""
 "Please enter the organization the server belongs to (such as \"Debian\")."
-msgstr "Informe a qual organização pertence o servidor(\"Debian\" por exemplo"
+msgstr "Informe a qual organizaï¿½ï¿½o pertence o servidor(\"Debian\" por exemplo"
 
 #. Type: string
 #. Description
 #: ../openswan.templates:14001
 msgid "Organizational unit for the X.509 certificate request:"
 msgstr ""
-"Informe a unidade organizacional para a requisição de certificado X.509:"
+"Informe a unidade organizacional para a requisiï¿½ï¿½o de certificado X.509:"
 
 #. Type: string
 #. Description
@@ -383,13 +383,13 @@ msgid ""
 "Please enter the organizational unit the server belongs to (such as "
 "\"security group\")."
 msgstr ""
-"Informe a unidade organizacional para a requisição de certificado X.509: "
+"Informe a unidade organizacional para a requisiï¿½ï¿½o de certificado X.509: "
 
 #. Type: string
 #. Description
 #: ../openswan.templates:15001
 msgid "Common Name for the X.509 certificate request:"
-msgstr "Informe o nome comum para a requisição de certificado X.509:"
+msgstr "Informe o nome comum para a requisiï¿½ï¿½o de certificado X.509:"
 
 #. Type: string
 #. Description
@@ -403,7 +403,7 @@ msgstr ""
 #. Description
 #: ../openswan.templates:16001
 msgid "Email address for the X.509 certificate request:"
-msgstr "Informe o endereço de e-mail para a requisição de certificado X.509:"
+msgstr "Informe o endereï¿½o de e-mail para a requisiï¿½ï¿½o de certificado X.509:"
 
 #. Type: string
 #. Description
@@ -412,7 +412,7 @@ msgid ""
 "Please enter the email address of the person or organization responsible for "
 "the X.509 certificate."
 msgstr ""
-"Por favor, informe o endereço de e-mail da pessoa ou organização responsável "
+"Por favor, informe o endereï¿½o de e-mail da pessoa ou organizaï¿½ï¿½o responsï¿½vel "
 "pelo certificado X509."
 
 #. Type: note
@@ -431,8 +431,8 @@ msgid ""
 "Any such include paragraph will now be automatically removed to ensure that "
 "Openswan can start correctly."
 msgstr ""
-"Devido a mudanças no tráfego de saída do Openswan, criptografia oportunista "
-"não é mais ativado por padrão. O Arquivo no_oe.conf que enviado em versões "
-"antigasexactamente para desativa-la por isso não é mais incluído pelo ipsec."
-"conf.Qualquer coisa que inclua o paragrafo de agora em diante será removido "
+"Devido a mudanï¿½as no trï¿½fego de saï¿½da do Openswan, criptografia oportunista "
+"nï¿½o ï¿½ mais ativado por padrï¿½o. O Arquivo no_oe.conf que enviado em versï¿½es "
+"antigasexactamente para desativa-la por isso nï¿½o ï¿½ mais incluï¿½do pelo ipsec."
+"conf.Qualquer coisa que inclua o paragrafo de agora em diante serï¿½ removido "
 "para garantirque o Openswan inicie correctamente"

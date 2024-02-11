@@ -240,7 +240,7 @@ struct Growl_Delegate {
 struct Growl_Notification {
 	/*	This should be sizeof(struct Growl_Notification).
 	 */
- 	size_t size;
+	size_t size;
 
 	/*	The notification name distinguishes one type of
 	 *	 notification from another. The name should be human-readable, as it
@@ -292,7 +292,7 @@ struct Growl_Notification {
 
 	/*	These bits are not used in Growl 0.6. Set them to 0.
 	 */
-	unsigned reserved: 31;
+	unsigned reserved : 31;
 
 	/*	When the sticky bit is clear, in most displays,
 	 *	 notifications disappear after a certain amount of time. Sticky
@@ -305,7 +305,7 @@ struct Growl_Notification {
 	 *	 notification to be sticky or non-sticky, in which case the sticky bit
 	 *	 in the notification will be ignored.
 	 */
-	unsigned isSticky: 1;
+	unsigned isSticky : 1;
 
 	/*	If this is not <code>NULL</code>, and your click callback
 	 *	 is not <code>NULL</code> either, this will be passed to the callback
@@ -341,25 +341,25 @@ struct Growl_Notification {
  *	 size (which will be set to <code>sizeof(struct Growl_Delegate)</code>) and
  *	 referenceCount (which will be set to 1).
  */
-#define InitGrowlDelegate(delegate) \
-	do { \
-		if (delegate) { \
+#define InitGrowlDelegate(delegate)                                       \
+	do {                                                              \
+		if (delegate) {                                           \
 			(delegate)->size = sizeof(struct Growl_Delegate); \
-			(delegate)->applicationName = NULL; \
-			(delegate)->registrationDictionary = NULL; \
-			(delegate)->applicationIconData = NULL; \
-			(delegate)->growlInstallationWindowTitle = NULL; \
-			(delegate)->growlInstallationInformation = NULL; \
-			(delegate)->growlUpdateWindowTitle = NULL; \
-			(delegate)->growlUpdateInformation = NULL; \
-			(delegate)->referenceCount = 1U; \
-			(delegate)->retain = NULL; \
-			(delegate)->release = NULL; \
-			(delegate)->growlIsReady = NULL; \
-			(delegate)->growlNotificationWasClicked = NULL; \
-			(delegate)->growlNotificationTimedOut = NULL; \
-		} \
-	} while(0)
+			(delegate)->applicationName = NULL;               \
+			(delegate)->registrationDictionary = NULL;        \
+			(delegate)->applicationIconData = NULL;           \
+			(delegate)->growlInstallationWindowTitle = NULL;  \
+			(delegate)->growlInstallationInformation = NULL;  \
+			(delegate)->growlUpdateWindowTitle = NULL;        \
+			(delegate)->growlUpdateInformation = NULL;        \
+			(delegate)->referenceCount = 1U;                  \
+			(delegate)->retain = NULL;                        \
+			(delegate)->release = NULL;                       \
+			(delegate)->growlIsReady = NULL;                  \
+			(delegate)->growlNotificationWasClicked = NULL;   \
+			(delegate)->growlNotificationTimedOut = NULL;     \
+		}                                                         \
+	} while (0)
 
 /*!	@defined	InitGrowlNotification
  *	@abstract	Callable macro. Initializes a Growl notification structure to defaults.
@@ -368,22 +368,23 @@ struct Growl_Notification {
  *	 for size (which will be set to
  *	<code>sizeof(struct Growl_Notification)</code>).
  */
-#define InitGrowlNotification(notification) \
-	do { \
-		if (notification) { \
-			(notification)->size = sizeof(struct Growl_Notification); \
-			(notification)->name = NULL; \
-			(notification)->title = NULL; \
-			(notification)->description = NULL; \
-			(notification)->iconData = NULL; \
-			(notification)->priority = 0; \
-			(notification)->reserved = 0U; \
-			(notification)->isSticky = false; \
-			(notification)->clickContext = NULL; \
-			(notification)->clickCallback = NULL; \
-			(notification)->identifier = NULL; \
-		} \
-	} while(0)
+#define InitGrowlNotification(notification)                        \
+	do {                                                       \
+		if (notification) {                                \
+			(notification)->size =                     \
+				sizeof(struct Growl_Notification); \
+			(notification)->name = NULL;               \
+			(notification)->title = NULL;              \
+			(notification)->description = NULL;        \
+			(notification)->iconData = NULL;           \
+			(notification)->priority = 0;              \
+			(notification)->reserved = 0U;             \
+			(notification)->isSticky = false;          \
+			(notification)->clickContext = NULL;       \
+			(notification)->clickCallback = NULL;      \
+			(notification)->identifier = NULL;         \
+		}                                                  \
+	} while (0)
 
 #pragma mark -
 #pragma mark Public API
@@ -460,7 +461,8 @@ GROWL_EXPORT struct Growl_Delegate *Growl_GetDelegate(void);
  *	 If the user does choose to install Growl, the requested notification will
  *	 be displayed once Growl is installed and running.
  */
-GROWL_EXPORT void Growl_PostNotification(const struct Growl_Notification *notification);
+GROWL_EXPORT void
+Growl_PostNotification(const struct Growl_Notification *notification);
 
 /*!	@function Growl_PostNotificationWithDictionary
 *	@abstract	Notifies using a userInfo dictionary suitable for passing to
@@ -476,7 +478,8 @@ GROWL_EXPORT void Growl_PostNotification(const struct Growl_Notification *notifi
 *	 to using CFDistributedNotificationCenter. The keys for this dictionary
  *	 can be found in GrowlDefines.h.
 */
-GROWL_EXPORT void Growl_PostNotificationWithDictionary(CFDictionaryRef userInfo);
+GROWL_EXPORT void
+Growl_PostNotificationWithDictionary(CFDictionaryRef userInfo);
 
 /*!	@function	Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext
  *	@abstract	Posts a Growl notification using parameter values.
@@ -499,15 +502,12 @@ GROWL_EXPORT void Growl_PostNotificationWithDictionary(CFDictionaryRef userInfo)
  *	 The icon data can be in any format supported by NSImage. As of Mac OS X
  *	 10.3, this includes the .icns, TIFF, JPEG, GIF, PNG, PDF, and PICT formats.
  */
-GROWL_EXPORT void Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext(
- /*inhale*/
-	CFStringRef title,
-	CFStringRef description,
-	CFStringRef notificationName,
-	CFDataRef iconData,
-	signed int priority,
-	Boolean isSticky,
-	CFPropertyListRef clickContext);
+GROWL_EXPORT void
+Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext(
+	/*inhale*/
+	CFStringRef title, CFStringRef description,
+	CFStringRef notificationName, CFDataRef iconData, signed int priority,
+	Boolean isSticky, CFPropertyListRef clickContext);
 
 #pragma mark -
 
@@ -621,7 +621,8 @@ GROWL_EXPORT CFDictionaryRef Growl_CopyRegistrationDictionaryFromDelegate(void);
  *	 This function was introduced in Growl.framework 0.7.
  *	@result A registration dictionary.
  */
-GROWL_EXPORT CFDictionaryRef Growl_CopyRegistrationDictionaryFromBundle(CFBundleRef bundle);
+GROWL_EXPORT CFDictionaryRef
+Growl_CopyRegistrationDictionaryFromBundle(CFBundleRef bundle);
 
 /*!	@function	Growl_CreateBestRegistrationDictionary
  *	@abstract	Obtains a registration dictionary, filled out to the best of
@@ -672,7 +673,8 @@ GROWL_EXPORT CFDictionaryRef Growl_CreateBestRegistrationDictionary(void);
  *
  *	 This function was introduced in Growl.framework 0.7.
  */
-GROWL_EXPORT CFDictionaryRef Growl_CreateRegistrationDictionaryByFillingInDictionary(CFDictionaryRef regDict);
+GROWL_EXPORT CFDictionaryRef
+Growl_CreateRegistrationDictionaryByFillingInDictionary(CFDictionaryRef regDict);
 /*!	@function	Growl_CreateRegistrationDictionaryByFillingInDictionaryRestrictedToKeys
  *	@abstract	Tries to fill in missing keys in a registration dictionary.
  *	@param	regDict	The dictionary to fill in.
@@ -694,7 +696,9 @@ GROWL_EXPORT CFDictionaryRef Growl_CreateRegistrationDictionaryByFillingInDictio
  *
  *	 This function was introduced in Growl.framework 0.7.
  */
-GROWL_EXPORT CFDictionaryRef Growl_CreateRegistrationDictionaryByFillingInDictionaryRestrictedToKeys(CFDictionaryRef regDict, CFSetRef keys);
+GROWL_EXPORT CFDictionaryRef
+Growl_CreateRegistrationDictionaryByFillingInDictionaryRestrictedToKeys(
+	CFDictionaryRef regDict, CFSetRef keys);
 
 /*!	@brief	Tries to fill in missing keys in a notification dictionary.
  *	@param	notifDict	The dictionary to fill in.
@@ -708,7 +712,9 @@ GROWL_EXPORT CFDictionaryRef Growl_CreateRegistrationDictionaryByFillingInDictio
  *
  *	@since Growl.framework 1.1
  */
-GROWL_EXPORT CFDictionaryRef Growl_CreateNotificationDictionaryByFillingInDictionary(CFDictionaryRef notifDict);
+GROWL_EXPORT CFDictionaryRef
+Growl_CreateNotificationDictionaryByFillingInDictionary(
+	CFDictionaryRef notifDict);
 
 #pragma mark -
 
@@ -760,7 +766,8 @@ typedef void (*GrowlLaunchCallback)(void *context);
  *	 acceptable for context to be <code>NULL</code>. The callback itself can be
  *	 <code>NULL</code> if you don't want one.
  */
-GROWL_EXPORT Boolean Growl_LaunchIfInstalled(GrowlLaunchCallback callback, void *context);
+GROWL_EXPORT Boolean Growl_LaunchIfInstalled(GrowlLaunchCallback callback,
+					     void *context);
 
 #pragma mark -
 #pragma mark Constants
@@ -772,7 +779,7 @@ GROWL_EXPORT Boolean Growl_LaunchIfInstalled(GrowlLaunchCallback callback, void 
  *	 application probably does not need to use this macro itself.
  */
 #ifndef GROWL_PREFPANE_BUNDLE_IDENTIFIER
-#define GROWL_PREFPANE_BUNDLE_IDENTIFIER	CFSTR("com.growl.prefpanel")
+#define GROWL_PREFPANE_BUNDLE_IDENTIFIER CFSTR("com.growl.prefpanel")
 #endif
 
 __END_DECLS

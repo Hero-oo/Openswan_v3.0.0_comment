@@ -20,33 +20,33 @@
 #include "oswalloc.h"
 
 #ifdef KLIPS
-# define USED_BY_KLIPS	/* ignore */
+#define USED_BY_KLIPS /* ignore */
 #else
-# define USED_BY_KLIPS	UNUSED
+#define USED_BY_KLIPS UNUSED
 #endif
 
 #ifdef DEBUG
-# define USED_BY_DEBUG	/* ignore */
+#define USED_BY_DEBUG /* ignore */
 #else
-# define USED_BY_DEBUG	UNUSED
+#define USED_BY_DEBUG UNUSED
 #endif
 
 /* type of serial number of a state object
  * Needed in connections.h and state.h; here to simplify dependencies.
  */
 typedef unsigned long so_serial_t;
-#define SOS_NOBODY	0	/* null serial number */
-#define SOS_FIRST	1	/* first normal serial number */
+#define SOS_NOBODY 0 /* null serial number */
+#define SOS_FIRST 1 /* first normal serial number */
 
 /* warns a predefined interval before expiry */
-extern const char* check_expiry(time_t expiration_date,
-    int warning_interval, bool strict);
+extern const char *check_expiry(time_t expiration_date, int warning_interval,
+				bool strict);
 
 /* cleanly exit Pluto */
 
 extern void exit_pluto(int /*status*/) NEVER_RETURNS;
 
-typedef u_int32_t msgid_t;	/* Network order for ikev1, host order for ikev2 */
+typedef u_int32_t msgid_t; /* Network order for ikev1, host order for ikev2 */
 
 /* zero all bytes */
 #define zero(x) memset((x), '\0', sizeof(*(x)))
@@ -55,7 +55,7 @@ typedef u_int32_t msgid_t;	/* Network order for ikev1, host order for ikev2 */
 extern bool all_zero(const unsigned char *m, size_t len);
 
 /* pad_up(n, m) is the amount to add to n to make it a multiple of m */
-#define pad_up(n, m) (((m) - 1) - (((n) + (m) - 1) % (m)))
+#define pad_up(n, m) (((m)-1) - (((n) + (m)-1) % (m)))
 
 /* does not belong here, have not found another place */
 extern struct secret *pluto_secrets;
@@ -65,9 +65,11 @@ extern struct secret *pluto_secrets;
  * USE WITH CAUTION and only when you know it's safe to discard the const
  */
 #ifdef __GNUC__
-#define DISCARD_CONST(vartype, \
-		      varname) (__extension__({ const vartype tmp = (varname); \
-						(vartype)(uintptr_t)tmp; }))
+#define DISCARD_CONST(vartype, varname)        \
+	(__extension__({                       \
+		const vartype tmp = (varname); \
+		(vartype)(uintptr_t) tmp;      \
+	}))
 #else
 #define DISCARD_CONST(vartype, varname) ((vartype)(uintptr_t)(varname))
 #endif
@@ -75,10 +77,11 @@ extern struct secret *pluto_secrets;
 /* a macro used to access a variable as if it were volatile.  this forces the
  * compiler to explicitly access the variable, and not cache data in registers */
 #ifdef __GNUC__
-#define READ_ONCE(x) (__extension__({ \
-			const volatile typeof(x) *_p = &(x); \
-			*_p; \
-		    }))
+#define READ_ONCE(x)                                 \
+	(__extension__({                             \
+		const volatile typeof(x) *_p = &(x); \
+		*_p;                                 \
+	}))
 #else
 #define READ_ONCE(x) (*(volatile typeof(x) *)&(x))
 #endif

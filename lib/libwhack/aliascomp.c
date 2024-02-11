@@ -35,30 +35,29 @@ bool osw_alias_cmp(const char *needle, const char *haystack)
 	const char *s = haystack;
 
 	if (s == NULL)
-	   return FALSE;
+		return FALSE;
 
-	while(*s!='\0') {
+	while (*s != '\0') {
 		/* does it match, and does it end with a space?
 		 * check if things end at same place
 		 */
-		if(strncasecmp(s, needle, nlen)==0
-		   && (s[nlen]==' ' || s[nlen]=='\t' || s[nlen]=='\0')) {
+		if (strncasecmp(s, needle, nlen) == 0 &&
+		    (s[nlen] == ' ' || s[nlen] == '\t' || s[nlen] == '\0')) {
 			return TRUE;
 		}
-		
-        	for (;;) {
-            	s++;
-            	if (*s == '\0')
-                	break;  /* or return FALSE: we're done */
-            	if (*s == ' ' || *s == '\t') {
-                	/* at whitespace: start next scan right after */
-                	s++;
-                	break;
-            		}
-        	}
 
+		for (;;) {
+			s++;
+			if (*s == '\0')
+				break; /* or return FALSE: we're done */
+			if (*s == ' ' || *s == '\t') {
+				/* at whitespace: start next scan right after */
+				s++;
+				break;
+			}
+		}
 	}
-	
+
 	return FALSE;
 }
 

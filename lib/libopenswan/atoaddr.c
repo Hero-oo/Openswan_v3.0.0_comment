@@ -36,19 +36,18 @@ static const char *getbyte(const char **, const char *, int *);
 /*
  - atoaddr - convert ASCII name or dotted-decimal address to binary address
  */
-const char *			/* NULL for success, else string literal */
-atoaddr(src, srclen, addrp)
-const char *src;
-size_t srclen;			/* 0 means "apply strlen" */
+const char * /* NULL for success, else string literal */
+	atoaddr(src, srclen, addrp) const char *src;
+size_t srclen; /* 0 means "apply strlen" */
 struct in_addr *addrp;
 {
 	struct hostent *h;
 	struct netent *ne = NULL;
 	const char *oops;
-#	define	HEXLEN	10	/* strlen("0x11223344") */
-#	ifndef ATOADDRBUF
-#	define	ATOADDRBUF	100
-#	endif
+#define HEXLEN 10 /* strlen("0x11223344") */
+#ifndef ATOADDRBUF
+#define ATOADDRBUF 100
+#endif
 	char namebuf[ATOADDRBUF];
 	char *p = namebuf;
 	char *q;
@@ -59,21 +58,21 @@ struct in_addr *addrp;
 		return "empty string";
 
 	/* might it be hex? */
-	if (srclen == HEXLEN && *src == '0' && CIEQ(*(src+1), 'x'))
-		return try8hex(src+2, srclen-2, addrp);
-	if (srclen == HEXLEN && *src == '0' && CIEQ(*(src+1), 'h'))
-		return try8hosthex(src+2, srclen-2, addrp);
+	if (srclen == HEXLEN && *src == '0' && CIEQ(*(src + 1), 'x'))
+		return try8hex(src + 2, srclen - 2, addrp);
+	if (srclen == HEXLEN && *src == '0' && CIEQ(*(src + 1), 'h'))
+		return try8hosthex(src + 2, srclen - 2, addrp);
 
 	/* try it as dotted decimal */
 	oops = trydotted(src, srclen, addrp);
 	if (oops == NULL)
-		return NULL;		/* it worked */
+		return NULL; /* it worked */
 	if (*oops != '?')
-		return oops;		/* it *was* probably meant as a d.q. */
+		return oops; /* it *was* probably meant as a d.q. */
 
 	/* try it as a name -- first, NUL-terminate it */
-	if (srclen > sizeof(namebuf)-1) {
-		p = (char *) MALLOC(srclen+1);
+	if (srclen > sizeof(namebuf) - 1) {
+		p = (char *)MALLOC(srclen + 1);
 		if (p == NULL)
 			return "unable to allocate temporary space for name";
 	}
@@ -114,10 +113,9 @@ struct in_addr *addrp;
 /*
  - try8hosthex - try conversion as an eight-digit host-order hex number
  */
-const char *			/* NULL for success, else string literal */
-try8hosthex(src, srclen, addrp)
-const char *src;
-size_t srclen;			/* should be 8 */
+const char * /* NULL for success, else string literal */
+	try8hosthex(src, srclen, addrp) const char *src;
+size_t srclen; /* should be 8 */
 struct in_addr *addrp;
 {
 	const char *oops;
@@ -137,10 +135,9 @@ struct in_addr *addrp;
 /*
  - try8hex - try conversion as an eight-digit network-order hex number
  */
-const char *			/* NULL for success, else string literal */
-try8hex(src, srclen, addrp)
-const char *src;
-size_t srclen;			/* should be 8 */
+const char * /* NULL for success, else string literal */
+	try8hex(src, srclen, addrp) const char *src;
+size_t srclen; /* should be 8 */
 struct in_addr *addrp;
 {
 	const char *oops;
@@ -159,29 +156,28 @@ struct in_addr *addrp;
  * If the first char of a complaint is '?', that means "didn't look like
  * dotted decimal at all".
  */
-const char *			/* NULL for success, else string literal */
-trydotted(src, srclen, addrp)
-const char *src;
+const char * /* NULL for success, else string literal */
+	trydotted(src, srclen, addrp) const char *src;
 size_t srclen;
 struct in_addr *addrp;
 {
-	const char *stop = src + srclen;	/* just past end */
+	const char *stop = src + srclen; /* just past end */
 	int byte;
 	const char *oops;
 	unsigned long addr;
 	int i;
-#	define	NBYTES	4
-#	define	BYTE	8
+#define NBYTES 4
+#define BYTE 8
 
 	addr = 0;
 	for (i = 0; i < NBYTES && src < stop; i++) {
 		oops = getbyte(&src, stop, &byte);
 		if (oops != NULL) {
 			if (*oops != '?')
-				return oops;	/* bad number */
+				return oops; /* bad number */
 			if (i > 1)
-				return oops+1;	/* failed number */
-			return oops;		/* with leading '?' */
+				return oops + 1; /* failed number */
+			return oops; /* with leading '?' */
 		}
 		addr = (addr << BYTE) | byte;
 		if (i < 3 && src < stop && *src++ != '.') {
@@ -208,11 +204,10 @@ struct in_addr *addrp;
  * If the first char of a complaint is '?', that means "didn't look like a
  * number at all".
  */
-const char *			/* NULL for success, else string literal */
-getbyte(srcp, stop, retp)
-const char **srcp;		/* *srcp is updated */
-const char *stop;		/* first untouchable char */
-int *retp;			/* return-value pointer */
+const char * /* NULL for success, else string literal */
+	getbyte(srcp, stop, retp) const char **srcp; /* *srcp is updated */
+const char *stop; /* first untouchable char */
+int *retp; /* return-value pointer */
 {
 	char c;
 	const char *p;
@@ -221,10 +216,10 @@ int *retp;			/* return-value pointer */
 	if (*srcp >= stop)
 		return "?empty number in dotted-decimal address";
 
-	if (stop - *srcp >= 3 && **srcp == '0' && CIEQ(*(*srcp+1), 'x'))
+	if (stop - *srcp >= 3 && **srcp == '0' && CIEQ(*(*srcp + 1), 'x'))
 		return "hex numbers not supported in dotted-decimal addresses";
 #ifdef NOLEADINGZEROS
-	if (stop - *srcp >= 2 && **srcp == '0' && isdigit(*(*srcp+1)))
+	if (stop - *srcp >= 2 && **srcp == '0' && isdigit(*(*srcp + 1)))
 		return "octal numbers not supported in dotted-decimal addresses";
 #endif /* NOLEADINGZEROS */
 
@@ -232,7 +227,7 @@ int *retp;			/* return-value pointer */
 	no = 0;
 	p = *srcp;
 	while (p < stop && no <= 255 && (c = *p) >= '0' && c <= '9') {
-		no = no*10 + (c - '0');
+		no = no * 10 + (c - '0');
 		p++;
 	}
 	if (p == *srcp)

@@ -13,17 +13,9 @@
  * for more details.
  */
 
-extern stf_status quick_outI1(int whack_sock
-    , struct state *isakmp_sa
-    , struct connection *c
-    , lset_t policy
-    , unsigned long try
-    , so_serial_t replacing
-    , struct xfrm_user_sec_ctx_ike * uctx
-    );
+extern stf_status quick_outI1(int whack_sock, struct state *isakmp_sa,
+			      struct connection *c, lset_t policy,
+			      unsigned long try, so_serial_t replacing,
+			      struct xfrm_user_sec_ctx_ike *uctx);
 
-extern state_transition_fn
-    quick_inI1_outR1,
-    quick_inR1_outI2,
-    quick_inI2;
-
+extern state_transition_fn quick_inI1_outR1, quick_inR1_outI2, quick_inI2;

@@ -16,10 +16,24 @@
 
 /* these are mostly fallbacks for the no-IPv6-support-in-library case */
 #ifndef IN6ADDR_ANY_INIT
-#define	IN6ADDR_ANY_INIT	{{{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }}}
+#define IN6ADDR_ANY_INIT                                                       \
+	{                                                                      \
+		{                                                              \
+			{                                                      \
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
+			}                                                      \
+		}                                                              \
+	}
 #endif
 #ifndef IN6ADDR_LOOPBACK_INIT
-#define	IN6ADDR_LOOPBACK_INIT	{{{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }}}
+#define IN6ADDR_LOOPBACK_INIT                                                  \
+	{                                                                      \
+		{                                                              \
+			{                                                      \
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 \
+			}                                                      \
+		}                                                              \
+	}
 #endif
 
 static struct in6_addr v6any = IN6ADDR_ANY_INIT;
@@ -28,19 +42,21 @@ static struct in6_addr v6loop = IN6ADDR_LOOPBACK_INIT;
 /*
  - anyaddr - initialize to the any-address value
  */
-err_t				/* NULL for success, else string literal */
+err_t /* NULL for success, else string literal */
 anyaddr(af, dst)
-int af;				/* address family */
+int af; /* address family */
 ip_address *dst;
 {
 	uint32_t v4any = htonl(INADDR_ANY);
 
 	switch (af) {
 	case AF_INET:
-		return initaddr((unsigned char *)&v4any, sizeof(v4any), af, dst);
+		return initaddr((unsigned char *)&v4any, sizeof(v4any), af,
+				dst);
 		break;
 	case AF_INET6:
-		return initaddr((unsigned char *)&v6any, sizeof(v6any), af, dst);
+		return initaddr((unsigned char *)&v6any, sizeof(v6any), af,
+				dst);
 		break;
 	default:
 		return "unknown address family in anyaddr/unspecaddr";
@@ -51,9 +67,9 @@ ip_address *dst;
 /*
  - unspecaddr - initialize to the unspecified-address value
  */
-err_t				/* NULL for success, else string literal */
+err_t /* NULL for success, else string literal */
 unspecaddr(af, dst)
-int af;				/* address family */
+int af; /* address family */
 ip_address *dst;
 {
 	return anyaddr(af, dst);
@@ -62,19 +78,21 @@ ip_address *dst;
 /*
  - loopbackaddr - initialize to the loopback-address value
  */
-err_t				/* NULL for success, else string literal */
+err_t /* NULL for success, else string literal */
 loopbackaddr(af, dst)
-int af;				/* address family */
+int af; /* address family */
 ip_address *dst;
 {
 	uint32_t v4loop = htonl(INADDR_LOOPBACK);
 
 	switch (af) {
 	case AF_INET:
-		return initaddr((unsigned char *)&v4loop, sizeof(v4loop), af, dst);
+		return initaddr((unsigned char *)&v4loop, sizeof(v4loop), af,
+				dst);
 		break;
 	case AF_INET6:
-		return initaddr((unsigned char *)&v6loop, sizeof(v6loop), af, dst);
+		return initaddr((unsigned char *)&v6loop, sizeof(v6loop), af,
+				dst);
 		break;
 	default:
 		return "unknown address family in loopbackaddr";
@@ -85,9 +103,7 @@ ip_address *dst;
 /*
  - isanyaddr - test for the any-address value
  */
-int
-isanyaddr(src)
-const ip_address *src;
+int isanyaddr(src) const ip_address *src;
 {
 	uint32_t v4any = htonl(INADDR_ANY);
 	int cmp;
@@ -115,9 +131,7 @@ const ip_address *src;
 /*
  - isunspecaddr - test for the unspecified-address value
  */
-int
-isunspecaddr(src)
-const ip_address *src;
+int isunspecaddr(src) const ip_address *src;
 {
 	return isanyaddr(src);
 }
@@ -125,16 +139,15 @@ const ip_address *src;
 /*
  - isloopbackaddr - test for the loopback-address value
  */
-int
-isloopbackaddr(src)
-const ip_address *src;
+int isloopbackaddr(src) const ip_address *src;
 {
 	uint32_t v4loop = htonl(INADDR_LOOPBACK);
 	int cmp;
 
 	switch (src->u.v4.sin_family) {
 	case AF_INET:
-		cmp = memcmp(&src->u.v4.sin_addr.s_addr, &v4loop, sizeof(v4loop));
+		cmp = memcmp(&src->u.v4.sin_addr.s_addr, &v4loop,
+			     sizeof(v4loop));
 		break;
 	case AF_INET6:
 		cmp = memcmp(&src->u.v6.sin6_addr, &v6loop, sizeof(v6loop));

@@ -24,7 +24,8 @@
 @protocol GrowlApplicationBridgeDelegate;
 
 //Internal notification when the user chooses not to install (to avoid continuing to cache notifications awaiting installation)
-#define GROWL_USER_CHOSE_NOT_TO_INSTALL_NOTIFICATION @"User chose not to install"
+#define GROWL_USER_CHOSE_NOT_TO_INSTALL_NOTIFICATION \
+	@"User chose not to install"
 
 //------------------------------------------------------------------------------
 #pragma mark -
@@ -38,7 +39,6 @@
  *	 GrowlHelperApp if it's not already running.
  */
 @interface GrowlApplicationBridge : NSObject {
-
 }
 
 /*!
@@ -47,7 +47,7 @@
  *	@discussion Determines if the Growl prefpane and its helper app are installed.
  *	@result Returns YES if Growl is installed, NO otherwise.
  */
-+ (BOOL) isGrowlInstalled;
++ (BOOL)isGrowlInstalled;
 
 /*!
  *	@method isGrowlRunning
@@ -55,7 +55,7 @@
  *	@discussion Cycles through the process list to find whether GrowlHelperApp is running and returns its findings.
  *	@result Returns YES if GrowlHelperApp is running, NO otherwise.
  */
-+ (BOOL) isGrowlRunning;
++ (BOOL)isGrowlRunning;
 
 #pragma mark -
 
@@ -87,7 +87,7 @@
  *
  *	@param inDelegate The delegate for the GrowlApplicationBridge. It must conform to the GrowlApplicationBridgeDelegate protocol.
  */
-+ (void) setGrowlDelegate:(NSObject<GrowlApplicationBridgeDelegate> *)inDelegate;
++ (void)setGrowlDelegate:(NSObject<GrowlApplicationBridgeDelegate> *)inDelegate;
 
 /*!
  *	@method growlDelegate
@@ -95,7 +95,7 @@
  *	@discussion See setGrowlDelegate: for details.
  *	@result The Growl delegate.
  */
-+ (NSObject<GrowlApplicationBridgeDelegate> *) growlDelegate;
++ (NSObject<GrowlApplicationBridgeDelegate> *)growlDelegate;
 
 #pragma mark -
 
@@ -123,13 +123,13 @@
  *	@param isSticky		If YES, the notification will remain on screen until clicked. Not all Growl displays support sticky notifications.
  *	@param clickContext	A context passed back to the Growl delegate if it implements -(void)growlNotificationWasClicked: and the notification is clicked. Not all display plugins support clicking. The clickContext must be plist-encodable (completely of <code>NSString</code>, <code>NSArray</code>, <code>NSNumber</code>, <code>NSDictionary</code>, and <code>NSData</code> types).
  */
-+ (void) notifyWithTitle:(NSString *)title
-			 description:(NSString *)description
-		notificationName:(NSString *)notifName
-				iconData:(NSData *)iconData
-				priority:(signed int)priority
-				isSticky:(BOOL)isSticky
-			clickContext:(id)clickContext;
++ (void)notifyWithTitle:(NSString *)title
+	     description:(NSString *)description
+	notificationName:(NSString *)notifName
+		iconData:(NSData *)iconData
+		priority:(signed int)priority
+		isSticky:(BOOL)isSticky
+	    clickContext:(id)clickContext;
 
 /*!
  *	@method notifyWithTitle:description:notificationName:iconData:priority:isSticky:clickContext:identifier:
@@ -156,14 +156,14 @@
  *	@param clickContext	A context passed back to the Growl delegate if it implements -(void)growlNotificationWasClicked: and the notification is clicked. Not all display plugins support clicking. The clickContext must be plist-encodable (completely of <code>NSString</code>, <code>NSArray</code>, <code>NSNumber</code>, <code>NSDictionary</code>, and <code>NSData</code> types).
  *	@param identifier	An identifier for this notification. Notifications with equal identifiers are coalesced.
  */
-+ (void) notifyWithTitle:(NSString *)title
-			 description:(NSString *)description
-		notificationName:(NSString *)notifName
-				iconData:(NSData *)iconData
-				priority:(signed int)priority
-				isSticky:(BOOL)isSticky
-			clickContext:(id)clickContext
-			  identifier:(NSString *)identifier;
++ (void)notifyWithTitle:(NSString *)title
+	     description:(NSString *)description
+	notificationName:(NSString *)notifName
+		iconData:(NSData *)iconData
+		priority:(signed int)priority
+		isSticky:(BOOL)isSticky
+	    clickContext:(id)clickContext
+	      identifier:(NSString *)identifier;
 
 /*!
  *	@method notifyWithTitle:description:notificationName:iconData:priority:isSticky:clickContext:identifier:
@@ -190,14 +190,14 @@
  *	@param clickContext	A context passed back to the Growl delegate if it implements -(void)growlNotificationWasClicked: and the notification is clicked. Not all display plugins support clicking. The clickContext must be plist-encodable (completely of <code>NSString</code>, <code>NSArray</code>, <code>NSNumber</code>, <code>NSDictionary</code>, and <code>NSData</code> types).
  *	@param identifier	An identifier for this notification. Notifications with equal identifiers are coalesced.
  */
-+ (void) notifyWithTitle:(NSString *)title
-			 description:(NSString *)description
-		notificationName:(NSString *)notifName
-				iconData:(NSData *)iconData
-				priority:(signed int)priority
-				isSticky:(BOOL)isSticky
-			clickContext:(id)clickContext
-			  identifier:(NSString *)identifier;
++ (void)notifyWithTitle:(NSString *)title
+	     description:(NSString *)description
+	notificationName:(NSString *)notifName
+		iconData:(NSData *)iconData
+		priority:(signed int)priority
+		isSticky:(BOOL)isSticky
+	    clickContext:(id)clickContext
+	      identifier:(NSString *)identifier;
 
 /*!	@method	notifyWithDictionary:
  *	@abstract	Notifies using a userInfo dictionary suitable for passing to
@@ -213,7 +213,7 @@
  *	 to using <code>NSDistributedNotificationCenter</code>. The keys for this dictionary
  *	 can be found in GrowlDefines.h.
  */
-+ (void) notifyWithDictionary:(NSDictionary *)userInfo;
++ (void)notifyWithDictionary:(NSDictionary *)userInfo;
 
 #pragma mark -
 
@@ -236,7 +236,7 @@
  *
  *	 This method was introduced in Growl.framework 0.7.
  */
-+ (BOOL) registerWithDictionary:(NSDictionary *)regDict;
++ (BOOL)registerWithDictionary:(NSDictionary *)regDict;
 
 /*!	@method	reregisterGrowlNotifications
  *	@abstract	Reregister the notifications for this application.
@@ -248,7 +248,7 @@
  *
  *	 This method is now implemented using <code>-registerWithDictionary:</code>.
  */
-+ (void) reregisterGrowlNotifications;
++ (void)reregisterGrowlNotifications;
 
 #pragma mark -
 
@@ -268,14 +268,14 @@
  *	@param	flag	<code>YES</code> if you want GrowlApplicationBridge to register with
  *	 Growl when next it is ready; <code>NO</code> if not.
  */
-+ (void) setWillRegisterWhenGrowlIsReady:(BOOL)flag;
++ (void)setWillRegisterWhenGrowlIsReady:(BOOL)flag;
 /*!	@method	willRegisterWhenGrowlIsReady
  *	@abstract	Reports whether GrowlApplicationBridge will register with Growl
  *	 when Growl next launches.
  *	@result	<code>YES</code> if GrowlApplicationBridge will register with Growl
  *	 when next it posts GROWL_IS_READY; <code>NO</code> if not.
  */
-+ (BOOL) willRegisterWhenGrowlIsReady;
++ (BOOL)willRegisterWhenGrowlIsReady;
 
 #pragma mark -
 
@@ -296,7 +296,7 @@
  *	 This method was introduced in Growl.framework 0.7.
  *	@result A registration dictionary.
  */
-+ (NSDictionary *) registrationDictionaryFromDelegate;
++ (NSDictionary *)registrationDictionaryFromDelegate;
 
 /*!	@method	registrationDictionaryFromBundle:
  *	@abstract	Looks in a bundle for a registration dictionary.
@@ -319,7 +319,7 @@
  *	 This method was introduced in Growl.framework 0.7.
  *	@result A registration dictionary.
  */
-+ (NSDictionary *) registrationDictionaryFromBundle:(NSBundle *)bundle;
++ (NSDictionary *)registrationDictionaryFromBundle:(NSBundle *)bundle;
 
 /*!	@method	bestRegistrationDictionary
  *	@abstract	Obtains a registration dictionary, filled out to the best of
@@ -345,7 +345,7 @@
  *	 This method was introduced in Growl.framework 0.7.
  *	@result	A registration dictionary.
  */
-+ (NSDictionary *) bestRegistrationDictionary;
++ (NSDictionary *)bestRegistrationDictionary;
 
 #pragma mark -
 
@@ -369,7 +369,8 @@
  *	@result	The dictionary with the keys filled in. This is an autoreleased
  *	 copy of <code>regDict</code>.
  */
-+ (NSDictionary *) registrationDictionaryByFillingInDictionary:(NSDictionary *)regDict;
++ (NSDictionary *)registrationDictionaryByFillingInDictionary:
+	(NSDictionary *)regDict;
 /*!	@method	registrationDictionaryByFillingInDictionary:restrictToKeys:
  *	@abstract	Tries to fill in missing keys in a registration dictionary.
  *	@discussion	This method examines the passed-in dictionary for missing keys,
@@ -392,7 +393,9 @@
  *	@result	The dictionary with the keys filled in. This is an autoreleased
  *	 copy of <code>regDict</code>.
  */
-+ (NSDictionary *) registrationDictionaryByFillingInDictionary:(NSDictionary *)regDict restrictToKeys:(NSSet *)keys;
++ (NSDictionary *)registrationDictionaryByFillingInDictionary:
+			  (NSDictionary *)regDict
+					       restrictToKeys:(NSSet *)keys;
 
 /*!	@brief	Tries to fill in missing keys in a notification dictionary.
  *	@param	notifDict	The dictionary to fill in.
@@ -406,9 +409,10 @@
  *
  *	@since Growl.framework 1.1
  */
-+ (NSDictionary *) notificationDictionaryByFillingInDictionary:(NSDictionary *)regDict;
++ (NSDictionary *)notificationDictionaryByFillingInDictionary:
+	(NSDictionary *)regDict;
 
-+ (NSDictionary *) frameworkInfoDictionary;
++ (NSDictionary *)frameworkInfoDictionary;
 @end
 
 //------------------------------------------------------------------------------
@@ -467,7 +471,7 @@
  *
  *	@result The <code>NSDictionary</code> to use for registration.
  */
-- (NSDictionary *) registrationDictionaryForGrowl;
+- (NSDictionary *)registrationDictionaryForGrowl;
 
 /*!
  *	@method applicationNameForGrowl
@@ -486,7 +490,7 @@
  *
  *	@result The name of the application using Growl.
  */
-- (NSString *) applicationNameForGrowl;
+- (NSString *)applicationNameForGrowl;
 
 /*!
  *	@method applicationIconForGrowl
@@ -498,7 +502,7 @@
  *	 generally needed.
  *	@result The <code>NSImage</code> to treat as the application icon.
  */
-- (NSImage *) applicationIconForGrowl;
+- (NSImage *)applicationIconForGrowl;
 
 /*!
  *	@method applicationIconDataForGrowl
@@ -509,7 +513,7 @@
  *	@result The <code>NSData</code> to treat as the application icon.
  *	@deprecated In version 1.1, in favor of {{{-applicationIconForGrowl}}}.
  */
-- (NSData *) applicationIconDataForGrowl;
+- (NSData *)applicationIconDataForGrowl;
 
 /*!
  *	@method growlIsReady
@@ -518,7 +522,7 @@
  *	 GrowlHelperApp) was launched successfully. The application can take actions
  *   with the knowledge that Growl is installed and functional.
  */
-- (void) growlIsReady;
+- (void)growlIsReady;
 
 /*!
  *	@method growlNotificationWasClicked:
@@ -530,7 +534,7 @@
  *	 <code>+[GrowlApplicationBridge notifyWithTitle: description:notificationName:iconData:priority:isSticky:clickContext:]</code>.
  *	@param clickContext The clickContext passed when displaying the notification originally via +[GrowlApplicationBridge notifyWithTitle:description:notificationName:iconData:priority:isSticky:clickContext:].
  */
-- (void) growlNotificationWasClicked:(id)clickContext;
+- (void)growlNotificationWasClicked:(id)clickContext;
 
 /*!
  *	@method growlNotificationTimedOut:
@@ -542,7 +546,7 @@
  *	 <code>+[GrowlApplicationBridge notifyWithTitle: description:notificationName:iconData:priority:isSticky:clickContext:]</code>.
  *	@param clickContext The clickContext passed when displaying the notification originally via +[GrowlApplicationBridge notifyWithTitle:description:notificationName:iconData:priority:isSticky:clickContext:].
  */
-- (void) growlNotificationTimedOut:(id)clickContext;
+- (void)growlNotificationTimedOut:(id)clickContext;
 
 @end
 
@@ -603,7 +607,7 @@
 
 //private
 @interface GrowlApplicationBridge (GrowlInstallationPrompt_private)
-+ (void) _userChoseNotToInstallGrowl;
++ (void)_userChoseNotToInstallGrowl;
 @end
 
 #endif /* __GrowlApplicationBridge_h__ */

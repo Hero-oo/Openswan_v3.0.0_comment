@@ -2,7 +2,8 @@
 
 before launching OSW as usual.
 
-RJZ-LNX UDP501 # cat UDP501encap.c
+	RJZ -
+	LNX UDP501 #cat UDP501encap.c
 /*
   * This code is GPL.
   * To compile: gcc UDP501encap.c -o UDP501encap -lipq
@@ -27,144 +28,147 @@ RJZ-LNX UDP501 # cat UDP501encap.c
 #define BOOL int
 
 #define DstPort 501
-         #define DstPortHi DstPort >> 8
-         #define DstPortLo DstPort & 0x00FF
+#define DstPortHi DstPort >> 8
+#define DstPortLo DstPort & 0x00FF
 #define SrcPort 501
-         #define SrcPortHi SrcPort >> 8
-         #define SrcPortLo SrcPort & 0x00FF
+#define SrcPortHi SrcPort >> 8
+#define SrcPortLo SrcPort & 0x00FF
 
-
-typedef unsigned short u16;
+	typedef unsigned short u16;
 typedef unsigned long u32;
 
 u16 ip_sum_calc(u16 len_ip_header, unsigned char buff[])
 {
-         u16 word16;
-         u32 sum=0;
-         u16 i;
+	u16 word16;
+	u32 sum = 0;
+	u16 i;
 
-         // make 16 bit words out of every two adjacent 8 bit words in the packet
-         // and add them up
-         for (i=0;i<len_ip_header;i=i+2){
-                 word16 =((buff[i]<<8)&0xFF00)+(buff[i+1]&0xFF);
-                 sum = sum + (u32) word16;
-         }
+	// make 16 bit words out of every two adjacent 8 bit words in the packet
+	// and add them up
+	for (i = 0; i < len_ip_header; i = i + 2) {
+		word16 = ((buff[i] << 8) & 0xFF00) + (buff[i + 1] & 0xFF);
+		sum = sum + (u32)word16;
+	}
 
-         // take only 16 bits out of the 32 bit sum and add up the carries
-         while (sum>>16)
-           sum = (sum & 0xFFFF)+(sum >> 16);
+	// take only 16 bits out of the 32 bit sum and add up the carries
+	while (sum >> 16)
+		sum = (sum & 0xFFFF) + (sum >> 16);
 
-         // one's complement the result
-         sum = ~sum;
+	// one's complement the result
+	sum = ~sum;
 
-return ((u16) sum);
+	return ((u16)sum);
 }
 
 static void die(struct ipq_handle *h)
 {
-         ipq_perror("passer");
-         ipq_destroy_handle(h);
-         exit(1);
+	ipq_perror("passer");
+	ipq_destroy_handle(h);
+	exit(1);
 }
 
 int main(int argc, char **argv)
 {
-         int status;
-         unsigned char buf[BUFSIZE];
-         struct ipq_handle *h;
-         unsigned char *newPayload;
-         u16 srcaddr[4], dstaddr[4];
-         u16 newCS;
-         int ip_header_len;
-         u16 udp_len;
-         int i;
+	int status;
+	unsigned char buf[BUFSIZE];
+	struct ipq_handle *h;
+	unsigned char *newPayload;
+	u16 srcaddr[4], dstaddr[4];
+	u16 newCS;
+	int ip_header_len;
+	u16 udp_len;
+	int i;
 
-         h = ipq_create_handle(0, PF_INET);
-         if (!h)
-                 die(h);
+	h = ipq_create_handle(0, PF_INET);
+	if (!h)
+		die(h);
 
-         status = ipq_set_mode(h, IPQ_COPY_PACKET, BUFSIZE);
-         if (status < 0)
-                 die(h);
+	status = ipq_set_mode(h, IPQ_COPY_PACKET, BUFSIZE);
+	if (status < 0)
+		die(h);
 
-         do {
-                 status = ipq_read(h, buf, BUFSIZE, 0);
-                 if (status < 0)
-                         die(h);
+	do {
+		status = ipq_read(h, buf, BUFSIZE, 0);
+		if (status < 0)
+			die(h);
 
-                 switch (ipq_message_type(buf))
-                 {
-                         case NLMSG_ERROR:
-                                 fprintf(stderr, "Received error message %d\n", ipq_get_msgerr(buf));
-                                 break;
+		switch (ipq_message_type(buf)) {
+		case NLMSG_ERROR:
+			fprintf(stderr, "Received error message %d\n",
+				ipq_get_msgerr(buf));
+			break;
 
-                         case IPQM_PACKET:
-                         {
-                                 ipq_packet_msg_t *m = ipq_get_packet(buf);
-                                 //Enable this to debug the incoming/outgoing packets:
-                                 //printf("0x%02x %s -> %s (%d)\n",  m->payload[9], m->indev_name, m->outdev_name, m->data_len);
+		case IPQM_PACKET: {
+			ipq_packet_msg_t *m = ipq_get_packet(buf);
+			//Enable this to debug the incoming/outgoing packets:
+			//printf("0x%02x %s -> %s (%d)\n",  m->payload[9], m->indev_name, m->outdev_name, m->data_len);
 
-                                 if(m->outdev_name[0] == 0x0)
-                                 {
-                                         // INPUT
-                                         ip_header_len = (m->payload[0] & 0xF) * 4;
-                                         u16 new_ip_len = m->data_len - ip_header_len - 8;
-                                         newPayload = malloc(new_ip_len);
-                                         memcpy(newPayload, m->payload + ip_header_len + 8, new_ip_len);
-                                         status = ipq_set_verdict(h, m->packet_id, NF_ACCEPT, new_ip_len, newPayload);
-                                         free(newPayload);
-                                 }
-                                 else
-                                 {
-                                         u16 ip_len = (m->payload[2] << 8 & 0xff00) + (m->payload[3] & 0xff);
-                                         ip_header_len = (m->payload[0] & 0xF) * 4;
-                                         u16 new_ip_len = ip_len + ip_header_len + 8;
-                                         newPayload = malloc(new_ip_len);
-                                         // Copy prev packet
-                                         char *dst = newPayload;
-                                         char *org = m->payload;
-                                         // Copy IP header
-                                         memcpy(dst, org, ip_header_len);
-                                         dst += ip_header_len;
-                                         // Update IP length field
-                                         newPayload[2] = new_ip_len >> 8;
-                                         newPayload[3] = new_ip_len & 0x00ff;
-                                         // Set IP protocol field to UDP
-                                         newPayload[9] = 0x11;
-                                         // Calculate and update IP cksum
-                                         newPayload[10] = newPayload[11] = 0x00;
-                                         newCS = ip_sum_calc(ip_header_len, newPayload);
-                                         newPayload[10] = newCS >> 8;
-                                         newPayload[11] = newCS & 0x00FF;
-                                         // Create UDP header
-                                         dst[0] = SrcPortHi; // src port
-                                         dst[1] = SrcPortLo; // src port
-                                         dst[2] = DstPortHi; // dst port
-                                         dst[3] = DstPortLo; // dst port
-                                         u16 new_udp_len = new_ip_len - ip_header_len;
-                                         dst[4] = new_udp_len >> 8; // total len
-                                         dst[5] = new_udp_len & 0x00ff; // total len
-                                         dst[6] = 0x00; // Cksum
-                                         dst[7] = 0x00; // Cksum
-                                         dst += 8;
-                                         // Clone the rest of the packet
-                                         memcpy(dst, org, ip_len);
-                                         status = ipq_set_verdict(h, m->packet_id, NF_ACCEPT, new_ip_len, newPayload);
-                                         free(newPayload);
-                                 }
-                                 if (status < 0)
-                                         die(h);
-                                 break;
-                         }
+			if (m->outdev_name[0] == 0x0) {
+				// INPUT
+				ip_header_len = (m->payload[0] & 0xF) * 4;
+				u16 new_ip_len =
+					m->data_len - ip_header_len - 8;
+				newPayload = malloc(new_ip_len);
+				memcpy(newPayload,
+				       m->payload + ip_header_len + 8,
+				       new_ip_len);
+				status = ipq_set_verdict(h, m->packet_id,
+							 NF_ACCEPT, new_ip_len,
+							 newPayload);
+				free(newPayload);
+			} else {
+				u16 ip_len = (m->payload[2] << 8 & 0xff00) +
+					     (m->payload[3] & 0xff);
+				ip_header_len = (m->payload[0] & 0xF) * 4;
+				u16 new_ip_len = ip_len + ip_header_len + 8;
+				newPayload = malloc(new_ip_len);
+				// Copy prev packet
+				char *dst = newPayload;
+				char *org = m->payload;
+				// Copy IP header
+				memcpy(dst, org, ip_header_len);
+				dst += ip_header_len;
+				// Update IP length field
+				newPayload[2] = new_ip_len >> 8;
+				newPayload[3] = new_ip_len & 0x00ff;
+				// Set IP protocol field to UDP
+				newPayload[9] = 0x11;
+				// Calculate and update IP cksum
+				newPayload[10] = newPayload[11] = 0x00;
+				newCS = ip_sum_calc(ip_header_len, newPayload);
+				newPayload[10] = newCS >> 8;
+				newPayload[11] = newCS & 0x00FF;
+				// Create UDP header
+				dst[0] = SrcPortHi; // src port
+				dst[1] = SrcPortLo; // src port
+				dst[2] = DstPortHi; // dst port
+				dst[3] = DstPortLo; // dst port
+				u16 new_udp_len = new_ip_len - ip_header_len;
+				dst[4] = new_udp_len >> 8; // total len
+				dst[5] = new_udp_len & 0x00ff; // total len
+				dst[6] = 0x00; // Cksum
+				dst[7] = 0x00; // Cksum
+				dst += 8;
+				// Clone the rest of the packet
+				memcpy(dst, org, ip_len);
+				status = ipq_set_verdict(h, m->packet_id,
+							 NF_ACCEPT, new_ip_len,
+							 newPayload);
+				free(newPayload);
+			}
+			if (status < 0)
+				die(h);
+			break;
+		}
 
-                         default:
-                                 fprintf(stderr, "Unknown message type!\n");
-                                 break;
-                 }
-         } while (1);
+		default:
+			fprintf(stderr, "Unknown message type!\n");
+			break;
+		}
+	} while (1);
 
-         ipq_destroy_handle(h);
-         return 0;
+	ipq_destroy_handle(h);
+	return 0;
 }
 
 >> I discussed this subject here:
@@ -273,6 +277,3 @@ int main(int argc, char **argv)
 > similarly.
 >
 > Paul
-
-
-

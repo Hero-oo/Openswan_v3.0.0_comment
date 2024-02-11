@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#ifndef HOST_NAME_MAX   /* POSIX 1003.1-2001 says <unistd.h> defines this */
-# define HOST_NAME_MAX  255 /* upper bound, according to SUSv2 */
+#ifndef HOST_NAME_MAX /* POSIX 1003.1-2001 says <unistd.h> defines this */
+#define HOST_NAME_MAX 255 /* upper bound, according to SUSv2 */
 #endif
 #include <errno.h>
 #include <sys/types.h>
@@ -33,7 +33,7 @@
 #include <arpa/inet.h>
 #include <resolv.h>
 #include <fcntl.h>
-#include <limits.h>  /* for PATH_MAX */
+#include <limits.h> /* for PATH_MAX */
 #include <time.h>
 
 #include <openswan.h>
@@ -47,17 +47,17 @@
 #include "pluto/whackfile.h"
 
 static char whackrecordname[PATH_MAX];
-static FILE *whackrecordfile=NULL;
+static FILE *whackrecordfile = NULL;
 
 void close_whackrecordfile(void)
 {
-  if(whackrecordfile) {
-    DBG(DBG_CONTROL
-        , DBG_log("stopped recording whack messages to %s\n"
-                  , whackrecordname));
-    fclose(whackrecordfile);
-  }
-  whackrecordfile = NULL;
+	if (whackrecordfile) {
+		DBG(DBG_CONTROL,
+		    DBG_log("stopped recording whack messages to %s\n",
+			    whackrecordname));
+		fclose(whackrecordfile);
+	}
+	whackrecordfile = NULL;
 }
 
 /*
@@ -69,35 +69,35 @@ void close_whackrecordfile(void)
  */
 bool writewhackrecord(char *buf, int buflen)
 {
-    u_int32_t header[3];
-    time_t n;
+	u_int32_t header[3];
+	time_t n;
 
-    /* round up buffer length */
-    int abuflen = (buflen + 3) & ~0x3;
+	/* round up buffer length */
+	int abuflen = (buflen + 3) & ~0x3;
 
-    /* bail if we aren't writing anything */
-    if(whackrecordfile == NULL) return TRUE;
+	/* bail if we aren't writing anything */
+	if (whackrecordfile == NULL)
+		return TRUE;
 
-    header[0]=buflen + sizeof(u_int32_t)*3;
-    header[1]=0;
-    time(&n);
-    header[2]=n;
+	header[0] = buflen + sizeof(u_int32_t) * 3;
+	header[1] = 0;
+	time(&n);
+	header[2] = n;
 
-    DBG(DBG_CONTROL
-	, DBG_log("writewhack record buflen: %u abuflen: %u\n", header[0], abuflen));
+	DBG(DBG_CONTROL, DBG_log("writewhack record buflen: %u abuflen: %u\n",
+				 header[0], abuflen));
 
-    if(fwrite(header, sizeof(u_int32_t)*3, 1, whackrecordfile) < 1) {
-	DBG_log("writewhackrecord: fwrite error when writing header");
-    }
+	if (fwrite(header, sizeof(u_int32_t) * 3, 1, whackrecordfile) < 1) {
+		DBG_log("writewhackrecord: fwrite error when writing header");
+	}
 
-    if(fwrite(buf, abuflen, 1, whackrecordfile) < 1) {
-	DBG_log("writewhackrecord: fwrite error when writing buf");
-    }
-    fflush(whackrecordfile);
+	if (fwrite(buf, abuflen, 1, whackrecordfile) < 1) {
+		DBG_log("writewhackrecord: fwrite error when writing buf");
+	}
+	fflush(whackrecordfile);
 
-    return TRUE;
+	return TRUE;
 }
-
 
 /*
  * we write out an empty record with the right WHACK magic.
@@ -107,38 +107,38 @@ bool writewhackrecord(char *buf, int buflen)
  */
 bool openwhackrecordfile(char *file)
 {
-    char when[256];
-    char FQDN[HOST_NAME_MAX + 1];
-    u_int32_t magic;
-    struct tm tm1, *tm;
-    time_t n;
+	char when[256];
+	char FQDN[HOST_NAME_MAX + 1];
+	u_int32_t magic;
+	struct tm tm1, *tm;
+	time_t n;
 
-    strcpy(FQDN, "unknown host");
-    gethostname(FQDN, sizeof(FQDN));
+	strcpy(FQDN, "unknown host");
+	gethostname(FQDN, sizeof(FQDN));
 
-    strncpy(whackrecordname, file, sizeof(whackrecordname));
-    whackrecordfile = fopen(whackrecordname, "w");
-    if(whackrecordfile==NULL) {
-	openswan_log("Failed to open whack record file: '%s'\n"
-		     , whackrecordname);
-	return FALSE;
-    }
+	strncpy(whackrecordname, file, sizeof(whackrecordname));
+	whackrecordfile = fopen(whackrecordname, "w");
+	if (whackrecordfile == NULL) {
+		openswan_log("Failed to open whack record file: '%s'\n",
+			     whackrecordname);
+		return FALSE;
+	}
 
-    time(&n);
-    tm = localtime_r(&n, &tm1);
-    strftime(when, sizeof(when), "%F %T", tm);
+	time(&n);
+	tm = localtime_r(&n, &tm1);
+	strftime(when, sizeof(when), "%F %T", tm);
 
-    fprintf(whackrecordfile, "#!-pluto-whack-file- recorded on %s on %s\n",
-	    FQDN, when);
+	fprintf(whackrecordfile, "#!-pluto-whack-file- recorded on %s on %s\n",
+		FQDN, when);
 
-    magic = WHACK_BASIC_MAGIC;
-    writewhackrecord((char *)&magic, 4);
-    fflush(whackrecordfile);
+	magic = WHACK_BASIC_MAGIC;
+	writewhackrecord((char *)&magic, 4);
+	fflush(whackrecordfile);
 
-    DBG(DBG_CONTROL
-	, DBG_log("writewhack started recording whack messages to %s\n"
-		  , whackrecordname));
-    return TRUE;
+	DBG(DBG_CONTROL,
+	    DBG_log("writewhack started recording whack messages to %s\n",
+		    whackrecordname));
+	return TRUE;
 }
 
 /*

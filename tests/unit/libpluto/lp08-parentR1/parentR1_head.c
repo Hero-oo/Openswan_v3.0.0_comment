@@ -33,7 +33,7 @@
 #define SAMPLEDIR "../samples/"
 #endif
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

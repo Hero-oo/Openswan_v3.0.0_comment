@@ -22,26 +22,24 @@ bool no_cr_send = 0;
 
 static void init_local_interface(void)
 {
-    nat_traversal_support_non_ike = TRUE;
-    nat_traversal_support_port_floating = TRUE;
-    nat_traversal_enabled = TRUE;
-    init_sun_interface(TRUE);
+	nat_traversal_support_non_ike = TRUE;
+	nat_traversal_support_port_floating = TRUE;
+	nat_traversal_enabled = TRUE;
+	init_sun_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    prompt_pass_t pass;
-    memset(&pass, 0, sizeof(pass));
+	prompt_pass_t pass;
+	memset(&pass, 0, sizeof(pass));
 
-    osw_init_ipsecdir(SAMPLEDIR "sun");
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , SAMPLEDIR "sun.secrets"
-			       , &pass, NULL);
+	osw_init_ipsecdir(SAMPLEDIR "sun");
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   SAMPLEDIR "sun.secrets", &pass, NULL);
 }
 #include "../lp08-parentR1/parentR1_main.c"
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

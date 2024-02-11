@@ -11,7 +11,7 @@
 #include "setproctitle.h"
 
 #ifndef SPT_BUFSIZE
-# define SPT_BUFSIZE     2048
+#define SPT_BUFSIZE 2048
 #endif
 
 extern char **environ;
@@ -19,7 +19,7 @@ extern char **environ;
 static char **argv0;
 static int argv_lth;
 
-void initproctitle (int argc, char **argv)
+void initproctitle(int argc, char **argv)
 {
 	int i;
 	char **envp = environ;
@@ -33,7 +33,7 @@ void initproctitle (int argc, char **argv)
 	for (i = 0; envp[i] != NULL; i++)
 		continue;
 
-	environ = (char **) malloc(sizeof(char *) * (i + 1));
+	environ = (char **)malloc(sizeof(char *) * (i + 1));
 	if (environ == NULL)
 		return;
 
@@ -44,31 +44,31 @@ void initproctitle (int argc, char **argv)
 
 	argv0 = argv;
 	if (i > 0)
-		argv_lth = envp[i-1] + strlen(envp[i-1]) - argv0[0];
+		argv_lth = envp[i - 1] + strlen(envp[i - 1]) - argv0[0];
 	else
-		argv_lth = argv0[argc-1] + strlen(argv0[argc-1]) - argv0[0];
+		argv_lth = argv0[argc - 1] + strlen(argv0[argc - 1]) - argv0[0];
 }
 
-void setproctitle (const char *prog, const char *txt)
+void setproctitle(const char *prog, const char *txt)
 {
-        int i;
-        char buf[SPT_BUFSIZE];
+	int i;
+	char buf[SPT_BUFSIZE];
 
-        if (!argv0)
-                return;
+	if (!argv0)
+		return;
 
 	if (strlen(prog) + strlen(txt) + 5 > SPT_BUFSIZE)
 		return;
 
 	sprintf(buf, "%s -- %s", prog, txt);
 
-        i = strlen(buf);
-        if (i > argv_lth - 2) {
-                i = argv_lth - 2;
-                buf[i] = '\0';
-        }
-	memset(argv0[0], '\0', argv_lth);       /* clear the memory area */
-        strcpy(argv0[0], buf);
+	i = strlen(buf);
+	if (i > argv_lth - 2) {
+		i = argv_lth - 2;
+		buf[i] = '\0';
+	}
+	memset(argv0[0], '\0', argv_lth); /* clear the memory area */
+	strcpy(argv0[0], buf);
 
-        argv0[1] = NULL;
+	argv0[1] = NULL;
 }

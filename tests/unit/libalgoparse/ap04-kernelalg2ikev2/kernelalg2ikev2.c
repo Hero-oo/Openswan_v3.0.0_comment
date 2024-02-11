@@ -16,29 +16,29 @@ const char *progname;
 
 void exit_tool(int stat)
 {
-    exit(stat);
+	exit(stat);
 }
 
 int main(int argc, char *argv[])
 {
-    int i;
-    struct id one;
+	int i;
+	struct id one;
 
-    load_oswcrypto();
+	load_oswcrypto();
 
-    progname = argv[0];
+	progname = argv[0];
 
-    tool_init_log();
+	tool_init_log();
 
-    passert(kernelalg2ikev2(AH_SHA) == IKEv2_AUTH_HMAC_SHA1_96);
-    passert(kernelalg2ikev2(AH_SHA2_256) == IKEv2_AUTH_HMAC_SHA2_256_128);
+	passert(kernelalg2ikev2(AH_SHA) == IKEv2_AUTH_HMAC_SHA1_96);
+	passert(kernelalg2ikev2(AH_SHA2_256) == IKEv2_AUTH_HMAC_SHA2_256_128);
 
-    /* check a value which does not exist */
-    passert(kernelalg2ikev2(AH_RIPEMD) == IKEv2_AUTH_NONE);
+	/* check a value which does not exist */
+	passert(kernelalg2ikev2(AH_RIPEMD) == IKEv2_AUTH_NONE);
 
-    report_leaks();
-    tool_close_log();
-    exit(0);
+	report_leaks();
+	tool_close_log();
+	exit(0);
 }
 
 /*

@@ -15,9 +15,8 @@
 #ifndef _STARTER_CMP_H_
 #define _STARTER_CMP_H_
 
-int starter_cmp_conn (struct starter_conn *c1, struct starter_conn *c2);
-int starter_cmp_klips (struct starter_config *c1, struct starter_config *c2);
-int starter_cmp_pluto (struct starter_config *c1, struct starter_config *c2);
+int starter_cmp_conn(struct starter_conn *c1, struct starter_conn *c2);
+int starter_cmp_klips(struct starter_config *c1, struct starter_config *c2);
+int starter_cmp_pluto(struct starter_config *c1, struct starter_config *c2);
 
 #endif
-

@@ -36,21 +36,19 @@
  * An entry in the radix tree
  */
 
-struct rjtentry
-{
-	struct	radij_node rd_nodes[2];	/* tree glue, and other values */
-#define	rd_key(r)	((struct sockaddr_encap *)((r)->rd_nodes->rj_key))
-#define	rd_mask(r)	((struct sockaddr_encap *)((r)->rd_nodes->rj_mask))
-	short	rd_flags;
-	short	rd_count;
+struct rjtentry {
+	struct radij_node rd_nodes[2]; /* tree glue, and other values */
+#define rd_key(r) ((struct sockaddr_encap *)((r)->rd_nodes->rj_key))
+#define rd_mask(r) ((struct sockaddr_encap *)((r)->rd_nodes->rj_mask))
+	short rd_flags;
+	short rd_count;
 };
 
-struct ident
-{
-	__u16	type;	/* identity type */
-	__u64	id;	/* identity id */
-	__u8	len;	/* identity len */
-	caddr_t	data;	/* identity data */
+struct ident {
+	__u16 type; /* identity type */
+	__u64 id; /* identity id */
+	__u8 len; /* identity len */
+	caddr_t data; /* identity data */
 };
 
 /*
@@ -58,8 +56,7 @@ struct ident
  * radix tree entry and a SAID (a destination_address/SPI/protocol triple).
  */
 
-struct eroute
-{
+struct eroute {
 	struct rjtentry er_rjt;
 	ip_said er_said;
 	uint32_t er_pid;
@@ -67,10 +64,10 @@ struct eroute
 	uint64_t er_lasttime;
 	struct sockaddr_encap er_eaddr; /* MCR get rid of _encap, it is silly*/
 	struct sockaddr_encap er_emask;
-        struct ident er_ident_s;
-        struct ident er_ident_d;
-	struct sk_buff* er_first;
-	struct sk_buff* er_last;
+	struct ident er_ident_s;
+	struct ident er_ident_d;
+	struct sk_buff *er_first;
+	struct sk_buff *er_last;
 };
 
 #define er_dst er_said.dst

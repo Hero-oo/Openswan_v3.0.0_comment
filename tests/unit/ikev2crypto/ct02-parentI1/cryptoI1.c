@@ -19,29 +19,28 @@
 
 static void init_local_interface(void)
 {
-    nat_traversal_support_non_ike = TRUE;
-    nat_traversal_support_port_floating = TRUE;
-    nat_traversal_enabled = TRUE;
-    init_parker_interface(TRUE);
+	nat_traversal_support_non_ike = TRUE;
+	nat_traversal_support_port_floating = TRUE;
+	nat_traversal_enabled = TRUE;
+	init_parker_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , SAMPLEDIR "parker.secrets"
-			       , NULL, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   SAMPLEDIR "parker.secrets", NULL, NULL);
 }
 
 #define INIT_LOADED init_loaded
-static struct connection *init_loaded(struct connection *c) {
-    init_crypto();
-    return c;
+static struct connection *init_loaded(struct connection *c)
+{
+	init_crypto();
+	return c;
 }
 
 #include "../lp02-parentI1/parentI1_main.c"
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

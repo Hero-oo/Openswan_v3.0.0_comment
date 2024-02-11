@@ -21,8 +21,7 @@
 #endif
 
 #ifndef UDP_ESPINUDP
-#define UDP_ESPINUDP    100
+#define UDP_ESPINUDP 100
 #endif
 
 #endif /* _NATT_DEFINES_H */
-

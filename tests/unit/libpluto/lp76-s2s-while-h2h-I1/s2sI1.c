@@ -18,31 +18,28 @@
 
 static void init_local_interface(void)
 {
-    init_parker_interface(TRUE);
+	init_parker_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/parker.secrets"
-			       , NULL, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/parker.secrets", NULL, NULL);
 
-    /* and also for the initial statetable entries */
-    h2h_insert_states();
+	/* and also for the initial statetable entries */
+	h2h_insert_states();
 }
 
 static struct connection *init_loaded(struct connection *c)
 {
-    h2h_conn_0.IPhost_pair = c->IPhost_pair;
-    return c;
+	h2h_conn_0.IPhost_pair = c->IPhost_pair;
+	return c;
 }
 #define INIT_LOADED init_loaded
 
 #include "../lp02-parentI1/parentI1_main.c"
 
-
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

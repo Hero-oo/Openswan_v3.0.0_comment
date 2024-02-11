@@ -19,16 +19,16 @@ char ipsec_mast_c_version[] = "Please use ipsec --version instead";
 #define __NO_VERSION__
 #include <linux/module.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
-#endif	/* for CONFIG_IP_FORWARD */
+#endif /* for CONFIG_IP_FORWARD */
 #include <linux/kernel.h> /* printk() */
 
 #include "openswan/ipsec_param.h"
 
 #include <linux/slab.h> /* kmalloc() */
-#include <linux/errno.h>  /* error codes */
-#include <linux/types.h>  /* size_t */
+#include <linux/errno.h> /* error codes */
+#include <linux/types.h> /* size_t */
 #include <linux/interrupt.h> /* mark_bh */
 
 #include <net/arp.h>
@@ -36,17 +36,17 @@ char ipsec_mast_c_version[] = "Please use ipsec --version instead";
 #include <net/udp.h>
 #include <linux/skbuff.h>
 
-#include <linux/netdevice.h>   /* struct device, struct net_device_stats, dev_queue_xmit() and other headers */
+#include <linux/netdevice.h> /* struct device, struct net_device_stats, dev_queue_xmit() and other headers */
 #include <linux/etherdevice.h> /* eth_type_trans */
-#include <linux/ip.h>          /* struct iphdr */
+#include <linux/ip.h> /* struct iphdr */
 #include <linux/skbuff.h>
-#ifdef NETDEV_25	/* 2.6 kernels */
+#ifdef NETDEV_25 /* 2.6 kernels */
 #include <net/xfrm.h>
 #endif
 
 #include <openswan.h>
 
-#include <net/icmp.h>		/* icmp_send() */
+#include <net/icmp.h> /* icmp_send() */
 #include <net/ip.h>
 #include <linux/netfilter_ipv4.h>
 
@@ -80,8 +80,7 @@ int debug_mast;
 
 static __u32 zeroes[64];
 
-DEBUG_NO_STATIC int
-ipsec_mast_open(struct net_device *dev)
+DEBUG_NO_STATIC int ipsec_mast_open(struct net_device *dev)
 {
 	struct mastpriv *prv = netdev_to_mastpriv(dev);
 
@@ -99,15 +98,14 @@ ipsec_mast_open(struct net_device *dev)
 	return 0;
 }
 
-DEBUG_NO_STATIC int
-ipsec_mast_close(struct net_device *dev)
+DEBUG_NO_STATIC int ipsec_mast_close(struct net_device *dev)
 {
 	return 0;
 }
 
 static inline int ipsec_mast_xmit2(struct sk_buff *skb)
 {
-#ifdef NETDEV_25	/* 2.6 kernels */
+#ifdef NETDEV_25 /* 2.6 kernels */
 	return dst_output(skb);
 #else
 	return ip_send(skb);
@@ -115,42 +113,48 @@ static inline int ipsec_mast_xmit2(struct sk_buff *skb)
 }
 
 #ifdef CONFIG_INET_IPSEC_SAREF
-static int klips_set_ipc_saref(struct ipcm_cookie *ipc,
-		xfrm_sec_unique_t ref)
+static int klips_set_ipc_saref(struct ipcm_cookie *ipc, xfrm_sec_unique_t ref)
 {
 	struct ipsec_sa *sa1;
 	struct sec_path *sp;
 
 	sp = secpath_dup(NULL);
-	if(!sp)
+	if (!sp)
 		return -EINVAL;
 
 	sp->ref = ref;
-	KLIPS_PRINT(debug_mast, "klips_debug:klips_set_ipc_saref: "
-			"sending with saref=%u\n", sp->ref);
+	KLIPS_PRINT(debug_mast,
+		    "klips_debug:klips_set_ipc_saref: "
+		    "sending with saref=%u\n",
+		    sp->ref);
 
 	sa1 = ipsec_sa_getbyref(sp->ref, IPSEC_REFOTHER);
-	if(sa1 && sa1->ips_out) {
+	if (sa1 && sa1->ips_out) {
 		ipc->oif = sa1->ips_out->ifindex;
-		KLIPS_PRINT(debug_mast, "klips_debug:klips_set_ipc_saref: "
-			"setting oif: %d\n", ipc->oif);
+		KLIPS_PRINT(debug_mast,
+			    "klips_debug:klips_set_ipc_saref: "
+			    "setting oif: %d\n",
+			    ipc->oif);
 	}
 	ipsec_sa_put(sa1, IPSEC_REFOTHER);
 
-	ipc->sp  = sp;
+	ipc->sp = sp;
 
 	return 0;
 }
 
 static void klips_get_secpath_refs(struct sec_path *sp,
-		xfrm_sec_unique_t *refme, xfrm_sec_unique_t *refhim)
+				   xfrm_sec_unique_t *refme,
+				   xfrm_sec_unique_t *refhim)
 {
 	struct ipsec_sa *sa1;
 
-	if(sp==NULL) return;
+	if (sp == NULL)
+		return;
 
-	KLIPS_PRINT(debug_rcv, "klips_debug:klips_get_secpath_refs: "
-			"retrieving saref=%u from sp=%p\n",
+	KLIPS_PRINT(debug_rcv,
+		    "klips_debug:klips_get_secpath_refs: "
+		    "retrieving saref=%u from sp=%p\n",
 		    sp->ref, sp);
 
 	*refme = sp->ref;
@@ -158,7 +162,7 @@ static void klips_get_secpath_refs(struct sec_path *sp,
 	sa1 = ipsec_sa_getbyref(sp->ref, IPSEC_REFOTHER);
 	*refhim = sa1 ? sa1->ips_refhim : 0;
 
-	if(sa1)
+	if (sa1)
 		ipsec_sa_put(sa1, IPSEC_REFOTHER);
 }
 
@@ -252,23 +256,21 @@ ipsec_mast_send(struct ipsec_xmit_state*ixs)
 }
 #endif
 
-static void
-ipsec_mast_xsm_complete(
-	struct ipsec_xmit_state *ixs,
-	enum ipsec_xmit_value stat)
+static void ipsec_mast_xsm_complete(struct ipsec_xmit_state *ixs,
+				    enum ipsec_xmit_value stat)
 {
 	if (stat != IPSEC_XMIT_OK) {
 		KLIPS_PRINT(debug_mast,
-				"klips_debug:ipsec_mast_xsm_complete: "
-				"ipsec_xsm failed: %d\n",
-				stat);
+			    "klips_debug:ipsec_mast_xsm_complete: "
+			    "ipsec_xsm failed: %d\n",
+			    stat);
 		goto cleanup;
 	}
 
 #ifdef NAT_TRAVERSAL
 	/* do any final NAT-encapsulation */
 	stat = ipsec_nat_encap(ixs);
-	if(stat != IPSEC_XMIT_OK) {
+	if (stat != IPSEC_XMIT_OK) {
 		goto cleanup;
 	}
 #endif
@@ -278,13 +280,13 @@ ipsec_mast_xsm_complete(
 cleanup:
 	ipsec_xmit_cleanup(ixs);
 
-	if(ixs->ipsp) {
+	if (ixs->ipsp) {
 		ipsec_sa_put(ixs->ipsp, IPSEC_REFOTHER);
-		ixs->ipsp=NULL;
+		ixs->ipsp = NULL;
 	}
-	if(ixs->skb) {
+	if (ixs->skb) {
 		ipsec_kfree_skb(ixs->skb);
-		ixs->skb=NULL;
+		ixs->skb = NULL;
 	}
 	ipsec_xmit_state_delete(ixs);
 }
@@ -293,8 +295,7 @@ cleanup:
  * Verify that the skb can go out on this ipsp.
  * Return 0 if OK, error code otherwise.
  */
-static int
-ipsec_mast_check_outbound_policy(struct ipsec_xmit_state *ixs)
+static int ipsec_mast_check_outbound_policy(struct ipsec_xmit_state *ixs)
 {
 	int failed_outbound_check = 0;
 	struct ipsec_sa *ipsp = ixs->ipsp;
@@ -311,35 +312,45 @@ ipsec_mast_check_outbound_policy(struct ipsec_xmit_state *ixs)
 		struct iphdr *ipp = osw_ip4_hdr(ixs);
 		if (ip_address_family(&ipsp->ips_said.dst) != AF_INET) {
 			failed_outbound_check = 1;
-		} else if (((ipp->saddr & ipsp->ips_mask_s.u.v4.sin_addr.s_addr)
-				^ ipsp->ips_flow_s.u.v4.sin_addr.s_addr)
-				| ((ipp->daddr & ipsp->ips_mask_d.u.v4.sin_addr.s_addr)
-				^ ipsp->ips_flow_d.u.v4.sin_addr.s_addr)) {
+		} else if (((ipp->saddr &
+			     ipsp->ips_mask_s.u.v4.sin_addr.s_addr) ^
+			    ipsp->ips_flow_s.u.v4.sin_addr.s_addr) |
+			   ((ipp->daddr &
+			     ipsp->ips_mask_d.u.v4.sin_addr.s_addr) ^
+			    ipsp->ips_flow_d.u.v4.sin_addr.s_addr)) {
 			failed_outbound_check = 1;
 		}
 	} else if (osw_ip_hdr_version(ixs) == 6) {
 		struct ipv6hdr *ipp6 = osw_ip6_hdr(ixs);
 		if (ip_address_family(&ipsp->ips_said.dst) != AF_INET6) {
 			failed_outbound_check = 1;
-		} else if (((ipp6->saddr.s6_addr32[0] & ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[0])
-				^ ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[0])
-				| ((ipp6->daddr.s6_addr32[0] & ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[0])
-				^ ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[0])) {
+		} else if (((ipp6->saddr.s6_addr32[0] &
+			     ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[0]) ^
+			    ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[0]) |
+			   ((ipp6->daddr.s6_addr32[0] &
+			     ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[0]) ^
+			    ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[0])) {
 			failed_outbound_check = 1;
-		} else if (((ipp6->saddr.s6_addr32[1] & ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[1])
-				^ ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[1])
-				| ((ipp6->daddr.s6_addr32[1] & ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[1])
-				^ ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[1])) {
+		} else if (((ipp6->saddr.s6_addr32[1] &
+			     ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[1]) ^
+			    ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[1]) |
+			   ((ipp6->daddr.s6_addr32[1] &
+			     ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[1]) ^
+			    ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[1])) {
 			failed_outbound_check = 1;
-		} else if (((ipp6->saddr.s6_addr32[2] & ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[2])
-				^ ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[2])
-				| ((ipp6->daddr.s6_addr32[2] & ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[2])
-				^ ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[2])) {
+		} else if (((ipp6->saddr.s6_addr32[2] &
+			     ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[2]) ^
+			    ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[2]) |
+			   ((ipp6->daddr.s6_addr32[2] &
+			     ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[2]) ^
+			    ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[2])) {
 			failed_outbound_check = 1;
-		} else if (((ipp6->saddr.s6_addr32[3] & ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[3])
-				^ ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[3])
-				| ((ipp6->daddr.s6_addr32[3] & ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[3])
-				^ ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[3])) {
+		} else if (((ipp6->saddr.s6_addr32[3] &
+			     ipsp->ips_mask_s.u.v6.sin6_addr.s6_addr32[3]) ^
+			    ipsp->ips_flow_s.u.v6.sin6_addr.s6_addr32[3]) |
+			   ((ipp6->daddr.s6_addr32[3] &
+			     ipsp->ips_mask_d.u.v6.sin6_addr.s6_addr32[3]) ^
+			    ipsp->ips_flow_d.u.v6.sin6_addr.s6_addr32[3])) {
 			failed_outbound_check = 1;
 		}
 	}
@@ -349,38 +360,40 @@ ipsec_mast_check_outbound_policy(struct ipsec_xmit_state *ixs)
 
 		if (ipsp->ips_flow_s.u.v4.sin_family == AF_INET6) {
 			subnet6toa(&ipsp->ips_flow_s.u.v6.sin6_addr,
-					&ipsp->ips_mask_s.u.v6.sin6_addr,
-					0, sflow_txt, sizeof(sflow_txt));
+				   &ipsp->ips_mask_s.u.v6.sin6_addr, 0,
+				   sflow_txt, sizeof(sflow_txt));
 			subnet6toa(&ipsp->ips_flow_d.u.v6.sin6_addr,
-					&ipsp->ips_mask_d.u.v6.sin6_addr,
-					0, dflow_txt, sizeof(dflow_txt));
-			inet_addrtot(AF_INET6, &osw_ip6_hdr(ixs)->saddr, 0, saddr_txt,
-					sizeof(saddr_txt));
-			inet_addrtot(AF_INET6, &osw_ip6_hdr(ixs)->daddr, 0, daddr_txt,
-					sizeof(daddr_txt));
+				   &ipsp->ips_mask_d.u.v6.sin6_addr, 0,
+				   dflow_txt, sizeof(dflow_txt));
+			inet_addrtot(AF_INET6, &osw_ip6_hdr(ixs)->saddr, 0,
+				     saddr_txt, sizeof(saddr_txt));
+			inet_addrtot(AF_INET6, &osw_ip6_hdr(ixs)->daddr, 0,
+				     daddr_txt, sizeof(daddr_txt));
 		} else {
 			subnettoa(ipsp->ips_flow_s.u.v4.sin_addr,
-					ipsp->ips_mask_s.u.v4.sin_addr,
-					0, sflow_txt, sizeof(sflow_txt));
+				  ipsp->ips_mask_s.u.v4.sin_addr, 0, sflow_txt,
+				  sizeof(sflow_txt));
 			subnettoa(ipsp->ips_flow_d.u.v4.sin_addr,
-					ipsp->ips_mask_d.u.v4.sin_addr,
-					0, dflow_txt, sizeof(dflow_txt));
-			inet_addrtot(AF_INET, &osw_ip4_hdr(ixs)->saddr, 0, saddr_txt,
-					sizeof(saddr_txt));
-			inet_addrtot(AF_INET, &osw_ip4_hdr(ixs)->daddr, 0, daddr_txt,
-					sizeof(daddr_txt));
+				  ipsp->ips_mask_d.u.v4.sin_addr, 0, dflow_txt,
+				  sizeof(dflow_txt));
+			inet_addrtot(AF_INET, &osw_ip4_hdr(ixs)->saddr, 0,
+				     saddr_txt, sizeof(saddr_txt));
+			inet_addrtot(AF_INET, &osw_ip4_hdr(ixs)->daddr, 0,
+				     daddr_txt, sizeof(daddr_txt));
 		}
 
-		if (!ixs->sa_len) ixs->sa_len = KLIPS_SATOT(debug_mast,
-				&ixs->outgoing_said, 0,
-				ixs->sa_txt, sizeof(ixs->sa_txt));
+		if (!ixs->sa_len)
+			ixs->sa_len =
+				KLIPS_SATOT(debug_mast, &ixs->outgoing_said, 0,
+					    ixs->sa_txt, sizeof(ixs->sa_txt));
 
-		KLIPS_PRINT(debug_mast,
-			    "klips_debug:ipsec_mast_check_outbound_policy: "
-			    "SA:%s, inner tunnel policy [%s -> %s] does not agree with pkt contents [%s -> %s].\n",
-			    ixs->sa_len ? ixs->sa_txt : " (error)",
-			    sflow_txt, dflow_txt, saddr_txt, daddr_txt);
-		if(ixs->stats)
+		KLIPS_PRINT(
+			debug_mast,
+			"klips_debug:ipsec_mast_check_outbound_policy: "
+			"SA:%s, inner tunnel policy [%s -> %s] does not agree with pkt contents [%s -> %s].\n",
+			ixs->sa_len ? ixs->sa_txt : " (error)", sflow_txt,
+			dflow_txt, saddr_txt, daddr_txt);
+		if (ixs->stats)
 			ixs->stats->rx_dropped++;
 		return -EACCES;
 	}
@@ -422,21 +435,21 @@ ipsec_mast_check_outbound_policy(struct ipsec_xmit_state *ixs)
  *	This function assumes it is being called from dev_queue_xmit()
  *	and that skb is filled properly by that function.
  */
-int
-ipsec_mast_start_xmit(struct sk_buff *skb, struct net_device *dev)
+int ipsec_mast_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct ipsec_xmit_state *ixs;
 	IPsecSAref_t SAref;
 
-	KLIPS_PRINT(debug_mast, "klips_debug:ipsec_mast_start_xmit: skb=%p\n", skb);
-	if(skb == NULL) {
+	KLIPS_PRINT(debug_mast, "klips_debug:ipsec_mast_start_xmit: skb=%p\n",
+		    skb);
+	if (skb == NULL) {
 		printk("ipsec_mast_start_xmit: "
-			"passed NULL\n");
+		       "passed NULL\n");
 		return 0;
 	}
 
 	ixs = ipsec_xmit_state_new(dev);
-	if(ixs == NULL)
+	if (ixs == NULL)
 		return NETDEV_TX_BUSY;
 
 	ixs->dev = dev;
@@ -444,21 +457,23 @@ ipsec_mast_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	SAref = 0;
 #ifdef NETDEV_25
 #if defined(CONFIG_NETFILTER)
-	if(skb->nfmark & IPSEC_NFMARK_IS_SAREF_BIT) {
+	if (skb->nfmark & IPSEC_NFMARK_IS_SAREF_BIT) {
 		SAref = NFmark2IPsecSAref(skb->nfmark);
-		KLIPS_PRINT(debug_mast, "klips_debug:ipsec_mast_start_xmit: "
-				"getting SAref=%d from nfmark\n",
-				SAref);
+		KLIPS_PRINT(debug_mast,
+			    "klips_debug:ipsec_mast_start_xmit: "
+			    "getting SAref=%d from nfmark\n",
+			    SAref);
 	}
 #endif
 #endif
 
 #ifdef CONFIG_INET_IPSEC_SAREF
-	if(skb->sp && skb->sp->ref != IPSEC_SAREF_NULL) {
+	if (skb->sp && skb->sp->ref != IPSEC_SAREF_NULL) {
 		SAref = skb->sp->ref;
-		KLIPS_PRINT(debug_mast, "klips_debug:ipsec_mast_start_xmit: "
-				"getting SAref=%d from sec_path\n",
-				SAref);
+		KLIPS_PRINT(debug_mast,
+			    "klips_debug:ipsec_mast_start_xmit: "
+			    "getting SAref=%d from sec_path\n",
+			    SAref);
 	}
 #endif
 
@@ -475,10 +490,11 @@ ipsec_mast_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	ixs->ipsp = ipsec_sa_getbyref(SAref, IPSEC_REFOTHER);
-	if(ixs->ipsp == NULL) {
-		KLIPS_ERROR(debug_mast, "klips_debug:ipsec_mast_start_xmit: "
-				"%s: no SA for saref=%d\n",
-				dev->name, SAref);
+	if (ixs->ipsp == NULL) {
+		KLIPS_ERROR(debug_mast,
+			    "klips_debug:ipsec_mast_start_xmit: "
+			    "%s: no SA for saref=%d\n",
+			    dev->name, SAref);
 		ipsec_xmit_cleanup(ixs);
 		ipsec_xmit_state_delete(ixs);
 		return 0;
@@ -497,7 +513,7 @@ ipsec_mast_start_xmit(struct sk_buff *skb, struct net_device *dev)
 #ifdef NETDEV_25
 #if defined(CONFIG_NETFILTER)
 	/* prevent recursion through the saref route */
-	if(skb->nfmark & 0x80000000) {
+	if (skb->nfmark & 0x80000000) {
 		skb->nfmark = 0;
 	}
 #endif
@@ -512,11 +528,10 @@ ipsec_mast_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	ixs->mast_mode = 1;
 	ixs->xsm_complete = ipsec_mast_xsm_complete;
-	ixs->state = IPSEC_XSM_INIT2;	/* we start later in the process */
+	ixs->state = IPSEC_XSM_INIT2; /* we start later in the process */
 
 	ipsec_xsm(ixs);
 	return 0;
-
 }
 
 DEBUG_NO_STATIC struct net_device_stats *
@@ -651,54 +666,54 @@ ipsec_mast_cache_update(struct hh_cache *hh, struct net_device *dev, unsigned ch
 }
 #endif
 
-DEBUG_NO_STATIC int
-ipsec_mast_neigh_setup(struct neighbour *n)
+DEBUG_NO_STATIC int ipsec_mast_neigh_setup(struct neighbour *n)
 {
 	KLIPS_PRINT(debug_mast & DB_MAST_REVEC,
 		    "klips_debug:ipsec_mast_neigh_setup:\n");
 
-        if (n->nud_state == NUD_NONE) {
+	if (n->nud_state == NUD_NONE) {
 #ifndef PRIVATE_ARP_BROKEN_OPS
-                n->ops = &arp_broken_ops;
+		n->ops = &arp_broken_ops;
 #endif
-                n->output = n->ops->output;
-        }
-        return 0;
+		n->output = n->ops->output;
+	}
+	return 0;
 }
 
-DEBUG_NO_STATIC int
-ipsec_mast_neigh_setup_dev(struct net_device *dev, struct neigh_parms *p)
+DEBUG_NO_STATIC int ipsec_mast_neigh_setup_dev(struct net_device *dev,
+					       struct neigh_parms *p)
 {
 	KLIPS_PRINT(debug_mast & DB_MAST_REVEC,
 		    "klips_debug:ipsec_mast_neigh_setup_dev: "
 		    "setting up %s\n",
 		    dev ? dev->name : "NULL");
 
-        if (p->tbl->family == AF_INET) {
-                p->neigh_setup = ipsec_mast_neigh_setup;
+	if (p->tbl->family == AF_INET) {
+		p->neigh_setup = ipsec_mast_neigh_setup;
 #ifdef NEIGH_PARAMS_IS_ARRAY
-                p->data[NEIGH_VAR_UCAST_PROBES] = 0;
-                p->data[NEIGH_VAR_MCAST_PROBES] = 0;
+		p->data[NEIGH_VAR_UCAST_PROBES] = 0;
+		p->data[NEIGH_VAR_MCAST_PROBES] = 0;
 #else
-                p->ucast_probes = 0;
-                p->mcast_probes = 0;
+		p->ucast_probes = 0;
+		p->mcast_probes = 0;
 #endif
-        }
-        return 0;
+	}
+	return 0;
 }
 
-DEBUG_NO_STATIC int
-ipsec_mast_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+DEBUG_NO_STATIC int ipsec_mast_ioctl(struct net_device *dev, struct ifreq *ifr,
+				     int cmd)
 {
 	/* struct ipsecmastconf *cf = (struct ipsecmastconf *)&ifr->ifr_data;*/
 	/* overlay our struct ipsecmast onto ifr.ifr_ifru union (hope it fits!) */
-	struct ipsecmastconf *cf=(struct ipsecmastconf *)ifr->ifr_ifru.ifru_newname;
+	struct ipsecmastconf *cf =
+		(struct ipsecmastconf *)ifr->ifr_ifru.ifru_newname;
 	struct mastpriv *mprv = netdev_to_mastpriv(dev);
 
 	cf = cf;
 	mprv = mprv;
 
-	if(dev == NULL) {
+	if (dev == NULL) {
 		KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 			    "klips_debug:ipsec_mast_ioctl: "
 			    "device not supplied.\n");
@@ -708,8 +723,7 @@ ipsec_mast_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 		    "klips_debug:ipsec_mast_ioctl: "
 		    "tncfg service call #%d for dev=%s\n",
-		    cmd,
-		    dev->name ? dev->name : "NULL");
+		    cmd, dev->name ? dev->name : "NULL");
 
 	switch (cmd) {
 	default:
@@ -718,12 +732,11 @@ ipsec_mast_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			    "unknown command %d.\n",
 			    cmd);
 		return -EOPNOTSUPP;
-
 	}
 }
 
-int
-ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void *ptr)
+int ipsec_mast_device_event(struct notifier_block *unused, unsigned long event,
+			    void *ptr)
 {
 	struct net_device *dev = ptr;
 	struct mastpriv *priv = netdev_to_mastpriv(dev);
@@ -735,12 +748,12 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
 			    "klips_debug:ipsec_mast_device_event: "
 			    "dev=NULL for event type %ld.\n",
 			    event);
-		return(NOTIFY_DONE);
+		return (NOTIFY_DONE);
 	}
 
 	/* check for loopback devices */
 	if (dev && (dev->flags & IFF_LOOPBACK)) {
-		return(NOTIFY_DONE);
+		return (NOTIFY_DONE);
 	}
 
 	switch (event) {
@@ -754,10 +767,10 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
 			KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 				    "klips_debug:ipsec_mast_device_event: "
 				    "NETDEV_DOWN dev=%s flags=%x\n",
-				    dev->name,
-				    dev->flags);
-			if(strncmp(dev->name, "ipsec", strlen("ipsec")) == 0) {
-				printk(KERN_CRIT "IPSEC EVENT: KLIPS device %s shut down.\n",
+				    dev->name, dev->flags);
+			if (strncmp(dev->name, "ipsec", strlen("ipsec")) == 0) {
+				printk(KERN_CRIT
+				       "IPSEC EVENT: KLIPS device %s shut down.\n",
 				       dev->name);
 			}
 			break;
@@ -765,8 +778,7 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
 			KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 				    "klips_debug:ipsec_mast_device_event: "
 				    "NETDEV_UNREGISTER dev=%s flags=%x\n",
-				    dev->name,
-				    dev->flags);
+				    dev->name, dev->flags);
 			break;
 		}
 		break;
@@ -789,8 +801,7 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
 		KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 			    "klips_debug:ipsec_mast_device_event: "
 			    "NETDEV_CHANGE dev=%s flags=%x\n",
-			    dev->name,
-			    dev->flags);
+			    dev->name, dev->flags);
 		break;
 
 	case NETDEV_REGISTER:
@@ -804,8 +815,7 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
 		KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 			    "klips_debug:ipsec_mast_device_event: "
 			    "NETDEV_CHANGEMTU dev=%s to mtu=%d\n",
-			    dev->name,
-			    dev->mtu);
+			    dev->name, dev->mtu);
 		break;
 
 	case NETDEV_CHANGEADDR:
@@ -833,8 +843,7 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
 		KLIPS_PRINT(debug_mast & DB_MAST_INIT,
 			    "klips_debug:ipsec_mast_device_event: "
 			    "event type %ld unrecognised for dev=%s\n",
-			    event,
-			    dev->name);
+			    event, dev->name);
 		break;
 	}
 	return NOTIFY_DONE;
@@ -844,8 +853,7 @@ ipsec_mast_device_event(struct notifier_block *unused, unsigned long event, void
  *	Called when an ipsec mast device is initialized.
  *	The ipsec mast device structure is passed to us.
  */
-int
-ipsec_mast_probe(struct net_device *dev)
+int ipsec_mast_probe(struct net_device *dev)
 {
 	int i;
 	struct mastpriv *mprv;
@@ -853,22 +861,22 @@ ipsec_mast_probe(struct net_device *dev)
 	KLIPS_PRINT(debug_mast,
 		    "klips_debug:ipsec_mast_probe: "
 		    "allocating %lu bytes initialising device: %s\n",
-		    (unsigned long) sizeof(struct mastpriv),
+		    (unsigned long)sizeof(struct mastpriv),
 		    dev->name ? dev->name : "NULL");
 
 #ifndef USE_NETDEV_OPS
 	/* Add our mast functions to the device */
-	dev->open		= ipsec_mast_open;
-	dev->stop		= ipsec_mast_close;
-	dev->hard_start_xmit	= ipsec_mast_start_xmit;
-	dev->get_stats		= ipsec_mast_get_stats;
+	dev->open = ipsec_mast_open;
+	dev->stop = ipsec_mast_close;
+	dev->hard_start_xmit = ipsec_mast_start_xmit;
+	dev->get_stats = ipsec_mast_get_stats;
 	dev->set_multicast_list = NULL;
-	dev->do_ioctl		= ipsec_mast_ioctl;
-	dev->set_mac_address 	= NULL;
-	dev->neigh_setup        = ipsec_mast_neigh_setup_dev;
+	dev->do_ioctl = ipsec_mast_ioctl;
+	dev->set_mac_address = NULL;
+	dev->neigh_setup = ipsec_mast_neigh_setup_dev;
 #endif
 #ifdef alloc_netdev
-	dev->destructor         = free_netdev;
+	dev->destructor = free_netdev;
 #endif
 
 #ifndef alloc_netdev
@@ -880,29 +888,30 @@ ipsec_mast_probe(struct net_device *dev)
 	memset(mprv, 0, sizeof(struct mastpriv));
 	mprv->magic = MASTPRIV_MAGIC;
 
-	for(i = 0; i < sizeof(zeroes); i++) {
-		((__u8*)(zeroes))[i] = 0;
+	for (i = 0; i < sizeof(zeroes); i++) {
+		((__u8 *)(zeroes))[i] = 0;
 	}
 
 #ifdef HAVE_NETDEV_HEADER_OPS
 	dev->header_ops = NULL;
 #else
-	dev->hard_header	= NULL;
-	dev->rebuild_header 	= NULL;
-	dev->header_cache_update= NULL;
+	dev->hard_header = NULL;
+	dev->rebuild_header = NULL;
+	dev->header_cache_update = NULL;
 #endif
-	dev->hard_header_len 	= 8+20+20+8;
-	dev->mtu		= 0;
-	dev->addr_len		= 0;
-	dev->type		= ARPHRD_NONE;
-	dev->tx_queue_len	= 10;
+	dev->hard_header_len = 8 + 20 + 20 + 8;
+	dev->mtu = 0;
+	dev->addr_len = 0;
+	dev->type = ARPHRD_NONE;
+	dev->tx_queue_len = 10;
 #ifdef IFF_XMIT_DST_RELEASE
-	dev->priv_flags	       &= ~IFF_XMIT_DST_RELEASE;
+	dev->priv_flags &= ~IFF_XMIT_DST_RELEASE;
 #endif
-	memset((caddr_t)(dev->broadcast),0xFF, ETH_ALEN);	/* what if this is not attached to ethernet? */
+	memset((caddr_t)(dev->broadcast), 0xFF,
+	       ETH_ALEN); /* what if this is not attached to ethernet? */
 
 	/* New-style flags. */
-	dev->flags		= IFF_NOARP;
+	dev->flags = IFF_NOARP;
 
 	/* pick a random ethernet address for now. */
 	random_ether_addr(dev->dev_addr);
@@ -917,17 +926,17 @@ static void ipsec_mast_netdev_setup(struct net_device *dev)
 }
 #endif
 struct net_device *mastdevices[IPSEC_NUM_IFMAX];
-int mastdevices_max=-1;
+int mastdevices_max = -1;
 
 #ifdef USE_NETDEV_OPS
 static const struct net_device_ops ipsec_mast_ops = {
-	.ndo_init		= ipsec_mast_probe,
-	.ndo_open		= ipsec_mast_open,
-	.ndo_stop		= ipsec_mast_close,
-	.ndo_start_xmit		= ipsec_mast_start_xmit,
-	.ndo_get_stats		= ipsec_mast_get_stats,
-	.ndo_do_ioctl		= ipsec_mast_ioctl,
-	.ndo_neigh_setup	= ipsec_mast_neigh_setup_dev,
+	.ndo_init = ipsec_mast_probe,
+	.ndo_open = ipsec_mast_open,
+	.ndo_stop = ipsec_mast_close,
+	.ndo_start_xmit = ipsec_mast_start_xmit,
+	.ndo_get_stats = ipsec_mast_get_stats,
+	.ndo_do_ioctl = ipsec_mast_ioctl,
+	.ndo_neigh_setup = ipsec_mast_neigh_setup_dev,
 };
 #endif
 
@@ -937,31 +946,35 @@ int ipsec_mast_createnum(int vifnum)
 	int vifentry;
 	char name[IFNAMSIZ];
 
-	if(vifnum >= IPSEC_NUM_IFMAX) {
+	if (vifnum >= IPSEC_NUM_IFMAX) {
 		return -ENOENT;
 	}
 
-	if(mastdevices[vifnum]!=NULL) {
+	if (mastdevices[vifnum] != NULL) {
 		return -EEXIST;
 	}
 
 	/* no identical device */
-	if(vifnum > mastdevices_max) {
-		mastdevices_max=vifnum;
+	if (vifnum > mastdevices_max) {
+		mastdevices_max = vifnum;
 	}
 	vifentry = vifnum;
 
 	snprintf(name, IFNAMSIZ, MAST_DEV_FORMAT, vifnum);
 
 #ifdef ALLOC_NETDEV4
-	im = alloc_netdev(sizeof(struct mastpriv), name, NET_NAME_UNKNOWN, ipsec_mast_netdev_setup);
+	im = alloc_netdev(sizeof(struct mastpriv), name, NET_NAME_UNKNOWN,
+			  ipsec_mast_netdev_setup);
 #elif defined(alloc_netdev)
-	im = alloc_netdev(sizeof(struct mastpriv), name, ipsec_mast_netdev_setup);
+	im = alloc_netdev(sizeof(struct mastpriv), name,
+			  ipsec_mast_netdev_setup);
 #else
-	im = (struct net_device *)kmalloc(sizeof(struct net_device),GFP_KERNEL);
+	im = (struct net_device *)kmalloc(sizeof(struct net_device),
+					  GFP_KERNEL);
 #endif
-	if(im == NULL) {
-		printk(KERN_ERR "failed to allocate space for mast%d device\n", vifnum);
+	if (im == NULL) {
+		printk(KERN_ERR "failed to allocate space for mast%d device\n",
+		       vifnum);
 		return -ENOMEM;
 	}
 
@@ -976,35 +989,33 @@ int ipsec_mast_createnum(int vifnum)
 	im->init = ipsec_mast_probe;
 #endif
 
-	if(register_netdev(im) != 0) {
+	if (register_netdev(im) != 0) {
 		printk(KERN_ERR "ipsec_mast: failed to register %s\n",
 		       im->name);
 		return -EIO;
 	}
 
 	ipsec_dev_hold(im);
-	mastdevices[vifentry]=im;
+	mastdevices[vifentry] = im;
 
 	return 0;
 }
 
-
-int
-ipsec_mast_deletenum(int vifnum)
+int ipsec_mast_deletenum(int vifnum)
 {
 	struct net_device *dev_ipsec;
 
-	if(vifnum >= IPSEC_NUM_IFMAX) {
+	if (vifnum >= IPSEC_NUM_IFMAX) {
 		return -ENOENT;
 	}
 
 	dev_ipsec = mastdevices[vifnum];
-	if(dev_ipsec == NULL) {
+	if (dev_ipsec == NULL) {
 		return -ENOENT;
 	}
 
 	/* release reference */
-	mastdevices[vifnum]=NULL;
+	mastdevices[vifnum] = NULL;
 	ipsec_dev_put(dev_ipsec);
 
 	KLIPS_PRINT(debug_tunnel, "Unregistering %s\n", dev_ipsec->name);
@@ -1012,51 +1023,48 @@ ipsec_mast_deletenum(int vifnum)
 	KLIPS_PRINT(debug_tunnel, "Unregisted %s\n", dev_ipsec->name);
 #ifndef alloc_netdev
 	kfree(dev_ipsec->priv);
-	dev_ipsec->priv=NULL;
+	dev_ipsec->priv = NULL;
 #endif
 
 	return 0;
 }
 
-
-struct net_device *
-ipsec_mast_get_device(int vifnum)
+struct net_device *ipsec_mast_get_device(int vifnum)
 {
 	int ovifnum = vifnum;
 
-	if(vifnum > IPSECDEV_OFFSET) {
-		return ipsec_tunnel_get_device(vifnum-IPSECDEV_OFFSET);
+	if (vifnum > IPSECDEV_OFFSET) {
+		return ipsec_tunnel_get_device(vifnum - IPSECDEV_OFFSET);
 	} else {
 		struct net_device *nd;
 
-		if(vifnum >= MASTTRANSPORT_OFFSET) {
+		if (vifnum >= MASTTRANSPORT_OFFSET) {
 			vifnum -= MASTTRANSPORT_OFFSET;
 		}
 
-		if(vifnum <= mastdevices_max) {
+		if (vifnum <= mastdevices_max) {
 			nd = mastdevices[vifnum];
 
-			if(nd) ipsec_dev_hold(nd);
+			if (nd)
+				ipsec_dev_hold(nd);
 			return nd;
 		} else {
-			KLIPS_ERROR(debug_tunnel,
-				    "no such vif %d (ovif=%d)\n", vifnum, ovifnum);
+			KLIPS_ERROR(debug_tunnel, "no such vif %d (ovif=%d)\n",
+				    vifnum, ovifnum);
 			return NULL;
 		}
 	}
 }
 
-unsigned int
-ipsec_mast_is_transport(int vifnum)
+unsigned int ipsec_mast_is_transport(int vifnum)
 {
-	if(vifnum > MASTTRANSPORT_OFFSET && vifnum <IPSECDEV_OFFSET) {
+	if (vifnum > MASTTRANSPORT_OFFSET && vifnum < IPSECDEV_OFFSET) {
 		return 1;
 	}
 	return 0;
 }
 
-int
-ipsec_mast_init_devices(void)
+int ipsec_mast_init_devices(void)
 {
 	/*
 	 * mast0 is used for transport mode stuff, and generally is
@@ -1068,22 +1076,21 @@ ipsec_mast_init_devices(void)
 }
 
 /* void */
-int
-ipsec_mast_cleanup_devices(void)
+int ipsec_mast_cleanup_devices(void)
 {
 	int error = 0;
 	int i;
 	struct net_device *dev_mast;
 
-	for(i = 0; i <= mastdevices_max; i++) {
-		if(mastdevices[i]!=NULL) {
+	for (i = 0; i <= mastdevices_max; i++) {
+		if (mastdevices[i] != NULL) {
 			dev_mast = mastdevices[i];
-			mastdevices[i]=NULL;
+			mastdevices[i] = NULL;
 			ipsec_dev_put(dev_mast);
 			unregister_netdev(dev_mast);
 #ifndef alloc_netdev
 			kfree(dev_mast->priv);
-			dev_mast->priv=NULL;
+			dev_mast->priv = NULL;
 #endif
 		}
 	}
@@ -1097,5 +1104,3 @@ ipsec_mast_cleanup_devices(void)
  * End:
  *
  */
-
-

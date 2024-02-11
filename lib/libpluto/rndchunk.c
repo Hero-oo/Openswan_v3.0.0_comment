@@ -70,13 +70,12 @@
 #include "pluto/rnd.h"
 #include "oswlog.h"
 
-void
-fill_rnd_chunk(chunk_t *chunk, int length)
+void fill_rnd_chunk(chunk_t *chunk, int length)
 {
-  freeanychunk(*chunk);
-  chunk->ptr = alloc_bytes(length, "rnd chunk");
-  chunk->len = length;
-  get_rnd_bytes(chunk->ptr, length);
+	freeanychunk(*chunk);
+	chunk->ptr = alloc_bytes(length, "rnd chunk");
+	chunk->len = length;
+	get_rnd_bytes(chunk->ptr, length);
 }
 
 /*

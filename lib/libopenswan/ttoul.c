@@ -19,11 +19,10 @@
 /*
  - ttoul - convert text substring to unsigned long number
  */
-const char *			/* NULL for success, else string literal */
-ttoul(src, srclen, base, resultp)
-const char *src;
-size_t srclen;			/* 0 means strlen(src) */
-int base;			/* 0 means figure it out */
+const char * /* NULL for success, else string literal */
+	ttoul(src, srclen, base, resultp) const char *src;
+size_t srclen; /* 0 means strlen(src) */
+int base; /* 0 means figure it out */
 unsigned long *resultp;
 {
 	const char *stop;
@@ -43,10 +42,10 @@ unsigned long *resultp;
 
 	if (base == 0) {
 		if (srclen > 2 && *src == '0' &&
-					(*(src+1) == 'x' || *(src+1) == 'X'))
-			return ttoul(src+2, srclen-2, 16, resultp);
+		    (*(src + 1) == 'x' || *(src + 1) == 'X'))
+			return ttoul(src + 2, srclen - 2, 16, resultp);
 		if (srclen > 1 && *src == '0')
-			return ttoul(src+1, srclen-1, 8, resultp);
+			return ttoul(src + 1, srclen - 1, 8, resultp);
 		return ttoul(src, srclen, 10, resultp);
 	}
 	if (base != 8 && base != 10 && base != 16)
@@ -73,7 +72,7 @@ unsigned long *resultp;
 			return "hex number too long";
 	} else {
 		rlimit = ULONG_MAX / base;
-		dlimit = (int)(ULONG_MAX - rlimit*base);
+		dlimit = (int)(ULONG_MAX - rlimit * base);
 		while (src < stop) {
 			c = *src++;
 			d = c - '0';
@@ -81,7 +80,7 @@ unsigned long *resultp;
 				return "non-digit in number";
 			if (r > rlimit || (r == rlimit && d > dlimit))
 				return "unsigned-long overflow";
-			r = r*base + d;
+			r = r * base + d;
 		}
 	}
 

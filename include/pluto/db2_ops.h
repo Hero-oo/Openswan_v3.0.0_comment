@@ -56,21 +56,16 @@ struct db_v2_context; /* moved to spdb.h */
 /*
  * 	Allocate a new db object
  */
-struct db_v2_context * db2_prop_new(int max_conj
-                                  , int max_trans
-                                  , int max_attrs);
+struct db_v2_context *db2_prop_new(int max_conj, int max_trans, int max_attrs);
 
 /* (re-)initialize object for proposal building, returns 1 if everything okay
  * not needed if just called db2_prop_new.
  */
-int db2_prop_init(struct db_v2_context *ctx
-                  , int max_conj
-                  , int max_trans
-                  , int max_attrs);
+int db2_prop_init(struct db_v2_context *ctx, int max_conj, int max_trans,
+		  int max_attrs);
 
 /*	Clear out a db object */
 void db2_destroy(struct db_v2_context *ctx);
-
 
 /*	Free a db object itself, and things contained in it */
 void db2_free(struct db_v2_context *ctx);
@@ -85,15 +80,14 @@ int db2_prop_alternative(struct db_v2_context *ctx, u_int8_t protoid);
 int db2_trans_add(struct db_v2_context *ctx, u_int8_t transid, u_int8_t value);
 
 /*	Add a new attribute by value */
-int db2_attr_add(struct db_v2_context *ctx
-                 , u_int16_t type
-                 , u_int16_t val);
+int db2_attr_add(struct db_v2_context *ctx, u_int16_t type, u_int16_t val);
 
 /*	Start a new transform */
 void db2_prop_close(struct db_v2_context *ctx);
 
 /*	Get proposal from db object */
-static __inline__ struct db_v2_prop *db2_prop_get(struct db_v2_context *ctx) {
+static __inline__ struct db_v2_prop *db2_prop_get(struct db_v2_context *ctx)
+{
 	return &ctx->prop;
 }
 /*	Show stats (allocation, etc) */
@@ -102,8 +96,8 @@ int db2_ops_show_status(void);
 extern void db2_print(struct db_v2_context *ctx);
 extern void sa_v2_print(struct db_sa *sa);
 
-struct alg_info_ike;  /* forward reference */
-struct alg_info_esp;  /* forward reference */
+struct alg_info_ike; /* forward reference */
+struct alg_info_esp; /* forward reference */
 extern struct db_sa *alginfo2parent_db2(struct alg_info_ike *ai);
 extern struct db_sa *alginfo2child_db2(struct alg_info_esp *ai);
 

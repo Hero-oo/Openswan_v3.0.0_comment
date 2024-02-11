@@ -19,15 +19,14 @@
 
 #include "openswan.h"
 
-#define	V	"@IPSECVERSION@"	/* substituted in by Makefile */
+#define V "@IPSECVERSION@" /* substituted in by Makefile */
 static const char openswan_number[] = V;
 static const char openswan_string[] = "Linux Openswan " V;
 
 /*
  - ipsec_version_code - return IPsec version number/code, as string
  */
-const char *
-ipsec_version_code()
+const char *ipsec_version_code()
 {
 	return openswan_number;
 }
@@ -35,8 +34,7 @@ ipsec_version_code()
 /*
  - ipsec_version_string - return full version string
  */
-const char *
-ipsec_version_string()
+const char *ipsec_version_string()
 {
 	return openswan_string;
 }

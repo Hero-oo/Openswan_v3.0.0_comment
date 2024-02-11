@@ -23,28 +23,24 @@
 
 static void init_local_interface(void)
 {
-    init_carol_interface(TRUE);
+	init_carol_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    prompt_pass_t pass;
-    memset(&pass, 0, sizeof(pass));
+	prompt_pass_t pass;
+	memset(&pass, 0, sizeof(pass));
 
-    osw_init_ipsecdir(SAMPLEDIR "carol");
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , SAMPLEDIR "carol.secrets"
-			       , &pass, NULL);
-
+	osw_init_ipsecdir(SAMPLEDIR "carol");
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   SAMPLEDIR "carol.secrets", &pass, NULL);
 }
 
 bool no_cr_send = FALSE;
 
 #include "../lp02-parentI1/parentI1_main.c"
 
-
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

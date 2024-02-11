@@ -2,19 +2,19 @@
 /*
  * Copyright (C) 2002              Michael Richardson <mcr@freeswan.org>
  * Copyright (C) 2011              Paul Wouters <paul@xelerance.com>
- * 
+ *
  * This kernel module is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or (at your
  * option) any later version.  See <http://www.fsf.org/copyleft/lgpl.txt>.
- * 
+ *
  * This kernel module is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
  * License for more details.
  *
  */
-#define	_CONFIG_ALL_H_	/* seen it, no need to see it again */
+#define _CONFIG_ALL_H_ /* seen it, no need to see it again */
 
 #define CONFIG_KLIPS_MODULE 1
 
@@ -22,7 +22,7 @@
 #define CONFIG_KLIPS_AH 1
 #endif
 
-#ifndef CONFIG_KLIPS_DEBUG 
+#ifndef CONFIG_KLIPS_DEBUG
 #define CONFIG_KLIPS_DEBUG 1
 #endif
 
@@ -44,7 +44,7 @@
 
 #ifndef CONFIG_KLIPS_AUTH_HMAC_SHA1
 #define CONFIG_KLIPS_AUTH_HMAC_SHA1 1
-#endif 
+#endif
 
 #ifndef CONFIG_KLIPS_DYNDEV
 #define CONFIG_KLIPS_DYNDEV 1
@@ -56,9 +56,9 @@
 
 /* no longer needed as of 2.6.22 and up */
 #if 0
-# ifndef CONFIG_IPSEC_NAT_TRAVERSAL
-#  define CONFIG_IPSEC_NAT_TRAVERSAL 1
-# endif
+#ifndef CONFIG_IPSEC_NAT_TRAVERSAL
+#define CONFIG_IPSEC_NAT_TRAVERSAL 1
+#endif
 #endif
 #undef CONFIG_IPSEC_NAT_TRAVERSAL
 
@@ -75,9 +75,9 @@
 
 /* off by default requiers kernel patch */
 #if 0
-# ifndef CONFIG_KLIPS_OCF
-#  define CONFIG_KLIPS_OCF 1
-# endif
+#ifndef CONFIG_KLIPS_OCF
+#define CONFIG_KLIPS_OCF 1
+#endif
 #endif
 #undef CONFIG_KLIPS_OCF
 
@@ -88,9 +88,9 @@
 /* ALGO: */
 #if 0
 /* goal: cleanup KLIPS code from hardcoded algos :} */
-# undef CONFIG_KLIPS_AUTH_HMAC_MD5
-# undef CONFIG_KLIPS_AUTH_HMAC_SHA1
-# undef CONFIG_KLIPS_ENC_3DES
+#undef CONFIG_KLIPS_AUTH_HMAC_MD5
+#undef CONFIG_KLIPS_AUTH_HMAC_SHA1
+#undef CONFIG_KLIPS_ENC_3DES
 #endif
 
 #ifndef CONFIG_KLIPS_ALG

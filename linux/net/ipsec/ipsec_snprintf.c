@@ -19,7 +19,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 #define __NO_VERSION__
@@ -70,22 +70,21 @@
  */
 int ipsec_snprintf(char *buf, ssize_t size, const char *fmt, ...)
 {
-       va_list args;
-       int i;
-       size_t possize = size < 0? 0 : size;
-       va_start(args, fmt);
-       i = vsnprintf(buf,possize,fmt,args);
-       va_end(args);
-       if (i < 0) {
-           /* create empty output in place of error */
-           i = 0;
-           if (size > 0) {
-               *buf = '\0';
-           }
-       }
-       return i;
+	va_list args;
+	int i;
+	size_t possize = size < 0 ? 0 : size;
+	va_start(args, fmt);
+	i = vsnprintf(buf, possize, fmt, args);
+	va_end(args);
+	if (i < 0) {
+		/* create empty output in place of error */
+		i = 0;
+		if (size > 0) {
+			*buf = '\0';
+		}
+	}
+	return i;
 }
-
 
 void ipsec_dmp_block(char *s, caddr_t bb, int len)
 {
@@ -93,20 +92,19 @@ void ipsec_dmp_block(char *s, caddr_t bb, int len)
 	unsigned char *b = bb;
 
 	printk(KERN_INFO "klips_dmp: "
-	       "at %s, len=%d:\n", s, len);
+			 "at %s, len=%d:\n",
+	       s, len);
 
-	for(i = 0; i < len; i++ /*, c++*/) {
-		if(!(i % 16)) {
-			printk(KERN_INFO
-			       "klips_debug:   @%03x:",
-			       i);
+	for (i = 0; i < len; i++ /*, c++*/) {
+		if (!(i % 16)) {
+			printk(KERN_INFO "klips_debug:   @%03x:", i);
 		}
 		printk(" %02x", b[i]);
-		if(!((i + 1) % 16)) {
+		if (!((i + 1) % 16)) {
 			printk("\n");
 		}
 	}
-	if(i % 16) {
+	if (i % 16) {
 		printk("\n");
 	}
 }
@@ -117,4 +115,3 @@ void ipsec_dmp_block(char *s, caddr_t bb, int len)
  * End:
  *
  */
-

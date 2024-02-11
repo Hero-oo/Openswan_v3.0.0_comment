@@ -41,21 +41,21 @@
 #ifdef XAUTH_USEPAM
 #include <security/pam_appl.h>
 #endif
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "pending.h"
 #include "foodgroups.h"
 #include "packet.h"
-#include "demux.h"	/* needs packet.h */
+#include "demux.h" /* needs packet.h */
 #include "pluto/state.h"
 #include "timer.h"
-#include "ipsec_doi.h"	/* needs demux.h and state.h */
+#include "ipsec_doi.h" /* needs demux.h and state.h */
 #include "pluto/server.h"
-#include "kernel.h"	/* needs connections.h */
+#include "kernel.h" /* needs connections.h */
 #include "log.h"
 #include "keys.h"
 #include "secrets.h"
-#include "adns.h"	/* needs <resolv.h> */
-#include "dnskey.h"	/* needs keys.h and adns.h */
+#include "adns.h" /* needs <resolv.h> */
+#include "dnskey.h" /* needs keys.h and adns.h */
 #include "whack.h"
 #include "alg_info.h"
 #include "pluto/spdb.h"
@@ -73,22 +73,19 @@
 #include "pluto/crypto.h"
 #include "ikev1.h"
 
-stf_status aggr_not_present(int whack_sock UNUSED
-			    , struct connection *c UNUSED
-			    , struct state *predecessor UNUSED
-                            , so_serial_t  *newstateno UNUSED
-			    , lset_t policy UNUSED
-			    , unsigned long try UNUSED
-			    , enum crypto_importance importance UNUSED
-			    , struct xfrm_user_sec_ctx_ike * uctx UNUSED)
+stf_status aggr_not_present(int whack_sock UNUSED, struct connection *c UNUSED,
+			    struct state *predecessor UNUSED,
+			    so_serial_t *newstateno UNUSED,
+			    lset_t policy UNUSED, unsigned long try UNUSED,
+			    enum crypto_importance importance UNUSED,
+			    struct xfrm_user_sec_ctx_ike *uctx UNUSED)
 {
-    openswan_log("An attempt to use aggressive mode was made.");
-    openswan_log("This pluto does not have aggressive mode (congradulations on your wisdom)");
+	openswan_log("An attempt to use aggressive mode was made.");
+	openswan_log(
+		"This pluto does not have aggressive mode (congradulations on your wisdom)");
 
-    return STF_FATAL;
+	return STF_FATAL;
 }
-
-
 
 /*
  * Local Variables:

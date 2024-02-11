@@ -34,4 +34,3 @@
 #endif
 
 #endif /* _OPENSWAN_PARAM2_H */
-

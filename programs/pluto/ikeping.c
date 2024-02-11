@@ -20,8 +20,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/time.h>	/* only used for belt-and-suspenders select call */
-#include <sys/poll.h>	/* only used for forensic poll call */
+#include <sys/time.h> /* only used for belt-and-suspenders select call */
+#include <sys/poll.h> /* only used for forensic poll call */
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -37,7 +37,7 @@
 #include "id.h"
 #include "log.h"
 #include "packet.h"
-#include "demux.h"	/* needs packet.h */
+#include "demux.h" /* needs packet.h */
 
 /*
  * receive and decode reply packet
@@ -45,12 +45,12 @@
  */
 void receive_ike_echo_request(struct msg_digest *md)
 {
-    char b1[ADDRTOT_BUF];
+	char b1[ADDRTOT_BUF];
 
-    addrtot(&md->sender, 0, b1, sizeof(b1));
+	addrtot(&md->sender, 0, b1, sizeof(b1));
 
-    openswan_log("received ike-echo-request-%d packet from %s/%d\n",
-		 md->hdr.isa_xchg, b1, md->sender_port);
+	openswan_log("received ike-echo-request-%d packet from %s/%d\n",
+		     md->hdr.isa_xchg, b1, md->sender_port);
 
 #if 0
 	op->isa_np    = NOTHING_WRONG;
@@ -64,12 +64,12 @@ void receive_ike_echo_request(struct msg_digest *md)
 
 void receive_ike_echo_reply(struct msg_digest *md)
 {
-    char b1[ADDRTOT_BUF];
+	char b1[ADDRTOT_BUF];
 
-    addrtot(&md->sender, 0, b1, sizeof(b1));
+	addrtot(&md->sender, 0, b1, sizeof(b1));
 
-    openswan_log("received ike-echo-reply-%d packet from %s/%d\n",
-		 md->hdr.isa_xchg, b1, md->sender_port);
+	openswan_log("received ike-echo-reply-%d packet from %s/%d\n",
+		     md->hdr.isa_xchg, b1, md->sender_port);
 
 #if 0
 	op->isa_np    = NOTHING_WRONG;

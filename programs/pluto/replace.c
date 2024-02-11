@@ -33,11 +33,11 @@
 #include "constants.h"
 #include "defs.h"
 #include "id.h"
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "pluto/state.h"
 #include "packet.h"
-#include "demux.h"  /* needs packet.h */
-#include "ipsec_doi.h"	/* needs demux.h and state.h */
+#include "demux.h" /* needs packet.h */
+#include "ipsec_doi.h" /* needs demux.h and state.h */
 #include "timer.h"
 #include "dpd.h"
 #include "replace.h"
@@ -46,40 +46,43 @@
 #include "nat_traversal.h"
 #endif
 
-void
-sa_replace(struct state *st, int type)
+void sa_replace(struct state *st, int type)
 {
-    struct connection *c;
-    so_serial_t newest;
-    time_t tm = now();
+	struct connection *c;
+	so_serial_t newest;
+	time_t tm = now();
 
-    passert(st != NULL);
-    c = st->st_connection;
-    newest = IS_PARENT_SA(st)
-	? c->newest_isakmp_sa : c->newest_ipsec_sa;
+	passert(st != NULL);
+	c = st->st_connection;
+	newest = IS_PARENT_SA(st) ? c->newest_isakmp_sa : c->newest_ipsec_sa;
 
-    DBG(DBG_LIFECYCLE,openswan_log(
-	"SA REPLACE: #%ld parent=%s orig_init=%s nat_bhnd_{me=%s peer=%s} (%08x)",
-		st->st_serialno,
-		IS_PARENT_SA(st) ? "Y" : "N",
-		st->st_ikev2_orig_initiator ? "Y" : "N",
-		(st->hidden_variables.st_nat_traversal & LELEM(NAT_TRAVERSAL_NAT_BHND_ME))  ? "Y" : "N",
-		(st->hidden_variables.st_nat_traversal & LELEM(NAT_TRAVERSAL_NAT_BHND_PEER))  ? "Y" : "N",
-		st->hidden_variables.st_nat_traversal));
+	DBG(DBG_LIFECYCLE,
+	    openswan_log(
+		    "SA REPLACE: #%ld parent=%s orig_init=%s nat_bhnd_{me=%s peer=%s} (%08x)",
+		    st->st_serialno, IS_PARENT_SA(st) ? "Y" : "N",
+		    st->st_ikev2_orig_initiator ? "Y" : "N",
+		    (st->hidden_variables.st_nat_traversal &
+		     LELEM(NAT_TRAVERSAL_NAT_BHND_ME)) ?
+			    "Y" :
+			    "N",
+		    (st->hidden_variables.st_nat_traversal &
+		     LELEM(NAT_TRAVERSAL_NAT_BHND_PEER)) ?
+			    "Y" :
+			    "N",
+		    st->hidden_variables.st_nat_traversal));
 
-    if (newest != st->st_serialno
-    && newest != SOS_NOBODY)
-    {
-	/* not very interesting: no need to replace */
-	DBG(DBG_LIFECYCLE
-	    , openswan_log("not replacing stale %s SA: #%lu will do"
-		, (IS_PHASE1(st->st_state) || IS_PHASE15(st->st_state ))? "ISAKMP" : "IPsec"
-		, newest));
-    }
-    else if (type == EVENT_SA_REPLACE_IF_USED
-    && st->st_outbound_time <= tm - c->sa_rekey_margin)
-    {
-	/* we observed no recent use: no need to replace
+	if (newest != st->st_serialno && newest != SOS_NOBODY) {
+		/* not very interesting: no need to replace */
+		DBG(DBG_LIFECYCLE,
+		    openswan_log("not replacing stale %s SA: #%lu will do",
+				 (IS_PHASE1(st->st_state) ||
+				  IS_PHASE15(st->st_state)) ?
+					 "ISAKMP" :
+					 "IPsec",
+				 newest));
+	} else if (type == EVENT_SA_REPLACE_IF_USED &&
+		   st->st_outbound_time <= tm - c->sa_rekey_margin) {
+		/* we observed no recent use: no need to replace
 	 *
 	 * The sampling effects mean that st_outbound_time
 	 * could be up to SHUNT_SCAN_INTERVAL more recent
@@ -96,17 +99,20 @@ sa_replace(struct state *st, int type)
 	 * Note: we are abusing the DBG mechanism to control
 	 * normal log output.
 	 */
-	DBG(DBG_LIFECYCLE
-	    , openswan_log("not replacing stale %s SA: inactive for %lus"
-		, (IS_PHASE1(st->st_state) || IS_PHASE15(st->st_state ))? "ISAKMP" : "IPsec"
-		, (unsigned long)(tm - st->st_outbound_time)));
-    }
+		DBG(DBG_LIFECYCLE,
+		    openswan_log("not replacing stale %s SA: inactive for %lus",
+				 (IS_PHASE1(st->st_state) ||
+				  IS_PHASE15(st->st_state)) ?
+					 "ISAKMP" :
+					 "IPsec",
+				 (unsigned long)(tm - st->st_outbound_time)));
+	}
 #ifdef NAT_TRAVERSAL
-    else if (IS_PARENT_SA(st)  /* this is the parent SA */
-    && !st->st_ikev2_orig_initiator  /* we are original responder */
-    && st->hidden_variables.st_nat_traversal & LELEM(NAT_TRAVERSAL_NAT_BHND_PEER))
-    {
-	/* this is a parent SA, we are the original responder, and
+	else if (IS_PARENT_SA(st) /* this is the parent SA */
+		 && !st->st_ikev2_orig_initiator /* we are original responder */
+		 && st->hidden_variables.st_nat_traversal &
+			    LELEM(NAT_TRAVERSAL_NAT_BHND_PEER)) {
+		/* this is a parent SA, we are the original responder, and
 	 * our peer is behind NAT-T.
 	 *
 	 * if we initiate the replace, we may not be unable to
@@ -115,88 +121,80 @@ sa_replace(struct state *st, int type)
 	 * we ignore the event, and hope that the peer will
 	 * renegotiate soon.
 	 */
-	DBG(DBG_LIFECYCLE,
-	    openswan_log("not initiating rekey on parent SA #%lu: "
-			 "peer is behind NAT-T", st->st_serialno));
-	st->st_margin = EVENT_NATT_DELAY_REKEY_EXPIRE;
-    }
-#endif
-    else
-    {
-	DBG(DBG_LIFECYCLE
-	    , openswan_log("replacing stale %s %s SA"
-		, (IS_PHASE1(st->st_state)||IS_PHASE15(st->st_state)) ? "ISAKMP" : "IPsec"
-		, (IS_PARENT_SA(st)) ? "PARENT" : "CHILD"));
-	ipsecdoi_replace(st, LEMPTY, LEMPTY, 1);
-	if (IS_PARENT_SA(st)) {
-		/* a parent SA will not be expired immediately, but after
-		 * it's replaced */
-		st->st_margin = EVENT_REAUTH_IKE_SA_TIMEOUT;
+		DBG(DBG_LIFECYCLE,
+		    openswan_log("not initiating rekey on parent SA #%lu: "
+				 "peer is behind NAT-T",
+				 st->st_serialno));
+		st->st_margin = EVENT_NATT_DELAY_REKEY_EXPIRE;
 	}
-    }
-    delete_dpd_event(st);
-    event_schedule(EVENT_SA_EXPIRE, st->st_margin, st);
+#endif
+	else {
+		DBG(DBG_LIFECYCLE,
+		    openswan_log("replacing stale %s %s SA",
+				 (IS_PHASE1(st->st_state) ||
+				  IS_PHASE15(st->st_state)) ?
+					 "ISAKMP" :
+					 "IPsec",
+				 (IS_PARENT_SA(st)) ? "PARENT" : "CHILD"));
+		ipsecdoi_replace(st, LEMPTY, LEMPTY, 1);
+		if (IS_PARENT_SA(st)) {
+			/* a parent SA will not be expired immediately, but after
+		 * it's replaced */
+			st->st_margin = EVENT_REAUTH_IKE_SA_TIMEOUT;
+		}
+	}
+	delete_dpd_event(st);
+	event_schedule(EVENT_SA_EXPIRE, st->st_margin, st);
 }
 
-void
-sa_expire(struct state *st)
+void sa_expire(struct state *st)
 {
-    const char *satype;
-    so_serial_t latest;
-    struct connection *c;
+	const char *satype;
+	so_serial_t latest;
+	struct connection *c;
 
-    passert(st != NULL);
-    c = st->st_connection;
+	passert(st != NULL);
+	c = st->st_connection;
 
-    if (IS_PHASE1(st->st_state)|| IS_PHASE15(st->st_state ))
-    {
-	satype = "ISAKMP";
-	latest = c->newest_isakmp_sa;
-    }
-    else
-    {
-	satype = "IPsec";
-	latest = c->newest_ipsec_sa;
-    }
+	if (IS_PHASE1(st->st_state) || IS_PHASE15(st->st_state)) {
+		satype = "ISAKMP";
+		latest = c->newest_isakmp_sa;
+	} else {
+		satype = "IPsec";
+		latest = c->newest_ipsec_sa;
+	}
 
-    if (st->st_serialno != latest)
-    {
-	/* not very interesting: already superseded */
-	DBG(DBG_LIFECYCLE
-	    , openswan_log("%s SA expired (superseded by #%lu)"
-		, satype, latest));
-    }
-    else
-    {
-	openswan_log("%s SA expired (%s)", satype
-	    , (c->policy & POLICY_DONT_REKEY)
-		? "--dontrekey"
-		: "LATEST!"
-	    );
-    }
-    delete_state(st);
+	if (st->st_serialno != latest) {
+		/* not very interesting: already superseded */
+		DBG(DBG_LIFECYCLE,
+		    openswan_log("%s SA expired (superseded by #%lu)", satype,
+				 latest));
+	} else {
+		openswan_log("%s SA expired (%s)", satype,
+			     (c->policy & POLICY_DONT_REKEY) ? "--dontrekey" :
+							       "LATEST!");
+	}
+	delete_state(st);
 }
 
-void
-schedule_sa_replace_event(bool is_initiator, unsigned long delay,
-		          struct connection *c, struct state *st)
+void schedule_sa_replace_event(bool is_initiator, unsigned long delay,
+			       struct connection *c, struct state *st)
 {
-    unsigned long marg = c->sa_rekey_margin;
-    enum event_type ev = EVENT_SA_REPLACE;
+	unsigned long marg = c->sa_rekey_margin;
+	enum event_type ev = EVENT_SA_REPLACE;
 
-    if(is_initiator)
-        marg += marg
-                * c->sa_rekey_fuzz / 100.E0
-                * (rand() / (RAND_MAX + 1.E0));
-    else
-        marg /= 2;
+	if (is_initiator)
+		marg += marg * c->sa_rekey_fuzz / 100.E0 *
+			(rand() / (RAND_MAX + 1.E0));
+	else
+		marg /= 2;
 
-    delete_event(st);
-    if(delay > marg) {
-        delay -= marg;
-        st->st_margin = marg;
-    } else {
-        ev = EVENT_SA_EXPIRE;
-    }
-    event_schedule(ev, delay, st);
+	delete_event(st);
+	if (delay > marg) {
+		delay -= marg;
+		st->st_margin = marg;
+	} else {
+		ev = EVENT_SA_EXPIRE;
+	}
+	event_schedule(ev, delay, st);
 }

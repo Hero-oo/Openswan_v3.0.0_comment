@@ -16,25 +16,24 @@
 #define _STARTER_FILES_H_
 
 #ifndef IPSEC_EXECDIR
-#define IPSEC_EXECDIR   "/usr/local/libexec/ipsec"
+#define IPSEC_EXECDIR "/usr/local/libexec/ipsec"
 #endif
 
 #ifndef IPSEC_CONFDIR
-#define IPSEC_CONFDIR   "/etc"
+#define IPSEC_CONFDIR "/etc"
 #endif
 #define IPSEC_CONFDIR_VAR "IPSEC_CONFS"
 
 #ifndef IPSEC_CONFDDIR
-#define IPSEC_CONFDDIR   "/etc/ipsec.d"
+#define IPSEC_CONFDDIR "/etc/ipsec.d"
 #endif
 
 #define DEFAULT_CTLBASE "/var/run/pluto/pluto"
-#define CTL_SUFFIX      ".ctl"
-#define PID_SUFFIX      ".pid"
+#define CTL_SUFFIX ".ctl"
+#define PID_SUFFIX ".pid"
 
-#define CTL_FILE        DEFAULT_CTLBASE CTL_SUFFIX
+#define CTL_FILE DEFAULT_CTLBASE CTL_SUFFIX
 
-#define DYNIP_DIR       "/var/run/pluto/dynip"
+#define DYNIP_DIR "/var/run/pluto/dynip"
 
 #endif /* _STARTER_FILES_H_ */
-

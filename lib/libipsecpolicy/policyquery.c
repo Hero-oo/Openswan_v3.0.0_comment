@@ -37,130 +37,125 @@ static u_int32_t policy_seq = 1;
 
 u_int32_t ipsec_policy_seq(void)
 {
-  return ++policy_seq;
+	return ++policy_seq;
 }
 
 err_t ipsec_policy_init(void)
 {
-  struct sockaddr_un sn;
+	struct sockaddr_un sn;
 
-  if(policy_query_socket != -1) {
-    return NULL;
-  }
+	if (policy_query_socket != -1) {
+		return NULL;
+	}
 
-  policy_query_socket = safe_socket(PF_UNIX, SOCK_STREAM, 0);
-  if(policy_query_socket == -1) {
-    return "failed to open policy socket";
-  }
+	policy_query_socket = safe_socket(PF_UNIX, SOCK_STREAM, 0);
+	if (policy_query_socket == -1) {
+		return "failed to open policy socket";
+	}
 
-  /* now connect it */
-  sn.sun_family = AF_UNIX;
-  strcpy(sn.sun_path, IPSEC_POLICY_SOCKET);
-  
-  if(connect(policy_query_socket, (struct sockaddr *)&sn, sizeof(sn)) != 0) {
-    int saveerrno = errno;
-    close(policy_query_socket);
-    policy_query_socket=-1;
-    errno = saveerrno;
-    return "failed to connect policy socket";
-  }
+	/* now connect it */
+	sn.sun_family = AF_UNIX;
+	strcpy(sn.sun_path, IPSEC_POLICY_SOCKET);
 
-  /* okay, I think we are done */
-  return NULL;
+	if (connect(policy_query_socket, (struct sockaddr *)&sn, sizeof(sn)) !=
+	    0) {
+		int saveerrno = errno;
+		close(policy_query_socket);
+		policy_query_socket = -1;
+		errno = saveerrno;
+		return "failed to connect policy socket";
+	}
+
+	/* okay, I think we are done */
+	return NULL;
 }
 
 err_t ipsec_policy_final(void)
 {
-  if(policy_query_socket != -1) {
-    close(policy_query_socket);
-    policy_query_socket = -1;
-  }
-  
-  return NULL;
+	if (policy_query_socket != -1) {
+		close(policy_query_socket);
+		policy_query_socket = -1;
+	}
+
+	return NULL;
 }
 
-err_t ipsec_policy_readmsg(int policysock,
-			   unsigned char *buf,
-			   size_t buflen)
+err_t ipsec_policy_readmsg(int policysock, unsigned char *buf, size_t buflen)
 {
-  struct ipsec_policy_msg_head ipmh;
+	struct ipsec_policy_msg_head ipmh;
 
-  if(read(policysock, &ipmh, sizeof(ipmh))
-     != sizeof(ipmh)) {
-    return "read failed";
-  }
+	if (read(policysock, &ipmh, sizeof(ipmh)) != sizeof(ipmh)) {
+		return "read failed";
+	}
 
-  /* got the header, sanitize it, and find out how much more to read */
-  switch(ipmh.ipm_version) {
-  case IPSEC_POLICY_MSG_REVISION:
-    break;
-    
-  default:
-    /* XXX go deal with older versions, error for now */
-    fprintf(stderr, "Bad magic header: %u\n", ipmh.ipm_version);
-    return "bad policy msg version magic";
-  }
+	/* got the header, sanitize it, and find out how much more to read */
+	switch (ipmh.ipm_version) {
+	case IPSEC_POLICY_MSG_REVISION:
+		break;
 
-  if(ipmh.ipm_msg_len > buflen) {
-    return "buffer too small for this message";
-  }
+	default:
+		/* XXX go deal with older versions, error for now */
+		fprintf(stderr, "Bad magic header: %u\n", ipmh.ipm_version);
+		return "bad policy msg version magic";
+	}
 
-  buflen = ipmh.ipm_msg_len;
-  memcpy(buf, &ipmh, sizeof(ipmh));
-  buf += sizeof(ipmh);
-  buflen -= sizeof(ipmh);
+	if (ipmh.ipm_msg_len > buflen) {
+		return "buffer too small for this message";
+	}
 
-  if(read(policysock, buf, buflen) != buflen) {
-    return "short read from socket";
-  }
-  
-  return NULL;
+	buflen = ipmh.ipm_msg_len;
+	memcpy(buf, &ipmh, sizeof(ipmh));
+	buf += sizeof(ipmh);
+	buflen -= sizeof(ipmh);
+
+	if (read(policysock, buf, buflen) != buflen) {
+		return "short read from socket";
+	}
+
+	return NULL;
 }
 
-err_t ipsec_policy_sendrecv(unsigned char *buf,
-			    size_t buflen)
+err_t ipsec_policy_sendrecv(unsigned char *buf, size_t buflen)
 {
-  err_t ret;
-  ipsec_policy_init();
+	err_t ret;
+	ipsec_policy_init();
 
-  if(write(policy_query_socket, buf, buflen)
-     != buflen) {
-    return "write failed";
-  }
+	if (write(policy_query_socket, buf, buflen) != buflen) {
+		return "write failed";
+	}
 
-  ret = ipsec_policy_readmsg(policy_query_socket,
-			     buf, buflen);
-  
-  ipsec_policy_final();
-  
-  return ret;
+	ret = ipsec_policy_readmsg(policy_query_socket, buf, buflen);
+
+	ipsec_policy_final();
+
+	return ret;
 }
-
 
 err_t ipsec_policy_lookup(int fd, struct ipsec_policy_cmd_query *result)
 {
-  unsigned int len;
+	unsigned int len;
 
-  /* clear it out */
-  memset(result, 0, sizeof(*result));
+	/* clear it out */
+	memset(result, 0, sizeof(*result));
 
-  /* setup it up */
-  result->head.ipm_version = IPSEC_POLICY_MSG_REVISION;
-  result->head.ipm_msg_len = sizeof(*result);
-  result->head.ipm_msg_type = IPSEC_CMD_QUERY_HOSTPAIR;
-  result->head.ipm_msg_seq = ipsec_policy_seq();
-  
-  /* suck out the data on the sockets */
-  len = sizeof(result->query_local);
-  if(getsockname(fd, (struct sockaddr *)&result->query_local, &len) != 0) {
-    return "getsockname failed";
-  }
+	/* setup it up */
+	result->head.ipm_version = IPSEC_POLICY_MSG_REVISION;
+	result->head.ipm_msg_len = sizeof(*result);
+	result->head.ipm_msg_type = IPSEC_CMD_QUERY_HOSTPAIR;
+	result->head.ipm_msg_seq = ipsec_policy_seq();
 
-  len = sizeof(result->query_remote);
-  if(getpeername(fd, (struct sockaddr *)&result->query_remote, &len) != 0) {
-    return "getpeername failed";
-  }
+	/* suck out the data on the sockets */
+	len = sizeof(result->query_local);
+	if (getsockname(fd, (struct sockaddr *)&result->query_local, &len) !=
+	    0) {
+		return "getsockname failed";
+	}
 
-  return ipsec_policy_sendrecv((unsigned char *)result, sizeof(*result));
+	len = sizeof(result->query_remote);
+	if (getpeername(fd, (struct sockaddr *)&result->query_remote, &len) !=
+	    0) {
+		return "getpeername failed";
+	}
+
+	return ipsec_policy_sendrecv((unsigned char *)result, sizeof(*result));
 }
-

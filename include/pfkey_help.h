@@ -7,6 +7,3 @@ extern int pfkey_open_sock_with_error(void);
 extern void pfkey_write_error(int writeerror, int err);
 
 #endif /* _PFKEY_HELP_H */
-
-
-

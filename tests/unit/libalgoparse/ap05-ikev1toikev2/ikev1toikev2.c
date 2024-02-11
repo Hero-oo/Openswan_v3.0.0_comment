@@ -16,31 +16,37 @@ const char *progname;
 
 void exit_tool(int stat)
 {
-    exit(stat);
+	exit(stat);
 }
 
 int main(int argc, char *argv[])
 {
-    int i;
-    struct id one;
+	int i;
+	struct id one;
 
-    load_oswcrypto();
+	load_oswcrypto();
 
-    progname = argv[0];
+	progname = argv[0];
 
-    tool_init_log();
+	tool_init_log();
 
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_MD5)      == IKEv2_AUTH_HMAC_MD5_96);
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA1)     == IKEv2_AUTH_HMAC_SHA1_96);
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_DES_MAC)       == IKEv2_AUTH_DES_MAC);
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_KPDK)          == IKEv2_AUTH_KPDK_MD5);
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA2_256) == IKEv2_AUTH_HMAC_SHA2_256_128);
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA2_384) == IKEv2_AUTH_HMAC_SHA2_384_192);
-    passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA2_512) == IKEv2_AUTH_HMAC_SHA2_512_256);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_MD5) ==
+		IKEv2_AUTH_HMAC_MD5_96);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA1) ==
+		IKEv2_AUTH_HMAC_SHA1_96);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_DES_MAC) ==
+		IKEv2_AUTH_DES_MAC);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_KPDK) == IKEv2_AUTH_KPDK_MD5);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA2_256) ==
+		IKEv2_AUTH_HMAC_SHA2_256_128);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA2_384) ==
+		IKEv2_AUTH_HMAC_SHA2_384_192);
+	passert(ikev1toikev2integ(AUTH_ALGORITHM_HMAC_SHA2_512) ==
+		IKEv2_AUTH_HMAC_SHA2_512_256);
 
-    report_leaks();
-    tool_close_log();
-    exit(0);
+	report_leaks();
+	tool_close_log();
+	exit(0);
 }
 
 /*

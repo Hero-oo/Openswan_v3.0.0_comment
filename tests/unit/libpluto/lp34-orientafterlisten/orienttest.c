@@ -43,73 +43,74 @@ u_int8_t reply_buffer[MAX_OUTPUT_UDP_SIZE];
 
 int main(int argc, char *argv[])
 {
-    int   i;
-    char *infile;
-    char *conn_name;
-    struct connection *c1;
+	int i;
+	char *infile;
+	char *conn_name;
+	struct connection *c1;
 
 #ifdef HAVE_EFENCE
-    EF_PROTECT_FREE=1;
+	EF_PROTECT_FREE = 1;
 #endif
 
-    progname = argv[0];
-    leak_detective = 1;
-    pluto_shared_secrets_file = "/dev/null";
+	progname = argv[0];
+	leak_detective = 1;
+	pluto_shared_secrets_file = "/dev/null";
 
-    if(argc < 3) {
-	fprintf(stderr, "Usage: %s <whackrecord> <conn-name>\n", progname);
-	exit(10);
-    }
-    /* argv[1] == "-r" */
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s <whackrecord> <conn-name>\n",
+			progname);
+		exit(10);
+	}
+	/* argv[1] == "-r" */
 
-    tool_init_log();
-    init_fake_vendorid();
+	tool_init_log();
+	init_fake_vendorid();
 
-    argc--;
-    argv++;
+	argc--;
+	argv++;
 
-    infile = *argv;
-    if(readwhackmsg(infile) == 0) exit(10);
+	infile = *argv;
+	if (readwhackmsg(infile) == 0)
+		exit(10);
 
-    argc--;
-    argv++;
+	argc--;
+	argv++;
 
-    for(i=0; i < argc; i++) {
-        conn_name = argv[i];
-        fprintf(stderr, "processing %s\n", conn_name);
-        c1 = con_by_name(conn_name, TRUE);
-        show_one_connection(c1, whack_log);
-        assert(c1 != NULL);
-        assert(orient(c1, pluto_port500) == FALSE);
-    }
+	for (i = 0; i < argc; i++) {
+		conn_name = argv[i];
+		fprintf(stderr, "processing %s\n", conn_name);
+		c1 = con_by_name(conn_name, TRUE);
+		show_one_connection(c1, whack_log);
+		assert(c1 != NULL);
+		assert(orient(c1, pluto_port500) == FALSE);
+	}
 
-    hostpair_list();
-    init_parker_interface(TRUE);
-    whack_listen();
-    hostpair_list();
+	hostpair_list();
+	init_parker_interface(TRUE);
+	whack_listen();
+	hostpair_list();
 
-    for(i=0; i < argc; i++) {
-        conn_name = argv[i];
-        fprintf(stderr, "re-processing %s\n", conn_name);
-        c1 = con_by_name(conn_name, TRUE);
-        show_one_connection(c1, whack_log);
-        assert(c1 != NULL);
-        assert(orient(c1, pluto_port500) == TRUE);
-    }
-    hostpair_list();
+	for (i = 0; i < argc; i++) {
+		conn_name = argv[i];
+		fprintf(stderr, "re-processing %s\n", conn_name);
+		c1 = con_by_name(conn_name, TRUE);
+		show_one_connection(c1, whack_log);
+		assert(c1 != NULL);
+		assert(orient(c1, pluto_port500) == TRUE);
+	}
+	hostpair_list();
 
-    for(i=0; i < argc; i++) {
-        conn_name = argv[i];
-        c1 = con_by_name(conn_name, TRUE);
-        delete_connection(c1, TRUE, FALSE);
-    }
+	for (i = 0; i < argc; i++) {
+		conn_name = argv[i];
+		c1 = con_by_name(conn_name, TRUE);
+		delete_connection(c1, TRUE, FALSE);
+	}
 
-    report_leaks();
+	report_leaks();
 
-    tool_close_log();
-    exit(0);
+	tool_close_log();
+	exit(0);
 }
-
 
 /*
  * Local Variables:

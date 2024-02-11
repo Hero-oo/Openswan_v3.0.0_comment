@@ -41,21 +41,19 @@
 
 void init_iface_port(struct iface_port *q)
 {
-  const struct af_info *afi = aftoinfo(addrtypeof(&q->ip_addr));
+	const struct af_info *afi = aftoinfo(addrtypeof(&q->ip_addr));
 
-  sin_addrtot(&q->ip_addr, 0, q->addrname, sizeof(q->addrname));
-  q->socktypename = afi->name;
+	sin_addrtot(&q->ip_addr, 0, q->addrname, sizeof(q->addrname));
+	q->socktypename = afi->name;
 
-  switch(q->ip_addr.u.v4.sin_family) {
-  case AF_INET6:
-    q->ip_addr.u.v4.sin_port  = htons(q->port);
-    break;
+	switch (q->ip_addr.u.v4.sin_family) {
+	case AF_INET6:
+		q->ip_addr.u.v4.sin_port = htons(q->port);
+		break;
 
-  default:
-  case AF_INET:
-    q->ip_addr.u.v6.sin6_port = htons(q->port);
-    break;
-  }
+	default:
+	case AF_INET:
+		q->ip_addr.u.v6.sin6_port = htons(q->port);
+		break;
+	}
 }
-
-

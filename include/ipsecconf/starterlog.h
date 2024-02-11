@@ -15,13 +15,14 @@
 #ifndef _STARTER_LOG_H_
 #define _STARTER_LOG_H_
 
-#define LOG_LEVEL_INFO   1
-#define LOG_LEVEL_ERR    2
-#define LOG_LEVEL_DEBUG  3
+#define LOG_LEVEL_INFO 1
+#define LOG_LEVEL_ERR 2
+#define LOG_LEVEL_DEBUG 3
 
-extern void starter_log (int level, const char *fmt, ...);
-extern void starter_use_log (int debug, int console, int mysyslog);
-extern void passert_fail(const char *pred_str, const char *file_str, unsigned long line_no);
+extern void starter_log(int level, const char *fmt, ...);
+extern void starter_use_log(int debug, int console, int mysyslog);
+extern void passert_fail(const char *pred_str, const char *file_str,
+			 unsigned long line_no);
 
 extern int showonly;
 
@@ -30,4 +31,3 @@ extern char *xstrdup(char *s);
 extern void *xrealloc(void *o, size_t s);
 
 #endif /* _STARTER_LOG_H_ */
-

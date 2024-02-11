@@ -12,25 +12,25 @@
 
 static void init_local_interface(void)
 {
-    init_parker_interface(TRUE);
+	init_parker_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    osw_init_ipsecdir("../samples/davecert");
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/parker.secrets"
-			       , NULL, NULL);
-    load_authcerts("CA cert", "../samples/davecert/cacerts", AUTH_CA);
+	osw_init_ipsecdir("../samples/davecert");
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/parker.secrets", NULL, NULL);
+	load_authcerts("CA cert", "../samples/davecert/cacerts", AUTH_CA);
 }
 
-static void init_loaded(void) {}
+static void init_loaded(void)
+{
+}
 
 #include "seam_parentI2.c"
 #include "../lp10-parentI2/parentI2_main.c"
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

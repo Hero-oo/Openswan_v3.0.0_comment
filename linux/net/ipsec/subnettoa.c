@@ -18,12 +18,12 @@
  - subnettoa - convert address and mask to ASCII "addr/mask"
  * Output expresses the mask as a bit count if possible, else dotted decimal.
  */
-size_t				/* space needed for full conversion */
+size_t /* space needed for full conversion */
 subnettoa(addr, mask, format, dst, dstlen)
 struct in_addr addr;
 struct in_addr mask;
-int format;			/* character */
-char *dst;			/* need not be valid if dstlen is 0 */
+int format; /* character */
+char *dst; /* need not be valid if dstlen is 0 */
 size_t dstlen;
 {
 	size_t len;
@@ -62,12 +62,12 @@ size_t dstlen;
  - subnettoa - convert address and mask to ASCII "addr/mask"
  * Output expresses the mask as a bit count if possible, else dotted decimal.
  */
-size_t				/* space needed for full conversion */
+size_t /* space needed for full conversion */
 subnet6toa(addr, mask, format, dst, dstlen)
 struct in6_addr *addr;
 struct in6_addr *mask;
-int format;			/* character */
-char *dst;			/* need not be valid if dstlen is 0 */
+int format; /* character */
+char *dst; /* need not be valid if dstlen is 0 */
 size_t dstlen;
 {
 	size_t len;

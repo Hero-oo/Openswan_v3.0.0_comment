@@ -33,32 +33,60 @@
  * should NEVER be done with /dev/urandom.
  */
 
-#define	DEVICE	"/dev/random"
+#define DEVICE "/dev/random"
 #endif
 #ifndef QDEVICE
-#define	QDEVICE	"/dev/urandom"
+#define QDEVICE "/dev/urandom"
 #endif
 #ifndef MAXBITS
-#define	MAXBITS	20000
+#define MAXBITS 20000
 #endif
 
 char usage[] = "Usage: ranbits [--quick] [--continuous] [--bytes] nbits";
-struct option opts[] = {
-  {"quick",	0,	NULL,	'q',},
-  {"continuous",	0,	NULL,	'c',},
-  {"bytes",	0,	NULL,	'b',},
-  {"help",		0,	NULL,	'h',},
-  {"version",	0,	NULL,	'v',},
-  {0,		0,	NULL,	0,}
-};
-int quick = 0;			/* quick and dirty? */
-char format = 'h';		/* datatot() format code */
-int isbytes = 0;		/* byte count rather than bits? */
+struct option opts[] = { {
+				 "quick",
+				 0,
+				 NULL,
+				 'q',
+			 },
+			 {
+				 "continuous",
+				 0,
+				 NULL,
+				 'c',
+			 },
+			 {
+				 "bytes",
+				 0,
+				 NULL,
+				 'b',
+			 },
+			 {
+				 "help",
+				 0,
+				 NULL,
+				 'h',
+			 },
+			 {
+				 "version",
+				 0,
+				 NULL,
+				 'v',
+			 },
+			 {
+				 0,
+				 0,
+				 NULL,
+				 0,
+			 } };
+int quick = 0; /* quick and dirty? */
+char format = 'h'; /* datatot() format code */
+int isbytes = 0; /* byte count rather than bits? */
 
-char me[] = "ipsec ranbits";	/* for messages */
+char me[] = "ipsec ranbits"; /* for messages */
 
-unsigned char buf[MAXBITS/CHAR_BIT];
-char outbuf[3*sizeof(buf)];
+unsigned char buf[MAXBITS / CHAR_BIT];
+char outbuf[3 * sizeof(buf)];
 
 int main(int argc, char *argv[])
 {
@@ -75,20 +103,20 @@ int main(int argc, char *argv[])
 
 	while ((opt = getopt_long(argc, argv, "", opts, NULL)) != EOF)
 		switch (opt) {
-		case 'q':	/* quick and dirty randomness */
+		case 'q': /* quick and dirty randomness */
 			quick = 1;
 			break;
-		case 'c':	/* continuous hex, no underscores */
+		case 'c': /* continuous hex, no underscores */
 			format = 'x';
 			break;
-		case 'b':	/* byte count, not bit count */
+		case 'b': /* byte count, not bit count */
 			isbytes = 1;
 			break;
-		case 'h':	/* help */
+		case 'h': /* help */
 			printf("%s\n", usage);
 			exit(0);
 			break;
-		case 'v':	/* version */
+		case 'v': /* version */
 			printf("%s %s\n", me, ipsec_version_code());
 			exit(0);
 			break;
@@ -97,7 +125,7 @@ int main(int argc, char *argv[])
 			errflg = 1;
 			break;
 		}
-	if (errflg || optind != argc-1) {
+	if (errflg || optind != argc - 1) {
 		fprintf(stderr, "%s\n", usage);
 		exit(2);
 	}
@@ -111,7 +139,7 @@ int main(int argc, char *argv[])
 	}
 	if (nbits > MAXBITS) {
 		fprintf(stderr, "%s: overlarge bit count (max %d)\n", me,
-								MAXBITS);
+			MAXBITS);
 		exit(1);
 	}
 	nbytes = (size_t)(nbits + CHAR_BIT - 1) / CHAR_BIT;
@@ -119,8 +147,8 @@ int main(int argc, char *argv[])
 	devname = (quick) ? QDEVICE : DEVICE;
 	dev = open(devname, 0);
 	if (dev < 0) {
-		fprintf(stderr, "%s: could not open %s (%s)\n", me,
-						devname, strerror(errno));
+		fprintf(stderr, "%s: could not open %s (%s)\n", me, devname,
+			strerror(errno));
 		exit(1);
 	}
 
@@ -129,7 +157,7 @@ int main(int argc, char *argv[])
 		got = read(dev, buf + ndone, nbytes - ndone);
 		if (got < 0) {
 			fprintf(stderr, "%s: read error on %s (%s)\n", me,
-						devname, strerror(errno));
+				devname, strerror(errno));
 			exit(1);
 		}
 		if (got == 0) {
@@ -141,8 +169,8 @@ int main(int argc, char *argv[])
 
 	nneeded = datatot(buf, nbytes, format, outbuf, sizeof(outbuf));
 	if (nneeded > sizeof(outbuf)) {
-		fprintf(stderr, "%s: buffer overflow (need %ld bytes)?!?\n",
-						me, (long)nneeded);
+		fprintf(stderr, "%s: buffer overflow (need %ld bytes)?!?\n", me,
+			(long)nneeded);
 		exit(1);
 	}
 	printf("%s\n", outbuf);

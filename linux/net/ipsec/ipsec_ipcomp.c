@@ -15,7 +15,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 
@@ -26,13 +26,13 @@
 #include "openswan/ipsec_param.h"
 
 #include <linux/slab.h> /* kmalloc() */
-#include <linux/errno.h>  /* error codes */
-#include <linux/types.h>  /* size_t */
+#include <linux/errno.h> /* error codes */
+#include <linux/types.h> /* size_t */
 #include <linux/interrupt.h> /* mark_bh */
 
-#include <linux/netdevice.h>	/* struct device, and other headers */
-#include <linux/etherdevice.h>	/* eth_type_trans */
-#include <linux/ip.h>		/* struct iphdr */
+#include <linux/netdevice.h> /* struct device, and other headers */
+#include <linux/etherdevice.h> /* eth_type_trans */
+#include <linux/ip.h> /* struct iphdr */
 #include <linux/skbuff.h>
 #include <openswan.h>
 #include <linux/spinlock.h> /* *lock* */
@@ -63,88 +63,94 @@ extern int sysctl_ipsec_inbound_policy_check;
 #endif
 
 #ifdef CONFIG_KLIPS_IPCOMP
-enum ipsec_rcv_value
-ipsec_rcv_ipcomp_checks(struct ipsec_rcv_state *irs,
-			struct sk_buff *skb)
+enum ipsec_rcv_value ipsec_rcv_ipcomp_checks(struct ipsec_rcv_state *irs,
+					     struct sk_buff *skb)
 {
 	int ipcompminlen;
 
 	ipcompminlen = sizeof(struct iphdr);
 
-	if(skb->len < (ipcompminlen + sizeof(struct ipcomphdr))) {
-		KLIPS_PRINT(debug_rcv & DB_RX_INAU,
-			    "klips_debug:ipsec_rcv_ipcomp_checks: "
-			    "runt comp packet of skb->len=%d received from %s, dropped.\n",
-			    skb->len,
-			    irs->ipsaddr_txt);
-		if(irs->stats) {
+	if (skb->len < (ipcompminlen + sizeof(struct ipcomphdr))) {
+		KLIPS_PRINT(
+			debug_rcv & DB_RX_INAU,
+			"klips_debug:ipsec_rcv_ipcomp_checks: "
+			"runt comp packet of skb->len=%d received from %s, dropped.\n",
+			skb->len, irs->ipsaddr_txt);
+		if (irs->stats) {
 			irs->stats->rx_errors++;
 		}
 		return IPSEC_RCV_BADLEN;
 	}
 
-	irs->protostuff.ipcompstuff.compp = (struct ipcomphdr *)skb_transport_header(skb);
-	irs->said.spi = htonl((__u32)ntohs(irs->protostuff.ipcompstuff.compp->ipcomp_cpi));
+	irs->protostuff.ipcompstuff.compp =
+		(struct ipcomphdr *)skb_transport_header(skb);
+	irs->said.spi = htonl(
+		(__u32)ntohs(irs->protostuff.ipcompstuff.compp->ipcomp_cpi));
 	return IPSEC_RCV_OK;
 }
 
-enum ipsec_rcv_value
-ipsec_rcv_ipcomp_decomp(struct ipsec_rcv_state *irs)
+enum ipsec_rcv_value ipsec_rcv_ipcomp_decomp(struct ipsec_rcv_state *irs)
 {
 	unsigned int flags = 0;
 	struct ipsec_sa *ipsp = irs->ipsp;
 	struct sk_buff *skb;
 
-	skb=irs->skb;
+	skb = irs->skb;
 
 	ipsec_xmit_dmp("ipcomp", skb_transport_header(skb), skb->len);
 
-	if(ipsp == NULL) {
+	if (ipsp == NULL) {
 		return IPSEC_RCV_SAIDNOTFOUND;
 	}
 
-	if(sysctl_ipsec_inbound_policy_check &&
-	   ((((ntohl(ipsp->ips_said.spi) & 0x0000ffff) != (ntohl(irs->said.spi) & 0x0000ffff)) &&
-	     (ipsp->ips_encalg != ntohl(irs->said.spi))   /* this is a workaround for peer non-compliance with rfc2393 */
-		    ))) {
+	if (sysctl_ipsec_inbound_policy_check &&
+	    ((((ntohl(ipsp->ips_said.spi) & 0x0000ffff) !=
+	       (ntohl(irs->said.spi) & 0x0000ffff)) &&
+	      (ipsp->ips_encalg !=
+	       ntohl(irs->said.spi)) /* this is a workaround for peer non-compliance with rfc2393 */
+	      ))) {
 		char sa2[SATOT_BUF];
 		size_t sa_len2 = 0;
 
-		sa_len2 = KLIPS_SATOT(debug_rcv, &ipsp->ips_said, 0, sa2, sizeof(sa2));
+		sa_len2 = KLIPS_SATOT(debug_rcv, &ipsp->ips_said, 0, sa2,
+				      sizeof(sa2));
 
-		KLIPS_PRINT(debug_rcv,
-			    "klips_debug:ipsec_rcv_ipcomp_decomp: "
-			    "Incoming packet with SA(IPCA):%s does not match policy SA(IPCA):%s cpi=%04x cpi->spi=%08x spi=%08x, spi->cpi=%04x for SA grouping, dropped.\n",
-			    irs->sa_len ? irs->sa : " (error)",
-			    sa_len2 ? sa2 : " (error)",
-			    ntohs(irs->protostuff.ipcompstuff.compp->ipcomp_cpi),
-			    (__u32)ntohl(irs->said.spi),
-			    (__u32)ntohl((ipsp->ips_said.spi)),
-			    (__u16)(ntohl(ipsp->ips_said.spi) & 0x0000ffff));
-		if(irs->stats) {
+		KLIPS_PRINT(
+			debug_rcv,
+			"klips_debug:ipsec_rcv_ipcomp_decomp: "
+			"Incoming packet with SA(IPCA):%s does not match policy SA(IPCA):%s cpi=%04x cpi->spi=%08x spi=%08x, spi->cpi=%04x for SA grouping, dropped.\n",
+			irs->sa_len ? irs->sa : " (error)",
+			sa_len2 ? sa2 : " (error)",
+			ntohs(irs->protostuff.ipcompstuff.compp->ipcomp_cpi),
+			(__u32)ntohl(irs->said.spi),
+			(__u32)ntohl((ipsp->ips_said.spi)),
+			(__u16)(ntohl(ipsp->ips_said.spi) & 0x0000ffff));
+		if (irs->stats) {
 			irs->stats->rx_dropped++;
 		}
 		return IPSEC_RCV_SAIDNOTFOUND;
 	}
 
 	if (osw_ip_hdr_version(irs) == 6)
-		ipsp->ips_comp_ratio_cbytes += ntohs(osw_ip6_hdr(irs)->payload_len)
-				+ sizeof(struct ipv6hdr);
+		ipsp->ips_comp_ratio_cbytes +=
+			ntohs(osw_ip6_hdr(irs)->payload_len) +
+			sizeof(struct ipv6hdr);
 	else
 		ipsp->ips_comp_ratio_cbytes += ntohs(osw_ip4_hdr(irs)->tot_len);
 	irs->next_header = irs->protostuff.ipcompstuff.compp->ipcomp_nh;
 
 #ifdef CONFIG_KLIPS_OCF
 	if (irs->ipsp->ocf_in_use)
-		return(ipsec_ocf_rcv(irs));
+		return (ipsec_ocf_rcv(irs));
 #endif
 
 	skb = skb_decompress(skb, ipsp, &flags);
 	if (!skb || flags) {
-		KLIPS_PRINT(debug_rcv,
-			    "klips_debug:ipsec_rcv_ipcomp_decomp: "
-			    "skb_decompress() returned error flags=%x, dropped.\n",
-			    flags);
+		KLIPS_PRINT(
+			debug_rcv,
+			"klips_debug:ipsec_rcv_ipcomp_decomp: "
+			"skb_decompress() returned error flags=%x, dropped.\n",
+			flags);
 		if (irs->stats) {
 			if (flags)
 				irs->stats->rx_errors++;
@@ -157,22 +163,24 @@ ipsec_rcv_ipcomp_decomp(struct ipsec_rcv_state *irs)
 	/* make sure we update the pointer */
 	irs->skb = skb;
 
-	irs->iph = (void *) ip_hdr(skb);
+	irs->iph = (void *)ip_hdr(skb);
 
 	if (osw_ip_hdr_version(irs) == 6)
-		ipsp->ips_comp_ratio_dbytes += ntohs(osw_ip6_hdr(irs)->payload_len)
-				+ sizeof(struct ipv6hdr);
+		ipsp->ips_comp_ratio_dbytes +=
+			ntohs(osw_ip6_hdr(irs)->payload_len) +
+			sizeof(struct ipv6hdr);
 	else
 		ipsp->ips_comp_ratio_dbytes += ntohs(osw_ip4_hdr(irs)->tot_len);
 
-	KLIPS_PRINT(debug_rcv,
-		    "klips_debug:ipsec_rcv_ipcomp_decomp: "
-		    "packet decompressed SA(IPCA):%s cpi->spi=%08x spi=%08x, spi->cpi=%04x, nh=%d.\n",
-		    irs->sa_len ? irs->sa : " (error)",
-		    (__u32)ntohl(irs->said.spi),
-		    ipsp != NULL ? (__u32)ntohl((ipsp->ips_said.spi)) : 0,
-		    ipsp != NULL ? (__u16)(ntohl(ipsp->ips_said.spi) & 0x0000ffff) : 0,
-		    irs->next_header);
+	KLIPS_PRINT(
+		debug_rcv,
+		"klips_debug:ipsec_rcv_ipcomp_decomp: "
+		"packet decompressed SA(IPCA):%s cpi->spi=%08x spi=%08x, spi->cpi=%04x, nh=%d.\n",
+		irs->sa_len ? irs->sa : " (error)", (__u32)ntohl(irs->said.spi),
+		ipsp != NULL ? (__u32)ntohl((ipsp->ips_said.spi)) : 0,
+		ipsp != NULL ? (__u16)(ntohl(ipsp->ips_said.spi) & 0x0000ffff) :
+			       0,
+		irs->next_header);
 	KLIPS_IP_PRINT(debug_rcv & DB_RX_PKTRX, irs->iph);
 
 	return IPSEC_RCV_OK;
@@ -236,10 +244,10 @@ ipsec_xmit_ipcomp_setup(struct ipsec_xmit_state *ixs)
 }
 #endif
 
-struct xform_functions ipcomp_xform_funcs[]={
+struct xform_functions ipcomp_xform_funcs[] = {
 	{
-		protocol:           IPPROTO_COMP,
-		rcv_checks:  ipsec_rcv_ipcomp_checks,
+		protocol: IPPROTO_COMP,
+		rcv_checks: ipsec_rcv_ipcomp_checks,
 		rcv_decrypt: ipsec_rcv_ipcomp_decomp,
 #if 0
 		xmit_setup:  ipsec_xmit_ipcomp_setup,

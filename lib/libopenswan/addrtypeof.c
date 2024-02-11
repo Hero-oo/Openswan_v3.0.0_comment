@@ -17,26 +17,25 @@
 /*
  - addrtypeof - get the type of an ip_address
  */
-int
-addrtypeof(src)
-const ip_address *src;
+int addrtypeof(src) const ip_address *src;
 {
-  if(src == NULL) return 0;
-  return src->u.v4.sin_family;
+	if (src == NULL)
+		return 0;
+	return src->u.v4.sin_family;
 }
 
 /*
  - addrbytesptr - get pointer to the address bytes of an ip_address
  */
-size_t				/* 0 for error */
-addrbytesptr(src, dstp)
-const ip_address *src;
-unsigned char **dstp;	/* NULL means just a size query */
+size_t /* 0 for error */
+	addrbytesptr(src, dstp) const ip_address *src;
+unsigned char **dstp; /* NULL means just a size query */
 {
 	unsigned char *p;
 	size_t n;
 
-        if(src == NULL) return 0;
+	if (src == NULL)
+		return 0;
 
 	switch (src->u.v4.sin_family) {
 	case AF_INET:
@@ -55,15 +54,14 @@ unsigned char **dstp;	/* NULL means just a size query */
 	if (dstp != NULL)
 		*dstp = p;
 	return n;
-
 }
 /*
  - addrbytesptr - get pointer to the address bytes of an ip_address
  */
-size_t				/* 0 for error */
+size_t /* 0 for error */
 addrbytesptr_write(src, dstp)
 ip_address *src;
-unsigned char **dstp;	/* NULL means just a size query */
+unsigned char **dstp; /* NULL means just a size query */
 {
 	unsigned char *p;
 	size_t n;
@@ -90,9 +88,8 @@ unsigned char **dstp;	/* NULL means just a size query */
 /*
  - addrlenof - get length of the address bytes of an ip_address
  */
-size_t				/* 0 for error */
-addrlenof(src)
-const ip_address *src;
+size_t /* 0 for error */
+	addrlenof(src) const ip_address *src;
 {
 	return addrbytesptr(src, NULL);
 }
@@ -100,9 +97,8 @@ const ip_address *src;
 /*
  - addrbytesof - get the address bytes of an ip_address
  */
-size_t				/* 0 for error */
-addrbytesof(src, dst, dstlen)
-const ip_address *src;
+size_t /* 0 for error */
+	addrbytesof(src, dst, dstlen) const ip_address *src;
 unsigned char *dst;
 size_t dstlen;
 {

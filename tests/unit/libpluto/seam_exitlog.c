@@ -3,17 +3,17 @@
 /* LINK seams */
 void exit_log(const char *msg, ...)
 {
-    osw_abort();
+	osw_abort();
 }
 
 void exit_tool(int status)
 {
-    exit(status);
+	exit(status);
 }
 
 void exit_pluto(int status)
 {
-    exit(status);
+	exit(status);
 }
 
 #endif

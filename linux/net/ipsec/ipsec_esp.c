@@ -15,7 +15,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 
@@ -26,13 +26,13 @@
 #include "openswan/ipsec_param.h"
 
 #include <linux/slab.h> /* kmalloc() */
-#include <linux/errno.h>  /* error codes */
-#include <linux/types.h>  /* size_t */
+#include <linux/errno.h> /* error codes */
+#include <linux/types.h> /* size_t */
 #include <linux/interrupt.h> /* mark_bh */
 
-#include <linux/netdevice.h>	/* struct device, and other headers */
-#include <linux/etherdevice.h>	/* eth_type_trans */
-#include <linux/ip.h>		/* struct iphdr */
+#include <linux/netdevice.h> /* struct device, and other headers */
+#include <linux/etherdevice.h> /* eth_type_trans */
+#include <linux/ip.h> /* struct iphdr */
 #include <linux/skbuff.h>
 #include <openswan.h>
 #include <linux/spinlock.h> /* *lock* */
@@ -59,24 +59,24 @@
 #include "openswan/ipsec_proto.h"
 #include "openswan/ipsec_alg.h"
 #ifdef CONFIG_KLIPS_OCF
-# include "ipsec_ocf.h"
+#include "ipsec_ocf.h"
 #endif
 
-#define ESP_DMP(_x,_y,_z) if(debug_rcv && sysctl_ipsec_debug_verbose) ipsec_dmp_block(_x,_y,_z)
+#define ESP_DMP(_x, _y, _z)                          \
+	if (debug_rcv && sysctl_ipsec_debug_verbose) \
+	ipsec_dmp_block(_x, _y, _z)
 
 #ifdef CONFIG_KLIPS_ESP
-enum ipsec_rcv_value
-ipsec_rcv_esp_checks(struct ipsec_rcv_state *irs,
-		     struct sk_buff *skb)
+enum ipsec_rcv_value ipsec_rcv_esp_checks(struct ipsec_rcv_state *irs,
+					  struct sk_buff *skb)
 {
 	/* XXX this will need to be 8 for IPv6 */
 	if ((irs->proto == IPPROTO_ESP) && ((skb->len - irs->iphlen) % 4)) {
 		printk("klips_error:ipsec_rcv: "
 		       "got packet with content length %d - %d = %d from %s -- should be on 4 octet boundary, packet dropped\n",
-			   skb->len, irs->iphlen,
-		       skb->len - irs->iphlen,
+		       skb->len, irs->iphlen, skb->len - irs->iphlen,
 		       irs->ipsaddr_txt);
-		if(irs->stats) {
+		if (irs->stats) {
 			irs->stats->rx_errors++;
 		}
 		return IPSEC_RCV_BADLEN;
@@ -112,31 +112,29 @@ ipsec_rcv_esp_checks(struct ipsec_rcv_state *irs,
 	}
 #endif
 
-	irs->protostuff.espstuff.espp = (struct esphdr *)skb_transport_header(skb);
+	irs->protostuff.espstuff.espp =
+		(struct esphdr *)skb_transport_header(skb);
 	irs->said.spi = irs->protostuff.espstuff.espp->esp_spi;
 
 	return IPSEC_RCV_OK;
 }
 
-enum ipsec_rcv_value
-ipsec_rcv_esp_decrypt_setup(struct ipsec_rcv_state *irs,
-			    struct sk_buff *skb,
-			    __u32          *replay,
-			    unsigned char **authenticator)
+enum ipsec_rcv_value ipsec_rcv_esp_decrypt_setup(struct ipsec_rcv_state *irs,
+						 struct sk_buff *skb,
+						 __u32 *replay,
+						 unsigned char **authenticator)
 {
 	struct esphdr *espp = irs->protostuff.espstuff.espp;
 	/* unsigned char *idat = (unsigned char *)espp; */
 
-	KLIPS_PRINT(debug_rcv,
-		    "klips_debug:ipsec_rcv: "
-		    "packet from %s received with seq=%d (iv)=0x%08x%08x iplen=%d esplen=%d sa=%s\n",
-		    irs->ipsaddr_txt,
-		    (__u32)ntohl(espp->esp_rpl),
-		    (__u32)ntohl(*((__u32 *)(espp->esp_iv)    )),
-		    (__u32)ntohl(*((__u32 *)(espp->esp_iv) + 1)),
-		    irs->len,
-		    irs->ilen,
-		    irs->sa_len ? irs->sa : " (error)");
+	KLIPS_PRINT(
+		debug_rcv,
+		"klips_debug:ipsec_rcv: "
+		"packet from %s received with seq=%d (iv)=0x%08x%08x iplen=%d esplen=%d sa=%s\n",
+		irs->ipsaddr_txt, (__u32)ntohl(espp->esp_rpl),
+		(__u32)ntohl(*((__u32 *)(espp->esp_iv))),
+		(__u32)ntohl(*((__u32 *)(espp->esp_iv) + 1)), irs->len,
+		irs->ilen, irs->sa_len ? irs->sa : " (error)");
 
 	*replay = ntohl(espp->esp_rpl);
 	*authenticator = &(skb_transport_header(skb)[irs->ilen]);
@@ -144,32 +142,31 @@ ipsec_rcv_esp_decrypt_setup(struct ipsec_rcv_state *irs,
 	return IPSEC_RCV_OK;
 }
 
-enum ipsec_rcv_value
-ipsec_rcv_esp_authcalc(struct ipsec_rcv_state *irs,
-		       struct sk_buff *skb)
+enum ipsec_rcv_value ipsec_rcv_esp_authcalc(struct ipsec_rcv_state *irs,
+					    struct sk_buff *skb)
 {
 	struct auth_alg *aa;
 	struct esphdr *espp = irs->protostuff.espstuff.espp;
 	union {
-		MD5_CTX		md5;
-		SHA1_CTX	sha1;
+		MD5_CTX md5;
+		SHA1_CTX sha1;
 	} tctx;
 
 #ifdef CONFIG_KLIPS_OCF
 	if (irs->ipsp->ocf_in_use)
-		return(ipsec_ocf_rcv(irs));
+		return (ipsec_ocf_rcv(irs));
 #endif
 
 #ifdef CONFIG_KLIPS_ALG
 	if (irs->ipsp->ips_alg_auth) {
 		KLIPS_PRINT(debug_rcv,
-				"klips_debug:ipsec_rcv: "
-				"ipsec_alg hashing proto=%d... ",
-				irs->said.proto);
-		if(irs->said.proto == IPPROTO_ESP) {
-			ipsec_alg_sa_esp_hash(irs->ipsp,
-					(caddr_t)espp, irs->ilen,
-					irs->hash, AHHMAC_HASHLEN);
+			    "klips_debug:ipsec_rcv: "
+			    "ipsec_alg hashing proto=%d... ",
+			    irs->said.proto);
+		if (irs->said.proto == IPPROTO_ESP) {
+			ipsec_alg_sa_esp_hash(irs->ipsp, (caddr_t)espp,
+					      irs->ilen, irs->hash,
+					      AHHMAC_HASHLEN);
 			return IPSEC_RCV_OK;
 		}
 		return IPSEC_RCV_BADPROTO;
@@ -205,28 +202,26 @@ ipsec_rcv_esp_authcalc(struct ipsec_rcv_state *irs,
 	return IPSEC_RCV_OK;
 }
 
-
-enum ipsec_rcv_value
-ipsec_rcv_esp_decrypt(struct ipsec_rcv_state *irs)
+enum ipsec_rcv_value ipsec_rcv_esp_decrypt(struct ipsec_rcv_state *irs)
 {
 #if defined(CONFIG_KLIPS_ALG) || defined(CONFIG_KLIPS_OCF)
 	struct ipsec_sa *ipsp = irs->ipsp;
 #endif
 #ifdef CONFIG_KLIPS_ALG
 	struct esphdr *espp = irs->protostuff.espstuff.espp;
-	__u8 *idat;	/* pointer to content to be decrypted/authenticated */
+	__u8 *idat; /* pointer to content to be decrypted/authenticated */
 	int encaplen = 0;
 	struct sk_buff *skb;
-	struct ipsec_alg_enc *ixt_e=NULL;
+	struct ipsec_alg_enc *ixt_e = NULL;
 #endif
 
 #ifdef CONFIG_KLIPS_OCF
 	if (ipsp->ocf_in_use)
-		return(ipsec_ocf_rcv(irs));
+		return (ipsec_ocf_rcv(irs));
 #endif
 
 #ifdef CONFIG_KLIPS_ALG
-	skb=irs->skb;
+	skb = irs->skb;
 
 	idat = skb_transport_header(skb);
 
@@ -238,10 +233,12 @@ ipsec_rcv_esp_decrypt(struct ipsec_rcv_state *irs)
 	 * Note: UDP-encap code has already moved the
 	 *       skb->data forward to accomodate this.
 	 */
-	encaplen = skb_transport_header(skb) - (skb_network_header(skb) + irs->iphlen);
+	encaplen = skb_transport_header(skb) -
+		   (skb_network_header(skb) + irs->iphlen);
 
-	ixt_e=ipsp->ips_alg_enc;
-	irs->esphlen = ESP_HEADER_LEN + ixt_e->ixt_common.ixt_support.ias_ivlen/8;
+	ixt_e = ipsp->ips_alg_enc;
+	irs->esphlen =
+		ESP_HEADER_LEN + ixt_e->ixt_common.ixt_support.ias_ivlen / 8;
 	KLIPS_PRINT(debug_rcv,
 		    "klips_debug:ipsec_rcv: "
 		    "encalg=%d esphlen=%d\n",
@@ -250,18 +247,16 @@ ipsec_rcv_esp_decrypt(struct ipsec_rcv_state *irs)
 	idat += irs->esphlen;
 	irs->ilen -= irs->esphlen;
 
-	if (ipsec_alg_esp_encrypt(ipsp,
-				  idat, irs->ilen, espp->esp_iv,
+	if (ipsec_alg_esp_encrypt(ipsp, idat, irs->ilen, espp->esp_iv,
 				  IPSEC_ALG_DECRYPT) <= 0) {
-		KLIPS_ERROR(debug_rcv, "klips_error:ipsec_rcv: "
+		KLIPS_ERROR(debug_rcv,
+			    "klips_error:ipsec_rcv: "
 			    "got packet with esplen = %d "
 			    "from %s -- should be on "
 			    "ENC(%d) octet boundary, "
 			    "packet dropped\n",
-			    irs->ilen,
-			    irs->ipsaddr_txt,
-			    ipsp->ips_encalg);
-		if(irs->stats) {
+			    irs->ilen, irs->ipsaddr_txt, ipsp->ips_encalg);
+		if (irs->stats) {
 			irs->stats->rx_errors++;
 		}
 		return IPSEC_RCV_BAD_DECRYPT;
@@ -273,12 +268,10 @@ ipsec_rcv_esp_decrypt(struct ipsec_rcv_state *irs)
 #endif /* CONFIG_KLIPS_ALG */
 }
 
-
-enum ipsec_rcv_value
-ipsec_rcv_esp_post_decrypt(struct ipsec_rcv_state *irs)
+enum ipsec_rcv_value ipsec_rcv_esp_post_decrypt(struct ipsec_rcv_state *irs)
 {
 	struct sk_buff *skb;
-	__u8 *idat;	/* pointer to content to be decrypted/authenticated */
+	__u8 *idat; /* pointer to content to be decrypted/authenticated */
 	struct ipsec_sa *ipsp = irs->ipsp;
 	int pad = 0, padlen;
 	int badpad = 0;
@@ -294,56 +287,55 @@ ipsec_rcv_esp_post_decrypt(struct ipsec_rcv_state *irs)
 	padlen = idat[irs->ilen - 2];
 	pad = padlen + 2 + irs->authlen;
 
-	KLIPS_PRINT(debug_rcv & DB_RX_IPAD,
-		    "klips_debug:ipsec_rcv_esp_post_decrypt: "
-		    "padlen=%d, contents: 0x<offset>: 0x<value> 0x<value> ...\n",
-		    padlen);
+	KLIPS_PRINT(
+		debug_rcv & DB_RX_IPAD,
+		"klips_debug:ipsec_rcv_esp_post_decrypt: "
+		"padlen=%d, contents: 0x<offset>: 0x<value> 0x<value> ...\n",
+		padlen);
 
 	for (i = 1; i <= padlen; i++) {
-		if((i % 16) == 1) {
+		if ((i % 16) == 1) {
 			KLIPS_PRINT(debug_rcv & DB_RX_IPAD,
-				    "klips_debug:           %02x:",
-				    i - 1);
+				    "klips_debug:           %02x:", i - 1);
 		}
-		KLIPS_PRINTMORE(debug_rcv & DB_RX_IPAD,
-				" %02x",
+		KLIPS_PRINTMORE(debug_rcv & DB_RX_IPAD, " %02x",
 				idat[irs->ilen - 2 - padlen + i - 1]);
-		if(i != idat[irs->ilen - 2 - padlen + i - 1]) {
+		if (i != idat[irs->ilen - 2 - padlen + i - 1]) {
 			badpad = 1;
 		}
-		if((i % 16) == 0) {
-			KLIPS_PRINTMORE(debug_rcv & DB_RX_IPAD,
-					"\n");
+		if ((i % 16) == 0) {
+			KLIPS_PRINTMORE(debug_rcv & DB_RX_IPAD, "\n");
 		}
 	}
-	if((i % 16) != 1) {
-		KLIPS_PRINTMORE(debug_rcv & DB_RX_IPAD,
-						"\n");
+	if ((i % 16) != 1) {
+		KLIPS_PRINTMORE(debug_rcv & DB_RX_IPAD, "\n");
 	}
-	if(badpad) {
-		KLIPS_PRINT(debug_rcv & DB_RX_IPAD,
-			    "klips_debug:ipsec_rcv_esp_post_decrypt: "
-			    "warning, decrypted packet from %s has bad padding\n",
-			    irs->ipsaddr_txt);
+	if (badpad) {
+		KLIPS_PRINT(
+			debug_rcv & DB_RX_IPAD,
+			"klips_debug:ipsec_rcv_esp_post_decrypt: "
+			"warning, decrypted packet from %s has bad padding\n",
+			irs->ipsaddr_txt);
 		KLIPS_PRINT(debug_rcv & DB_RX_IPAD,
 			    "klips_debug:ipsec_rcv_esp_post_decrypt: "
 			    "...may be bad decryption -- not dropped\n");
 		ipsp->ips_errs.ips_encpad_errs += 1;
 	}
 
-	KLIPS_PRINT(debug_rcv & DB_RX_IPAD,
-		    "klips_debug:ipsec_rcv_esp_post_decrypt: "
-		    "packet decrypted from %s: next_header = %d, padding = %d\n",
-		    irs->ipsaddr_txt,
-		    irs->next_header,
-		    pad - 2 - irs->authlen);
+	KLIPS_PRINT(
+		debug_rcv & DB_RX_IPAD,
+		"klips_debug:ipsec_rcv_esp_post_decrypt: "
+		"packet decrypted from %s: next_header = %d, padding = %d\n",
+		irs->ipsaddr_txt, irs->next_header, pad - 2 - irs->authlen);
 
 	if (osw_ip_hdr_version(irs) == 6)
 		osw_ip6_hdr(irs)->payload_len =
-			htons(ntohs(osw_ip6_hdr(irs)->payload_len) - (irs->esphlen + pad));
+			htons(ntohs(osw_ip6_hdr(irs)->payload_len) -
+			      (irs->esphlen + pad));
 	else
 		osw_ip4_hdr(irs)->tot_len =
-			htons(ntohs(osw_ip4_hdr(irs)->tot_len) - (irs->esphlen + pad));
+			htons(ntohs(osw_ip4_hdr(irs)->tot_len) -
+			      (irs->esphlen + pad));
 
 	/*
 	 * move the IP header forward by the size of the ESP header, which
@@ -353,16 +345,15 @@ ipsec_rcv_esp_post_decrypt(struct ipsec_rcv_state *irs)
 	 *     mode, and we will be *removing* this IP header.
 	 *
 	 */
-	memmove((void *)(idat - irs->iphlen),
-		(void *)(skb_network_header(skb)), irs->iphlen);
+	memmove((void *)(idat - irs->iphlen), (void *)(skb_network_header(skb)),
+		irs->iphlen);
 
-	ESP_DMP("esp postmove", (idat - irs->iphlen),
-		irs->iphlen + irs->ilen);
+	ESP_DMP("esp postmove", (idat - irs->iphlen), irs->iphlen + irs->ilen);
 
 	/* skb_pull below, will move up by esphlen */
 
 	/* XXX not clear how this can happen, as the message indicates */
-	if(skb->len < irs->esphlen) {
+	if (skb->len < irs->esphlen) {
 		printk(KERN_WARNING
 		       "klips_error:ipsec_rcv_esp_post_decrypt: "
 		       "tried to skb_pull esphlen=%d, %d available.  This should never happen, please report.\n",
@@ -371,7 +362,7 @@ ipsec_rcv_esp_post_decrypt(struct ipsec_rcv_state *irs)
 	}
 	skb_pull(skb, irs->esphlen);
 	skb_set_network_header(skb, ipsec_skb_offset(skb, idat - irs->iphlen));
-	irs->iph = (void *) ip_hdr(skb);
+	irs->iph = (void *)ip_hdr(skb);
 
 	ESP_DMP("esp postpull", skb->data, skb->len);
 
@@ -380,12 +371,13 @@ ipsec_rcv_esp_post_decrypt(struct ipsec_rcv_state *irs)
 		    "klips_debug:ipsec_rcv: "
 		    "trimming to %d.\n",
 		    irs->len - irs->esphlen - pad);
-	if(pad + irs->esphlen <= irs->len) {
+	if (pad + irs->esphlen <= irs->len) {
 		skb_trim(skb, irs->len - irs->esphlen - pad);
 	} else {
-		KLIPS_PRINT(debug_rcv & DB_RX_PKTRX,
-			    "klips_debug:ipsec_rcv: "
-			    "bogus packet, size is zero or negative, dropping.\n");
+		KLIPS_PRINT(
+			debug_rcv & DB_RX_PKTRX,
+			"klips_debug:ipsec_rcv: "
+			"bogus packet, size is zero or negative, dropping.\n");
 		return IPSEC_RCV_DECAPFAIL;
 	}
 
@@ -546,14 +538,13 @@ ipsec_xmit_esp_setup(struct ipsec_xmit_state *ixs)
 }
 #endif
 
-
-struct xform_functions esp_xform_funcs[]={
+struct xform_functions esp_xform_funcs[] = {
 	{
-		protocol:           IPPROTO_ESP,
-		rcv_checks:         ipsec_rcv_esp_checks,
-		rcv_setup_auth:     ipsec_rcv_esp_decrypt_setup,
-		rcv_calc_auth:      ipsec_rcv_esp_authcalc,
-		rcv_decrypt:        ipsec_rcv_esp_decrypt,
+		protocol: IPPROTO_ESP,
+		rcv_checks: ipsec_rcv_esp_checks,
+		rcv_setup_auth: ipsec_rcv_esp_decrypt_setup,
+		rcv_calc_auth: ipsec_rcv_esp_authcalc,
+		rcv_decrypt: ipsec_rcv_esp_decrypt,
 
 #if 0
 		xmit_setup:         ipsec_xmit_esp_setup,
@@ -567,7 +558,7 @@ struct xform_functions esp_xform_funcs[]={
 struct inet_protocol esp_protocol = {
 	.handler = ipsec_rcv,
 	.no_policy = 1,
-	.netns_ok  = 1,                 /* this is a lie until after
+	.netns_ok = 1, /* this is a lie until after
 					 * regression tests for now
 					 */
 };

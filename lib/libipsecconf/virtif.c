@@ -33,86 +33,96 @@
 #include "ipsecconf/files.h"
 #include "ipsecconf/starterlog.h"
 
-#define MIN(a,b) ( ((a)>(b)) ? (b) : (a) )
+#define MIN(a, b) (((a) > (b)) ? (b) : (a))
 
-#define N_IPSEC_IF      4
+#define N_IPSEC_IF 4
 
 struct st_ipsec_if {
-	char name[IFNAMSIZ+1];
-	char phys[IFNAMSIZ+1];
+	char name[IFNAMSIZ + 1];
+	char phys[IFNAMSIZ + 1];
 	int up;
 };
 static struct st_ipsec_if _ipsec_if[N_IPSEC_IF];
 
 extern char *starter_find_physical_iface(int sock, char *iface);
 
-
-static int valid_str(const char * const str, unsigned int * const pn, char ** const pphys)
+static int valid_str(const char *const str, unsigned int *const pn,
+		     char **const pphys)
 {
 	char *pequal = NULL;
 	char *pnum_start = NULL;
-	char numeric[5] = {'\0'};
+	char numeric[5] = { '\0' };
 	char ch = '\0';
 	unsigned int i = 0;
-	if (!str) return 0;
-	if (strlen(str)<8) return 0;
+	if (!str)
+		return 0;
+	if (strlen(str) < 8)
+		return 0;
 
 	/* Check if the string has an = sign */
-	pequal = strchr(str,'=');
-	if (!pequal) return 0;
+	pequal = strchr(str, '=');
+	if (!pequal)
+		return 0;
 
 	/* Where does the device number start ? */
-	pnum_start = strstr(str,"ipsec");
+	pnum_start = strstr(str, "ipsec");
 	if (!pnum_start) {
-		pnum_start = strstr(str,"mast");
-		if (!pnum_start) return 0;
-		else pnum_start += (sizeof("mast") - 1);
-	}
-	else pnum_start += (sizeof("ipsec") - 1);
+		pnum_start = strstr(str, "mast");
+		if (!pnum_start)
+			return 0;
+		else
+			pnum_start += (sizeof("mast") - 1);
+	} else
+		pnum_start += (sizeof("ipsec") - 1);
 
 	/* Is there a device number ? */
-	if (pequal == pnum_start) return 0;
+	if (pequal == pnum_start)
+		return 0;
 
 	/* Is there enough room to store the device number ? */
-	if ((pequal - pnum_start) >= sizeof(numeric)) return 0;
+	if ((pequal - pnum_start) >= sizeof(numeric))
+		return 0;
 
 	/* Copy only digit characters */
-	while ( '=' != (ch = pnum_start[i]) ) {
-		if (ch < '0' || ch > '9') return 0;
+	while ('=' != (ch = pnum_start[i])) {
+		if (ch < '0' || ch > '9')
+			return 0;
 		numeric[i++] = ch;
 	}
 
-	if (pn) *pn = atoi(numeric);
-	if (pphys) *pphys = pequal + 1;
+	if (pn)
+		*pn = atoi(numeric);
+	if (pphys)
+		*pphys = pequal + 1;
 	return 1;
 }
 
-static int _iface_up (int sock,  struct st_ipsec_if *iface, char *phys,
-	unsigned int mtu, int nat_t)
+static int _iface_up(int sock, struct st_ipsec_if *iface, char *phys,
+		     unsigned int mtu, int nat_t)
 {
 	struct ifreq req;
-	struct ipsectunnelconf *shc=(struct ipsectunnelconf *)&req.ifr_data;
+	struct ipsectunnelconf *shc = (struct ipsectunnelconf *)&req.ifr_data;
 	short phys_flags;
 	int ret = 0;
 
 	strncpy(req.ifr_name, phys, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFFLAGS, &req)!=0) {
+	if (ioctl(sock, SIOCGIFFLAGS, &req) != 0) {
 		return ret;
 	}
 	phys_flags = req.ifr_flags;
 
 	strncpy(req.ifr_name, iface->name, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFFLAGS, &req)!=0) {
+	if (ioctl(sock, SIOCGIFFLAGS, &req) != 0) {
 		return ret;
 	}
 
 	if ((!(req.ifr_flags & IFF_UP)) || (!iface->up)) {
-		starter_log(LOG_LEVEL_INFO, "attaching interface %s to %s", iface->name,
-			phys);
+		starter_log(LOG_LEVEL_INFO, "attaching interface %s to %s",
+			    iface->name, phys);
 		ret = 1;
 	}
 
-	if ((*iface->phys) && (strcmp(iface->phys, phys)!=0)) {
+	if ((*iface->phys) && (strcmp(iface->phys, phys) != 0)) {
 		/* tncfg --detach if phys has changed */
 		strncpy(req.ifr_name, iface->name, IFNAMSIZ);
 		ioctl(sock, IPSEC_DEL_DEV, &req);
@@ -126,42 +136,40 @@ static int _iface_up (int sock,  struct st_ipsec_if *iface, char *phys,
 
 	/* set ipsec addr = phys addr */
 	strncpy(req.ifr_name, phys, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFADDR, &req)==0) {
+	if (ioctl(sock, SIOCGIFADDR, &req) == 0) {
 		strncpy(req.ifr_name, iface->name, IFNAMSIZ);
 		ioctl(sock, SIOCSIFADDR, &req);
 	}
 
 	/* set ipsec mask = phys mask */
 	strncpy(req.ifr_name, phys, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFNETMASK, &req)==0) {
+	if (ioctl(sock, SIOCGIFNETMASK, &req) == 0) {
 		strncpy(req.ifr_name, iface->name, IFNAMSIZ);
 		ioctl(sock, SIOCSIFNETMASK, &req);
 	}
 
 	/* set other flags & addr */
 	strncpy(req.ifr_name, iface->name, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFFLAGS, &req)==0) {
+	if (ioctl(sock, SIOCGIFFLAGS, &req) == 0) {
 		if (phys_flags & IFF_POINTOPOINT) {
 			req.ifr_flags |= IFF_POINTOPOINT;
 			req.ifr_flags &= ~IFF_BROADCAST;
 			ioctl(sock, SIOCSIFFLAGS, &req);
 			strncpy(req.ifr_name, phys, IFNAMSIZ);
-			if (ioctl(sock, SIOCGIFDSTADDR, &req)==0) {
+			if (ioctl(sock, SIOCGIFDSTADDR, &req) == 0) {
 				strncpy(req.ifr_name, iface->name, IFNAMSIZ);
 				ioctl(sock, SIOCSIFDSTADDR, &req);
 			}
-		}
-		else if (phys_flags & IFF_BROADCAST) {
+		} else if (phys_flags & IFF_BROADCAST) {
 			req.ifr_flags &= ~IFF_POINTOPOINT;
 			req.ifr_flags |= IFF_BROADCAST;
 			ioctl(sock, SIOCSIFFLAGS, &req);
 			strncpy(req.ifr_name, phys, IFNAMSIZ);
-			if (ioctl(sock, SIOCGIFBRDADDR, &req)==0) {
+			if (ioctl(sock, SIOCGIFBRDADDR, &req) == 0) {
 				strncpy(req.ifr_name, iface->name, IFNAMSIZ);
 				ioctl(sock, SIOCSIFBRDADDR, &req);
 			}
-		}
-		else {
+		} else {
 			req.ifr_flags &= ~IFF_POINTOPOINT;
 			req.ifr_flags &= ~IFF_BROADCAST;
 			ioctl(sock, SIOCSIFFLAGS, &req);
@@ -174,11 +182,12 @@ static int _iface_up (int sock,  struct st_ipsec_if *iface, char *phys,
 	 * ESP overhead : 10+16+7+2+12=57 -> 60 by security
 	 * NAT-T overhead : 20
 	 */
-	if (mtu==0) {
+	if (mtu == 0) {
 		strncpy(req.ifr_name, phys, IFNAMSIZ);
 		ioctl(sock, SIOCGIFMTU, &req);
 		mtu = req.ifr_mtu - 60;
-		if (nat_t) mtu -= 20;
+		if (nat_t)
+			mtu -= 20;
 	}
 	/* set MTU */
 	if (mtu) {
@@ -189,7 +198,7 @@ static int _iface_up (int sock,  struct st_ipsec_if *iface, char *phys,
 
 	/* ipsec interface UP */
 	strncpy(req.ifr_name, iface->name, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFFLAGS, &req)==0) {
+	if (ioctl(sock, SIOCGIFFLAGS, &req) == 0) {
 		req.ifr_flags |= IFF_UP;
 		ioctl(sock, SIOCSIFFLAGS, &req);
 	}
@@ -199,7 +208,7 @@ static int _iface_up (int sock,  struct st_ipsec_if *iface, char *phys,
 	return ret;
 }
 
-static int _iface_down (int sock, struct st_ipsec_if *iface)
+static int _iface_down(int sock, struct st_ipsec_if *iface)
 {
 	struct ifreq req;
 	int ret = 0;
@@ -207,13 +216,13 @@ static int _iface_down (int sock, struct st_ipsec_if *iface)
 	iface->up = 0;
 
 	strncpy(req.ifr_name, iface->name, IFNAMSIZ);
-	if (ioctl(sock, SIOCGIFFLAGS, &req)!=0) {
+	if (ioctl(sock, SIOCGIFFLAGS, &req) != 0) {
 		return ret;
 	}
 
 	if (req.ifr_flags & IFF_UP) {
 		starter_log(LOG_LEVEL_INFO, "shutting down interface %s/%s",
-			iface->name, iface->phys);
+			    iface->name, iface->phys);
 		req.ifr_flags &= ~IFF_UP;
 		ioctl(sock, SIOCSIFFLAGS, &req);
 		ret = 1;
@@ -232,33 +241,36 @@ static int _iface_down (int sock, struct st_ipsec_if *iface)
 	return ret;
 }
 
-void starter_ifaces_init (void)
+void starter_ifaces_init(void)
 {
 	int i;
 
 	memset(_ipsec_if, 0, sizeof(_ipsec_if));
-	for (i=0; i<N_IPSEC_IF; i++) {
+	for (i = 0; i < N_IPSEC_IF; i++) {
 		snprintf(_ipsec_if[i].name, IFNAMSIZ, "ipsec%d", i);
 	}
 }
 
-void starter_ifaces_clear (void)
+void starter_ifaces_clear(void)
 {
 	int sock;
 	unsigned int i;
 
 	sock = safe_socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0) return;
+	if (sock < 0)
+		return;
 
-	for (i=0; i<N_IPSEC_IF; i++) {
-		_iface_down (sock, &(_ipsec_if[i]));
+	for (i = 0; i < N_IPSEC_IF; i++) {
+		_iface_down(sock, &(_ipsec_if[i]));
 	}
-	if(close(sock)){
-		starter_log(LOG_LEVEL_ERR,"starter_ifaces_clear socket close() failed: %s", strerror(errno));
+	if (close(sock)) {
+		starter_log(LOG_LEVEL_ERR,
+			    "starter_ifaces_clear socket close() failed: %s",
+			    strerror(errno));
 	}
 }
 
-int starter_ifaces_load (char **ifaces, unsigned int omtu, int nat_t)
+int starter_ifaces_load(char **ifaces, unsigned int omtu, int nat_t)
 {
 	char *tmp_phys, *phys;
 	unsigned int n;
@@ -270,45 +282,50 @@ int starter_ifaces_load (char **ifaces, unsigned int omtu, int nat_t)
 	starter_log(LOG_LEVEL_DEBUG, "starter_ifaces_load()");
 
 	sock = safe_socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0) return -1;
+	if (sock < 0)
+		return -1;
 
-	for (j=0; j<N_IPSEC_IF; j++) {
+	for (j = 0; j < N_IPSEC_IF; j++) {
 		found = 0;
-		for (i=ifaces; i && *i; i++) {
-			if ((valid_str(*i, &n, &tmp_phys)) && (tmp_phys)
-			&& (n<N_IPSEC_IF)) {
-				if (n==j) {
+		for (i = ifaces; i && *i; i++) {
+			if ((valid_str(*i, &n, &tmp_phys)) && (tmp_phys) &&
+			    (n < N_IPSEC_IF)) {
+				if (n == j) {
 					if (found) {
-						starter_log(LOG_LEVEL_ERR,
+						starter_log(
+							LOG_LEVEL_ERR,
 							"ignoring duplicate entry for interface ipsec%d",
 							j);
-					}
-					else {
+					} else {
 						found++;
-						phys = starter_find_physical_iface(sock, tmp_phys);
+						phys = starter_find_physical_iface(
+							sock, tmp_phys);
 						if (phys) {
-							ret += _iface_up (sock, &(_ipsec_if[n]), phys,
-								omtu, nat_t);
-						}
-						else {
-							ret += _iface_down (sock, &(_ipsec_if[n]));
+							ret += _iface_up(
+								sock,
+								&(_ipsec_if[n]),
+								phys, omtu,
+								nat_t);
+						} else {
+							ret += _iface_down(
+								sock,
+								&(_ipsec_if[n]));
 						}
 					}
 				}
-			}
-			else if (j==0) {
+			} else if (j == 0) {
 				/**
 				 * Only log in the first loop
 				 */
-				starter_log(LOG_LEVEL_ERR, "ignoring invalid interface '%s'",
-					*i);
+				starter_log(LOG_LEVEL_ERR,
+					    "ignoring invalid interface '%s'",
+					    *i);
 			}
 		}
 		if (!found)
-			ret += _iface_down (sock, &(_ipsec_if[j]));
+			ret += _iface_down(sock, &(_ipsec_if[j]));
 	}
 
 	close(sock);
 	return ret; /* = number of changes - 'whack --listen' if > 0 */
 }
-

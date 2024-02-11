@@ -15,20 +15,21 @@
  */
 
 #ifdef __KERNEL__
-# include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
-#  include <linux/config.h>
-# endif
-# define __NO_VERSION__
-# include <linux/module.h>
-# if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,26)
-#  include <linux/moduleparam.h>
-# endif
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
+#include <linux/config.h>
+#endif
+#define __NO_VERSION__
+#include <linux/module.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0) && \
+	LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 26)
+#include <linux/moduleparam.h>
+#endif
 #endif
 
 #include "openswan.h"
 
-#define	V	"@IPSECVERSION@"	/* substituted in by Makefile */
+#define V "@IPSECVERSION@" /* substituted in by Makefile */
 static const char openswan_number[] = V;
 static const char openswan_string[] = "Openswan " V;
 
@@ -42,8 +43,7 @@ MODULE_VERSION(V);
 /*
  - ipsec_version_code - return IPsec version number/code, as string
  */
-const char *
-ipsec_version_code()
+const char *ipsec_version_code()
 {
 	return openswan_number;
 }
@@ -51,9 +51,7 @@ ipsec_version_code()
 /*
  - ipsec_version_string - return full version string
  */
-const char *
-ipsec_version_string()
+const char *ipsec_version_string()
 {
 	return openswan_string;
 }
-

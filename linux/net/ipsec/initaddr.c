@@ -16,8 +16,7 @@
  */
 #include "openswan.h"
 
-err_t
-add_port(af, addr, port)
+err_t add_port(af, addr, port)
 int af;
 ip_address *addr;
 unsigned short port;
@@ -39,11 +38,10 @@ unsigned short port;
 /*
  - initaddr - initialize ip_address from bytes
  */
-err_t				/* NULL for success, else string literal */
-initaddr(src, srclen, af, dst)
-const unsigned char *src;
+err_t /* NULL for success, else string literal */
+	initaddr(src, srclen, af, dst) const unsigned char *src;
 size_t srclen;
-int af;				/* address family */
+int af; /* address family */
 ip_address *dst;
 {
 	switch (af) {
@@ -76,7 +74,7 @@ ip_address *dst;
 		bzero(&dst->u.v6, sizeof(dst->u.v6));
 #endif
 		dst->u.v6.sin6_family = af;
-		dst->u.v6.sin6_flowinfo = 0;		/* unused */
+		dst->u.v6.sin6_flowinfo = 0; /* unused */
 		dst->u.v6.sin6_port = 0;
 #ifdef NEED_SIN_LEN
 		dst->u.v6.sin6_len = sizeof(struct sockaddr_in6);

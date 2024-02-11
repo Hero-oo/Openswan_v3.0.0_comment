@@ -16,28 +16,27 @@
 
 // Commands supported
 
-
 // "LowNumberedPorts" asks the helper tool to open some low-numbered ports on our behalf.
 
-#define kConnectCommand		"Connect"
+#define kConnectCommand "Connect"
 
 // authorization right name
 
-#define	kConnectRightName	"com.xelerance.openswan.Connect"
+#define kConnectRightName "com.xelerance.openswan.Connect"
 
 // request keys
 
-#define kSampleLowNumberedPortsForceFailure	"ForceFailure"              // CFBoolean (optional, presence implies true)
+#define kSampleLowNumberedPortsForceFailure \
+	"ForceFailure" // CFBoolean (optional, presence implies true)
 
-// response keys (none, descriptors for the ports are in kBASDescriptorArrayKey, 
+// response keys (none, descriptors for the ports are in kBASDescriptorArrayKey,
 // the number of descriptors should be kNumberOfLowNumberedPorts)
 
-#define kNumberOfLowNumberedPorts			3
+#define kNumberOfLowNumberedPorts 3
 
-// The kSampleCommandSet is used by both the app and the tool to communicate the set of 
+// The kSampleCommandSet is used by both the app and the tool to communicate the set of
 // supported commands to the BetterAuthorizationSampleLib module.
 
 extern const BASCommandSpec kCommandSet[];
 
 #endif
-

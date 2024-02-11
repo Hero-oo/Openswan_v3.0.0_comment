@@ -25,19 +25,19 @@
 #include "ipsecconf/oeconns.h"
 
 enum oe_conn_type {
-	OE_PACKETDEFAULT=1,
-	OE_CLEAR=2,
-	OE_CLEAR_OR_PRIVATE=3,
-	OE_PRIVATE_OR_CLEAR=4,
-	OE_PRIVATE=5,
-	OE_BLOCK=6,
-	OE_MAX=7
+	OE_PACKETDEFAULT = 1,
+	OE_CLEAR = 2,
+	OE_CLEAR_OR_PRIVATE = 3,
+	OE_PRIVATE_OR_CLEAR = 4,
+	OE_PRIVATE = 5,
+	OE_BLOCK = 6,
+	OE_MAX = 7
 };
 
 struct oe_conn {
-	enum oe_conn_type    oe_ct;
-	char                *oe_cn;
-	struct starter_conn  oe_sc;
+	enum oe_conn_type oe_ct;
+	char *oe_cn;
+	struct starter_conn oe_sc;
 };
 
 /*
@@ -176,8 +176,6 @@ struct oe_conn oe_clear = {
 	},
 };
 
-
-
 /*
  *		if (jam("clear-or-private", "route")) {
  *			output(o_parm, "type", "passthrough")
@@ -251,7 +249,6 @@ struct oe_conn oe_clear_or_private = {
 		.right.rsakey1_type = PUBKEY_DNSONDEMAND,
 	},
 };
-
 
 /*
  *		if (jam("private-or-clear", "route")) {
@@ -468,19 +465,15 @@ struct oe_conn oe_block = {
 	},
 };
 
-struct oe_conn *implicit_conns[]={
-	&oe_packet_default,
-	&oe_clear,
-	&oe_clear_or_private,
-	&oe_private_or_clear,
-	&oe_private,
-	&oe_block,
-	NULL
-};
+struct oe_conn *implicit_conns[] = { &oe_packet_default,
+				     &oe_clear,
+				     &oe_clear_or_private,
+				     &oe_private_or_clear,
+				     &oe_private,
+				     &oe_block,
+				     NULL };
 
-
-void add_any_oeconns(struct starter_config *cfg,
-		     struct config_parsed *cfgp)
+void add_any_oeconns(struct starter_config *cfg, struct config_parsed *cfgp)
 {
 	bool found_conns[OE_MAX];
 	struct section_list *sconn;
@@ -488,23 +481,26 @@ void add_any_oeconns(struct starter_config *cfg,
 	err_t perr;
 	int i;
 
-	for(i=0;i<OE_MAX;i++) found_conns[i]=FALSE;
+	for (i = 0; i < OE_MAX; i++)
+		found_conns[i] = FALSE;
 
 	/* look for the conn. */
-	for(sconn = cfgp->sections.tqh_first; sconn != NULL; sconn = sconn->link.tqe_next)
+	for (sconn = cfgp->sections.tqh_first; sconn != NULL;
+	     sconn = sconn->link.tqe_next)
 
 	{
-	    for(i=0, oc=implicit_conns; *oc!=NULL; oc++, i++) {
-		if(strcasecmp((*oc)->oe_cn, sconn->name)==0) {
-		    starter_log(LOG_LEVEL_DEBUG, "found non-implicit conn: %s\n", sconn->name);
-		    found_conns[i]=TRUE;
+		for (i = 0, oc = implicit_conns; *oc != NULL; oc++, i++) {
+			if (strcasecmp((*oc)->oe_cn, sconn->name) == 0) {
+				starter_log(LOG_LEVEL_DEBUG,
+					    "found non-implicit conn: %s\n",
+					    sconn->name);
+				found_conns[i] = TRUE;
+			}
 		}
-	    }
 	}
 
-
-	for(i=0, oc=implicit_conns; *oc!=NULL; oc++, i++) {
-		if(found_conns[i]==FALSE) {
+	for (i = 0, oc = implicit_conns; *oc != NULL; oc++, i++) {
+		if (found_conns[i] == FALSE) {
 			struct starter_conn *conn;
 			const struct starter_conn *tconn;
 
@@ -514,8 +510,9 @@ void add_any_oeconns(struct starter_config *cfg,
 				    (*oc)->oe_cn);
 
 			conn = alloc_add_conn(cfg, (*oc)->oe_cn, &perr);
-			if(conn == NULL) {
-				starter_log(LOG_LEVEL_INFO, "Can not create conn %s:\n",
+			if (conn == NULL) {
+				starter_log(LOG_LEVEL_INFO,
+					    "Can not create conn %s:\n",
 					    (*oc)->oe_cn, perr);
 				continue;
 			}
@@ -528,19 +525,21 @@ void add_any_oeconns(struct starter_config *cfg,
 			}
 #endif
 
-			memcpy(&conn->strings, &tconn->strings, sizeof(tconn->strings));
-			memcpy(&conn->options, &tconn->options, sizeof(tconn->options));
-			memcpy(&conn->strings_set, &tconn->strings_set, sizeof(tconn->strings_set));
-			memcpy(&conn->options_set, &tconn->options_set, sizeof(tconn->options_set));
+			memcpy(&conn->strings, &tconn->strings,
+			       sizeof(tconn->strings));
+			memcpy(&conn->options, &tconn->options,
+			       sizeof(tconn->options));
+			memcpy(&conn->strings_set, &tconn->strings_set,
+			       sizeof(tconn->strings_set));
+			memcpy(&conn->options_set, &tconn->options_set,
+			       sizeof(tconn->options_set));
 			conn->left = tconn->left;
-			conn->right= tconn->right;
-			conn->esp  = tconn->esp;
-			conn->ike  = tconn->ike;
+			conn->right = tconn->right;
+			conn->esp = tconn->esp;
+			conn->ike = tconn->ike;
 			conn->desired_state = tconn->desired_state;
 			conn->policy = tconn->policy;
 			conn->state = STATE_LOADED;
 		}
 	}
 }
-
-

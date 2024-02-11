@@ -46,7 +46,7 @@
 #include "defs.h"
 #include "rnd.h"
 #include "id.h"
-#include "pluto/connections.h"        /* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "state.h"
 #include "timer.h"
 #include "kernel.h"
@@ -58,7 +58,7 @@
 #include "x509.h"
 #include "log.h"
 #include "pluto/server.h"
-#include "whack.h"      /* for RC_LOG_SERIOUS */
+#include "whack.h" /* for RC_LOG_SERIOUS */
 #include "keys.h"
 
 #include <ipsec_saref.h>
@@ -68,123 +68,126 @@ const struct kernel_ops *kernel_ops;
 /* keep track of kernel version */
 char kversion[256];
 
-void
-init_kernel(void)
+void init_kernel(void)
 {
-    struct utsname un;
+	struct utsname un;
 #if defined(NETKEY_SUPPORT) || defined(KLIPS) || defined(KLIPS_MAST)
-    struct stat buf;
+	struct stat buf;
 #endif
 
-    /* get kernel version */
-    uname(&un);
-    strncpy(kversion, un.release, sizeof(kversion));
+	/* get kernel version */
+	uname(&un);
+	strncpy(kversion, un.release, sizeof(kversion));
 
-    switch(kern_interface) {
-    case AUTO_PICK:
+	switch (kern_interface) {
+	case AUTO_PICK:
 #if defined(NETKEY_SUPPORT) || defined(KLIPS) || defined(KLIPS_MAST)
-	/* If we detect NETKEY and KLIPS, we can't continue */
-	if(stat("/proc/net/pfkey", &buf) == 0 &&
-	   stat("/proc/net/ipsec/spi/all", &buf) == 0) {
-	    /* we don't die, we just log and go to sleep */
-	    openswan_log("Can not run with both NETKEY and KLIPS in the kernel");
-	    openswan_log("Please check your kernel configuration, or specify a stack");
-	    openswan_log("using protostack={klips,netkey,mast}");
-	    exit_pluto(0);
-	}
+		/* If we detect NETKEY and KLIPS, we can't continue */
+		if (stat("/proc/net/pfkey", &buf) == 0 &&
+		    stat("/proc/net/ipsec/spi/all", &buf) == 0) {
+			/* we don't die, we just log and go to sleep */
+			openswan_log(
+				"Can not run with both NETKEY and KLIPS in the kernel");
+			openswan_log(
+				"Please check your kernel configuration, or specify a stack");
+			openswan_log("using protostack={klips,netkey,mast}");
+			exit_pluto(0);
+		}
 #endif
-	openswan_log("Kernel interface auto-pick");
-        FALL_THROUGH;   /* FALL THROUGH */
-
+		openswan_log("Kernel interface auto-pick");
+		FALL_THROUGH; /* FALL THROUGH */
 
 #if defined(NETKEY_SUPPORT)
-    case USE_NETKEY:
-	if (stat("/proc/net/pfkey", &buf) == 0) {
-	    kern_interface = USE_NETKEY;
-	    openswan_log("Using Linux XFRM/NETKEY IPsec interface code on %s"
-			 , kversion);
-	    kernel_ops = &netkey_kernel_ops;
-	    break;
-	} else
-	    openswan_log("No Kernel XFRM/NETKEY interface detected");
-        FALL_THROUGH;   /* FALL THROUGH */
+	case USE_NETKEY:
+		if (stat("/proc/net/pfkey", &buf) == 0) {
+			kern_interface = USE_NETKEY;
+			openswan_log(
+				"Using Linux XFRM/NETKEY IPsec interface code on %s",
+				kversion);
+			kernel_ops = &netkey_kernel_ops;
+			break;
+		} else
+			openswan_log(
+				"No Kernel XFRM/NETKEY interface detected");
+		FALL_THROUGH; /* FALL THROUGH */
 #endif
 
 #if defined(KLIPS)
-    case USE_KLIPS:
-	if (stat("/proc/net/ipsec/spi/all", &buf) == 0) {
-	    kern_interface = USE_KLIPS;
-	    openswan_log("Using KLIPS IPsec interface code on %s"
-			 , kversion);
-	    kernel_ops = &klips_kernel_ops;
-	    break;
-	} else
-	    openswan_log("No Kernel KLIPS interface detected");
-        FALL_THROUGH;   /* FALL THROUGH */
+	case USE_KLIPS:
+		if (stat("/proc/net/ipsec/spi/all", &buf) == 0) {
+			kern_interface = USE_KLIPS;
+			openswan_log("Using KLIPS IPsec interface code on %s",
+				     kversion);
+			kernel_ops = &klips_kernel_ops;
+			break;
+		} else
+			openswan_log("No Kernel KLIPS interface detected");
+		FALL_THROUGH; /* FALL THROUGH */
 #endif
 
 #if defined(KLIPS_MAST)
-    case USE_MASTKLIPS:
-        if (stat("/proc/sys/net/ipsec/debug_mast", &buf) == 0) {
-	    kern_interface = USE_MASTKLIPS;
-	    openswan_log("Using KLIPSng (mast) IPsec interface code on %s"
-			 , kversion);
-	    kernel_ops = &mast_kernel_ops;
-	    break;
-	} else
-	    openswan_log("No Kernel MASTKLIPS interface detected");
-        FALL_THROUGH;   /* FALL THROUGH */
+	case USE_MASTKLIPS:
+		if (stat("/proc/sys/net/ipsec/debug_mast", &buf) == 0) {
+			kern_interface = USE_MASTKLIPS;
+			openswan_log(
+				"Using KLIPSng (mast) IPsec interface code on %s",
+				kversion);
+			kernel_ops = &mast_kernel_ops;
+			break;
+		} else
+			openswan_log("No Kernel MASTKLIPS interface detected");
+		FALL_THROUGH; /* FALL THROUGH */
 #endif
 
 #if defined(BSD_KAME)
-    case USE_BSDKAME:
-	kern_interface = USE_BSDKAME;
-	openswan_log("Using BSD/KAME IPsec interface code on %s"
-			, kversion);
-	kernel_ops = &bsdkame_kernel_ops;
-	break;
+	case USE_BSDKAME:
+		kern_interface = USE_BSDKAME;
+		openswan_log("Using BSD/KAME IPsec interface code on %s",
+			     kversion);
+		kernel_ops = &bsdkame_kernel_ops;
+		break;
 #endif
 
 #if defined(WIN32) && defined(WIN32_NATIVE)
-    case USE_WIN32_NATIVE:
-	kern_interface = USE_WIN32_NATIVE;
-	openswan_log("Using Win2K native IPsec interface code on %s"
-		     , kversion);
-	kernel_ops = &win2k_kernel_ops;
-	break;
+	case USE_WIN32_NATIVE:
+		kern_interface = USE_WIN32_NATIVE;
+		openswan_log("Using Win2K native IPsec interface code on %s",
+			     kversion);
+		kernel_ops = &win2k_kernel_ops;
+		break;
 #endif
 
-    case NO_KERNEL:
-	kern_interface = NO_KERNEL;
-	openswan_log("Using 'no_kernel' interface code on %s"
-		     , kversion);
-	kernel_ops = &noklips_kernel_ops;
-	break;
+	case NO_KERNEL:
+		kern_interface = NO_KERNEL;
+		openswan_log("Using 'no_kernel' interface code on %s",
+			     kversion);
+		kernel_ops = &noklips_kernel_ops;
+		break;
 
-    default:
-	if(kern_interface == AUTO_PICK)
-		openswan_log("kernel interface auto-pick failed - no suitable kernel stack found");
-	else
-		openswan_log("kernel interface '%s' not available"
-		     , enum_name(&kern_interface_names, kern_interface));
-	exit_pluto(5);
-    }
+	default:
+		if (kern_interface == AUTO_PICK)
+			openswan_log(
+				"kernel interface auto-pick failed - no suitable kernel stack found");
+		else
+			openswan_log("kernel interface '%s' not available",
+				     enum_name(&kern_interface_names,
+					       kern_interface));
+		exit_pluto(5);
+	}
 
-    if (kernel_ops->init)
-    {
-        kernel_ops->init();
-    }
+	if (kernel_ops->init) {
+		kernel_ops->init();
+	}
 
-    /* register SA types that we can negotiate */
-    can_do_IPcomp = FALSE;  /* until we get a response from KLIPS */
-    if (kernel_ops->pfkey_register)
-    {
-	kernel_ops->pfkey_register();
-    }
+	/* register SA types that we can negotiate */
+	can_do_IPcomp = FALSE; /* until we get a response from KLIPS */
+	if (kernel_ops->pfkey_register) {
+		kernel_ops->pfkey_register();
+	}
 
-    if (!kernel_ops->policy_lifetime || kernel_ops->scan_shunts) {
-        event_schedule(EVENT_SHUNT_SCAN, SHUNT_SCAN_INTERVAL, NULL);
-    }
+	if (!kernel_ops->policy_lifetime || kernel_ops->scan_shunts) {
+		event_schedule(EVENT_SHUNT_SCAN, SHUNT_SCAN_INTERVAL, NULL);
+	}
 }
 
 /*

@@ -29,19 +29,14 @@
  */
 
 const BASCommandSpec kCommandSet[] = {
-{	
-kConnectCommand,						// commandName
-kConnectRightName,						// rightName
-"default",                              // rightDefaultRule    -- by default, you have to have admin credentials (see the "default" rule in the authorization policy database, currently "/etc/authorization")
-"ConnectPrompt",						// rightDescriptionKey -- key for custom prompt in "SampleAuthorizationPrompts.strings
-NULL                                    // userData
-},
+	{
+		kConnectCommand, // commandName
+		kConnectRightName, // rightName
+		"default", // rightDefaultRule    -- by default, you have to have admin credentials (see the "default" rule in the authorization policy database, currently "/etc/authorization")
+		"ConnectPrompt", // rightDescriptionKey -- key for custom prompt in "SampleAuthorizationPrompts.strings
+		NULL // userData
+	},
 
-{	
-NULL,                                   // the array is null terminated
-NULL, 
-NULL, 
-NULL,
-NULL
-}
+	{ NULL, // the array is null terminated
+	  NULL, NULL, NULL, NULL }
 };

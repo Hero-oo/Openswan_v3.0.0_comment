@@ -97,8 +97,7 @@ static int soft_meth_loaded = 0;
 /*
  * Convert a BIGNUM to the representation that /dev/crypto needs.
  */
-static int
-bn2crparam(const BIGNUM *a, struct crparam *crp)
+static int bn2crparam(const BIGNUM *a, struct crparam *crp)
 {
 	int i, j, k;
 	ssize_t bytes, bits;
@@ -130,8 +129,7 @@ bn2crparam(const BIGNUM *a, struct crparam *crp)
 }
 
 /* Convert a /dev/crypto parameter to a BIGNUM */
-static int
-crparam2bn(struct crparam *crp, BIGNUM *a)
+static int crparam2bn(struct crparam *crp, BIGNUM *a)
 {
 	u_int8_t *pd;
 	int i, bytes;
@@ -141,7 +139,7 @@ crparam2bn(struct crparam *crp, BIGNUM *a)
 	if (bytes == 0)
 		return (-1);
 
-	if ((pd = (u_int8_t *) malloc(bytes)) == NULL)
+	if ((pd = (u_int8_t *)malloc(bytes)) == NULL)
 		return (-1);
 
 	for (i = 0; i < bytes; i++)
@@ -153,8 +151,7 @@ crparam2bn(struct crparam *crp, BIGNUM *a)
 	return (0);
 }
 
-static void
-zapparams(struct crypt_kop *kop)
+static void zapparams(struct crypt_kop *kop)
 {
 	int i;
 
@@ -167,8 +164,7 @@ zapparams(struct crypt_kop *kop)
 }
 
 /* Convert from MP_INT to BIGNUM */
-static int
-mp2bn(const MP_INT *mp, BIGNUM *a)
+static int mp2bn(const MP_INT *mp, BIGNUM *a)
 {
 	a->dmax = mp->_mp_alloc;
 	if (mp->_mp_size < 0) {
@@ -183,8 +179,7 @@ mp2bn(const MP_INT *mp, BIGNUM *a)
 }
 
 /* Convert from BIGNUM to MP_INT */
-int
-bn2mp(const BIGNUM *a, MP_INT *mp)
+int bn2mp(const BIGNUM *a, MP_INT *mp)
 {
 	mp->_mp_alloc = a->dmax;
 	if (a->neg == 1) {
@@ -200,8 +195,7 @@ bn2mp(const BIGNUM *a, MP_INT *mp)
 /*
  * Return a fd if /dev/crypto seems usable, 0 otherwise.
  */
-static int
-open_dev_crypto(void)
+static int open_dev_crypto(void)
 {
 	static int fd = -1;
 
@@ -221,8 +215,7 @@ open_dev_crypto(void)
 /*
  * Get a /dev/crypto file descriptor
  */
-static int
-get_dev_crypto(void)
+static int get_dev_crypto(void)
 {
 	int fd, retfd;
 
@@ -247,19 +240,21 @@ get_dev_crypto(void)
 /*
  * Perform the ioctl 
  */
-static int
-cryptodev_asym(struct crypt_kop *kop, int rlen, BIGNUM *r, int slen, BIGNUM *s)
+static int cryptodev_asym(struct crypt_kop *kop, int rlen, BIGNUM *r, int slen,
+			  BIGNUM *s)
 {
 	int ret = -1;
 
 	if (r) {
-		kop->crk_param[kop->crk_iparams].crp_p = calloc(rlen, sizeof(char));
+		kop->crk_param[kop->crk_iparams].crp_p =
+			calloc(rlen, sizeof(char));
 		kop->crk_param[kop->crk_iparams].crp_nbits = rlen * 8;
 		kop->crk_oparams++;
 	}
 	if (s) {
-		kop->crk_param[kop->crk_iparams+1].crp_p = calloc(slen, sizeof(char));
-		kop->crk_param[kop->crk_iparams+1].crp_nbits = slen * 8;
+		kop->crk_param[kop->crk_iparams + 1].crp_p =
+			calloc(slen, sizeof(char));
+		kop->crk_param[kop->crk_iparams + 1].crp_nbits = slen * 8;
 		kop->crk_oparams++;
 	}
 
@@ -267,7 +262,7 @@ cryptodev_asym(struct crypt_kop *kop, int rlen, BIGNUM *r, int slen, BIGNUM *s)
 		if (r)
 			crparam2bn(&kop->crk_param[kop->crk_iparams], r);
 		if (s)
-			crparam2bn(&kop->crk_param[kop->crk_iparams+1], s);
+			crparam2bn(&kop->crk_param[kop->crk_iparams + 1], s);
 		ret = 0;
 	}
 
@@ -277,16 +272,14 @@ cryptodev_asym(struct crypt_kop *kop, int rlen, BIGNUM *r, int slen, BIGNUM *s)
 /*
  * Do the modular exponentiation without Chinese Remainder Theorem in hardware
  */
-static void
-cryptodev_rsa_mod_exp_crt(
-	mpz_t dst, const mpz_t src,
-	const mpz_t p, const mpz_t dP, const mpz_t q, const mpz_t dQ,
-	const mpz_t qInv)
+static void cryptodev_rsa_mod_exp_crt(mpz_t dst, const mpz_t src, const mpz_t p,
+				      const mpz_t dP, const mpz_t q,
+				      const mpz_t dQ, const mpz_t qInv)
 {
 	struct crypt_kop kop;
 	BIGNUM D, S, P, DP, Q, DQ, QI;
 	BN_CTX *ctx;
-	
+
 	memset(&kop, 0, sizeof kop);
 	kop.crk_op = CRK_MOD_EXP;
 
@@ -316,7 +309,8 @@ cryptodev_rsa_mod_exp_crt(
 	kop.crk_iparams = 6;
 
 	if (cryptodev_asym(&kop, BN_num_bytes(&D), &D, 0, NULL) == -1) {
-		openswan_log("OCF CRK_MOD_EXP_CRT failed %d, using SW\n", errno);
+		openswan_log("OCF CRK_MOD_EXP_CRT failed %d, using SW\n",
+			     errno);
 		goto err;
 	}
 
@@ -334,14 +328,13 @@ err:
 /*
  * Compute mod exp in hardware
  */
-static void
-cryptodev_mod_exp(mpz_t dst, const mpz_t mp_g, const mpz_t secret,
-	const mpz_t modulus)
+static void cryptodev_mod_exp(mpz_t dst, const mpz_t mp_g, const mpz_t secret,
+			      const mpz_t modulus)
 {
 	struct crypt_kop kop;
 	BIGNUM r0, a, p, m;
 	BN_CTX *ctx;
-	
+
 	memset(&kop, 0, sizeof kop);
 	kop.crk_op = CRK_MOD_EXP;
 
@@ -350,7 +343,6 @@ cryptodev_mod_exp(mpz_t dst, const mpz_t mp_g, const mpz_t secret,
 	mp2bn(secret, &p);
 	mp2bn(modulus, &m);
 	mp2bn(dst, &r0);
-
 
 	/* inputs: a^p % m */
 	if (bn2crparam(&a, &kop.crk_param[0]))
@@ -382,28 +374,22 @@ err:
 /* DES routines */
 /****************************************************************************/
 
-static int
-cryptodev_des_set_key(des_cblock (*key), des_key_schedule schedule)
+static int cryptodev_des_set_key(des_cblock(*key), des_key_schedule schedule)
 {
 	if (cryptodev_fd != -1) {
 		memcpy(schedule, key, sizeof(*key));
-		return(0);
+		return (0);
 	}
-	return(-1);
+	return (-1);
 }
 
 /****************************************************************************/
 
-static void
-cryptodev_des_cryptodev_internal(
-	u_int32_t cipher,
-	char (*key),
-	u_int32_t operation,
-	des_cblock (*src),
-	des_cblock (*dst),
-	u_int32_t len,
-	des_cblock (*iv),
-	u_int32_t iv_len)
+static void cryptodev_des_cryptodev_internal(u_int32_t cipher, char(*key),
+					     u_int32_t operation,
+					     des_cblock(*src), des_cblock(*dst),
+					     u_int32_t len, des_cblock(*iv),
+					     u_int32_t iv_len)
 {
 	struct session_op sop;
 	struct crypt_op cop;
@@ -418,7 +404,8 @@ cryptodev_des_cryptodev_internal(
 	if ((len & 7) && operation == COP_ENCRYPT) {
 		/* slow but safe */
 		fixed_src = (des_cblock *)malloc(fixed_len);
-		if (!fixed_src) return;
+		if (!fixed_src)
+			return;
 		memset((char *)fixed_src + fixed_len - 8, 0, 8);
 		memcpy((char *)fixed_src, (char *)src, len);
 	} else {
@@ -429,7 +416,8 @@ cryptodev_des_cryptodev_internal(
 	 * in place then the operation will destroy the last block of cipher text */
 	if (operation != COP_ENCRYPT) {
 		/* ciphertext will be in src */
-		memcpy((char *)new_iv, (char *)fixed_src + fixed_len - iv_len, iv_len);
+		memcpy((char *)new_iv, (char *)fixed_src + fixed_len - iv_len,
+		       iv_len);
 	}
 
 	/*
@@ -460,7 +448,7 @@ cryptodev_des_cryptodev_internal(
 	bzero(&cop, sizeof(cop));
 	cop.ses = sop.ses;
 	cop.op = operation;
-	cop.src = (char *)fixed_src; 
+	cop.src = (char *)fixed_src;
 	cop.dst = (char *)dst;
 	cop.len = fixed_len;
 	cop.iv = (char *)iv;
@@ -475,7 +463,7 @@ cryptodev_des_cryptodev_internal(
 	 */
 	if (operation == COP_ENCRYPT) {
 		/* ciphertext will be in dst */
-		memcpy((char *)iv, cop.dst + fixed_len - iv_len, iv_len); 
+		memcpy((char *)iv, cop.dst + fixed_len - iv_len, iv_len);
 	} else {
 		/* have to copy out the saved iv from new_iv */
 		memcpy((char *)iv, new_iv, iv_len);
@@ -495,15 +483,10 @@ failed:
 }
 
 /****************************************************************************/
-	
-static void
-cryptodev_des_cbc_encrypt(
-	des_cblock (*input),
-	des_cblock (*output),
-	long length,
-	des_key_schedule schedule,
-	des_cblock (*ivec),
-	int enc)
+
+static void cryptodev_des_cbc_encrypt(des_cblock(*input), des_cblock(*output),
+				      long length, des_key_schedule schedule,
+				      des_cblock(*ivec), int enc)
 {
 	if (cryptodev_fd != -1) {
 		char key[8];
@@ -512,14 +495,8 @@ cryptodev_des_cbc_encrypt(
 		memcpy(key, schedule, 8);
 		memcpy(&iv, ivec, sizeof(des_cblock));
 		cryptodev_des_cryptodev_internal(
-			CRYPTO_DES_CBC,
-			key,
-			enc ? COP_ENCRYPT : COP_DECRYPT,
-			input,
-			output,
-			length,
-			&iv,
-			sizeof(des_cblock));
+			CRYPTO_DES_CBC, key, enc ? COP_ENCRYPT : COP_DECRYPT,
+			input, output, length, &iv, sizeof(des_cblock));
 		/* intentionally do NOT copy out the iv into ivec, this is the
 		 * ONLY difference between the cbc and ncbc versions 
 		 */
@@ -528,21 +505,18 @@ cryptodev_des_cbc_encrypt(
 
 /****************************************************************************/
 
-#define c2l(c,l)	(l =((DES_LONG)(*((c)++)))    , \
-			 l|=((DES_LONG)(*((c)++)))<< 8L, \
-			 l|=((DES_LONG)(*((c)++)))<<16L, \
-			 l|=((DES_LONG)(*((c)++)))<<24L)
+#define c2l(c, l)                                                       \
+	(l = ((DES_LONG)(*((c)++))), l |= ((DES_LONG)(*((c)++))) << 8L, \
+	 l |= ((DES_LONG)(*((c)++))) << 16L,                            \
+	 l |= ((DES_LONG)(*((c)++))) << 24L)
 
-#define l2c(l,c)	(*((c)++)=(unsigned char)(((l)     )&0xff), \
-			 *((c)++)=(unsigned char)(((l)>> 8L)&0xff), \
-			 *((c)++)=(unsigned char)(((l)>>16L)&0xff), \
-			 *((c)++)=(unsigned char)(((l)>>24L)&0xff))
+#define l2c(l, c)                                         \
+	(*((c)++) = (unsigned char)(((l)) & 0xff),        \
+	 *((c)++) = (unsigned char)(((l) >> 8L) & 0xff),  \
+	 *((c)++) = (unsigned char)(((l) >> 16L) & 0xff), \
+	 *((c)++) = (unsigned char)(((l) >> 24L) & 0xff))
 
-static void
-cryptodev_des_encrypt(
-	DES_LONG *data,
-	des_key_schedule ks,
-	int enc)
+static void cryptodev_des_encrypt(DES_LONG *data, des_key_schedule ks, int enc)
 {
 	if (cryptodev_fd != -1) {
 		char key[8];
@@ -551,73 +525,57 @@ cryptodev_des_encrypt(
 		register DES_LONG l;
 		unsigned char *p;
 
-		p=&datac[0];
-		l=data[0]; l2c(l,p);
-		l=data[1]; l2c(l,p);
+		p = &datac[0];
+		l = data[0];
+		l2c(l, p);
+		l = data[1];
+		l2c(l, p);
 
 		memcpy(key, ks, 8);
 		memset(&iv, 0, sizeof(des_cblock));
 		/* single block ecb == single block cbc with iv=0 */
 		cryptodev_des_cryptodev_internal(
-			CRYPTO_DES_CBC,
-			key,
-			enc ? COP_ENCRYPT : COP_DECRYPT,
-			&datac,
-			&datac,
-			sizeof(des_cblock),
-			&iv,
+			CRYPTO_DES_CBC, key, enc ? COP_ENCRYPT : COP_DECRYPT,
+			&datac, &datac, sizeof(des_cblock), &iv,
 			sizeof(des_cblock));
 
-		p=datac;
-		c2l(p,l); data[0]=l;
-		c2l(p,l); data[1]=l;
+		p = datac;
+		c2l(p, l);
+		data[0] = l;
+		c2l(p, l);
+		data[1] = l;
 	}
 }
 
 /****************************************************************************/
 
-static void
-cryptodev_des_ede3_cbc_encrypt(
-	des_cblock (*input),
-	des_cblock (*output),
-	long length,
-	des_key_schedule ks1,
-	des_key_schedule ks2,
-	des_key_schedule ks3,
-	des_cblock (*ivec),
-	int enc)
+static void cryptodev_des_ede3_cbc_encrypt(des_cblock(*input),
+					   des_cblock(*output), long length,
+					   des_key_schedule ks1,
+					   des_key_schedule ks2,
+					   des_key_schedule ks3,
+					   des_cblock(*ivec), int enc)
 {
 	if (cryptodev_fd != -1) {
-		char key[8*3];
+		char key[8 * 3];
 		des_cblock iv;
 
 		memcpy(key, ks1, 8);
-		memcpy(key+8, ks2, 8);
-		memcpy(key+16, ks3, 8);
+		memcpy(key + 8, ks2, 8);
+		memcpy(key + 16, ks3, 8);
 		memcpy(&iv, ivec, sizeof(des_cblock));
 		cryptodev_des_cryptodev_internal(
-			CRYPTO_3DES_CBC,
-			key,
-			enc ? COP_ENCRYPT : COP_DECRYPT,
-			input,
-			output,
-			length,
-			&iv,
-			sizeof(des_cblock));
+			CRYPTO_3DES_CBC, key, enc ? COP_ENCRYPT : COP_DECRYPT,
+			input, output, length, &iv, sizeof(des_cblock));
 		memcpy(ivec, &iv, sizeof(des_cblock));
 	}
 }
 
 /****************************************************************************/
 
-static void
-cryptodev_des_ncbc_encrypt(
-	des_cblock (*input),
-	des_cblock (*output),
-	long length,
-	des_key_schedule schedule,
-	des_cblock (*ivec),
-	int enc)
+static void cryptodev_des_ncbc_encrypt(des_cblock(*input), des_cblock(*output),
+				       long length, des_key_schedule schedule,
+				       des_cblock(*ivec), int enc)
 {
 	if (cryptodev_fd != -1) {
 		char key[8];
@@ -626,26 +584,16 @@ cryptodev_des_ncbc_encrypt(
 		memcpy(key, schedule, 8);
 		memcpy(&iv, ivec, sizeof(des_cblock));
 		cryptodev_des_cryptodev_internal(
-			CRYPTO_DES_CBC,
-			key,
-			enc ? COP_ENCRYPT : COP_DECRYPT,
-			input,
-			output,
-			length,
-			&iv,
-			sizeof(des_cblock));
+			CRYPTO_DES_CBC, key, enc ? COP_ENCRYPT : COP_DECRYPT,
+			input, output, length, &iv, sizeof(des_cblock));
 		memcpy(ivec, &iv, sizeof(des_cblock));
 	}
 }
 
 /****************************************************************************/
 
-static void
-cryptodev_des_ecb_encrypt(
-	des_cblock (*input),
-	des_cblock (*output),
-	des_key_schedule ks,
-	int enc)
+static void cryptodev_des_ecb_encrypt(des_cblock(*input), des_cblock(*output),
+				      des_key_schedule ks, int enc)
 {
 	if (cryptodev_fd != -1) {
 		char key[8];
@@ -655,13 +603,8 @@ cryptodev_des_ecb_encrypt(
 		memset(&iv, 0, sizeof(des_cblock));
 		/* single block ecb == single block cbc with iv=0 */
 		cryptodev_des_cryptodev_internal(
-			CRYPTO_DES_CBC,
-			key,
-			enc ? COP_ENCRYPT : COP_DECRYPT,
-			input,
-			output,
-			sizeof(des_cblock),
-			&iv,
+			CRYPTO_DES_CBC, key, enc ? COP_ENCRYPT : COP_DECRYPT,
+			input, output, sizeof(des_cblock), &iv,
 			sizeof(des_cblock));
 	}
 }
@@ -670,29 +613,26 @@ cryptodev_des_ecb_encrypt(
 /* AES routines */
 /****************************************************************************/
 
-static int
-cryptodev_aes_set_key(
-	aes_context (*cx),
-	const unsigned char in_key[],
-	int length)
-{  
+static int cryptodev_aes_set_key(aes_context(*cx), const unsigned char in_key[],
+				 int length)
+{
 #if defined(AES_BLOCK_SIZE)
-#define nc   (AES_BLOCK_SIZE / 4)
+#define nc (AES_BLOCK_SIZE / 4)
 #else
-#define nc   (cx->aes_Ncol)
+#define nc (cx->aes_Ncol)
 #endif
 
-	switch(length) {
-	case 32:			/* bytes */
-	case 256:			/* bits */
+	switch (length) {
+	case 32: /* bytes */
+	case 256: /* bits */
 		cx->aes_Nkey = 8;
 		break;
-	case 24:			/* bytes */
-	case 192:			/* bits */
+	case 24: /* bytes */
+	case 192: /* bits */
 		cx->aes_Nkey = 6;
 		break;
-	case 16:			/* bytes */
-	case 128:			/* bits */
+	case 16: /* bytes */
+	case 128: /* bits */
 	default:
 		cx->aes_Nkey = 4;
 		break;
@@ -704,17 +644,12 @@ cryptodev_aes_set_key(
 
 /****************************************************************************/
 
-static void
-cryptodev_aes_cryptodev_internal(
-	u_int32_t cipher,
-	char (*key),
-	u_int32_t keylen,
-	u_int32_t operation,
-	const u_int8_t *src,
-	u_int8_t *dst,
-	long len,
-	const u_int8_t *iv,
-	u_int32_t iv_len)
+static void cryptodev_aes_cryptodev_internal(u_int32_t cipher, char(*key),
+					     u_int32_t keylen,
+					     u_int32_t operation,
+					     const u_int8_t *src, u_int8_t *dst,
+					     long len, const u_int8_t *iv,
+					     u_int32_t iv_len)
 {
 	struct session_op sop;
 	struct crypt_op cop;
@@ -726,15 +661,17 @@ cryptodev_aes_cryptodev_internal(
 
 	/*
 	 * if the input stream's length is not a multiple of 16, copy and zero pad
-	 */ 
+	 */
 	if ((len & 15) && operation == COP_ENCRYPT) {
 		/* slow but safe */
 		fixed_src = (u_int8_t *)malloc(fixed_len);
-		if (!fixed_src) return;
+		if (!fixed_src)
+			return;
 		memset(fixed_src + fixed_len - 15, 0, 15);
 		memcpy(fixed_src, src, len);
 	} else {
-		*((const u_int8_t **)&fixed_src) = src; /* bypass const checking */
+		*((const u_int8_t **)&fixed_src) =
+			src; /* bypass const checking */
 	}
 
 	/*
@@ -772,8 +709,9 @@ cryptodev_aes_cryptodev_internal(
 	if (ioctl(cryptodev_fd, CIOCFSESSION, &sop.ses) == -1)
 		goto failed;
 
-	if (fixed_src != src) free(fixed_src);
-		return;
+	if (fixed_src != src)
+		free(fixed_src);
+	return;
 
 failed:
 	memset(dst, 0, len);
@@ -784,33 +722,22 @@ failed:
 
 /****************************************************************************/
 
-static int
-cryptodev_aes_cbc_encrypt(
-	aes_context *ctx,
-	const u_int8_t *input,
-	u_int8_t *output,
-	int length,
-	const u_int8_t *ivec,
-	int enc)
+static int cryptodev_aes_cbc_encrypt(aes_context *ctx, const u_int8_t *input,
+				     u_int8_t *output, int length,
+				     const u_int8_t *ivec, int enc)
 {
 	if (cryptodev_fd != -1) {
-		cryptodev_aes_cryptodev_internal(	
+		cryptodev_aes_cryptodev_internal(
 			CRYPTO_AES_CBC,
 			/* ctx->aes_d_key isn't used here, just aes_e_key ??? */
 			/* enc ? ctx->aes_e_key : ctx->aes_d_key, */
-			(char *) ctx->aes_e_key,
-			ctx->aes_Nkey*4,
-			enc ? COP_ENCRYPT : COP_DECRYPT,
-			input,
-			output,
-			length,
-			ivec,
-			(u_int32_t)16);
+			(char *)ctx->aes_e_key, ctx->aes_Nkey * 4,
+			enc ? COP_ENCRYPT : COP_DECRYPT, input, output, length,
+			ivec, (u_int32_t)16);
 		return length;
 	}
 	return length;
 }
-
 
 /****************************************************************************/
 /* our init function */
@@ -826,7 +753,8 @@ void load_cryptodev(void)
 	struct oswcrypto_meth old_meth = oswcrypto;
 
 	if ((cryptodev_fd = get_dev_crypto()) == -1) {
-		openswan_log("OCF assist for IKE disabled: is the cryptodev module loaded ?");
+		openswan_log(
+			"OCF assist for IKE disabled: is the cryptodev module loaded ?");
 		return;
 	}
 
@@ -835,50 +763,54 @@ void load_cryptodev(void)
 		if (feat & CRF_MOD_EXP) {
 			/* Use modular exponentiation */
 			oswcrypto.mod_exp = cryptodev_mod_exp;
-			openswan_log("OCF assist for IKE for modular exponentiation enabled");
+			openswan_log(
+				"OCF assist for IKE for modular exponentiation enabled");
 			assisted++;
 		}
 		if (feat & CRF_MOD_EXP_CRT) {
 			oswcrypto.rsa_mod_exp_crt = cryptodev_rsa_mod_exp_crt;
-			openswan_log("OCF assist for IKE for modular exponentiation (CRT) enabled");
+			openswan_log(
+				"OCF assist for IKE for modular exponentiation (CRT) enabled");
 			assisted++;
 		}
 	}
 
 	/* test we can do AES */
 	memset(&ses, 0, sizeof(ses));
-	ses.key = (caddr_t)"12345678901234567890123456789012";
+	ses.key = (caddr_t) "12345678901234567890123456789012";
 	ses.cipher = CRYPTO_AES_CBC;
 	ses.keylen = 16;
 	if (ioctl(cryptodev_fd, CIOCGSESSION, &ses) != -1 &&
-			ioctl(cryptodev_fd, CIOCFSESSION, &ses.ses) != -1) {
+	    ioctl(cryptodev_fd, CIOCFSESSION, &ses.ses) != -1) {
 		openswan_log("OCF assist for IKE for AES crypto enabled");
-		oswcrypto.aes_set_key     = cryptodev_aes_set_key;
+		oswcrypto.aes_set_key = cryptodev_aes_set_key;
 		oswcrypto.aes_cbc_encrypt = cryptodev_aes_cbc_encrypt;
 		assisted++;
 	}
 
 	/* test we can do DES */
 	memset(&ses, 0, sizeof(ses));
-	ses.key = (caddr_t)"123456789012345678901234";
+	ses.key = (caddr_t) "123456789012345678901234";
 	ses.cipher = CRYPTO_DES_CBC;
 	ses.keylen = 8;
 	if (ioctl(cryptodev_fd, CIOCGSESSION, &ses) != -1 &&
-			ioctl(cryptodev_fd, CIOCFSESSION, &ses.ses) != -1) {
+	    ioctl(cryptodev_fd, CIOCFSESSION, &ses.ses) != -1) {
 		openswan_log("OCF assist for IKE for DES crypto enabled");
-		oswcrypto.des_set_key      = cryptodev_des_set_key;
-		oswcrypto.des_cbc_encrypt  = cryptodev_des_cbc_encrypt;
-		oswcrypto.des_encrypt      = cryptodev_des_encrypt;
+		oswcrypto.des_set_key = cryptodev_des_set_key;
+		oswcrypto.des_cbc_encrypt = cryptodev_des_cbc_encrypt;
+		oswcrypto.des_encrypt = cryptodev_des_encrypt;
 		oswcrypto.des_ncbc_encrypt = cryptodev_des_ncbc_encrypt;
-		oswcrypto.des_ecb_encrypt  = cryptodev_des_ecb_encrypt;
+		oswcrypto.des_ecb_encrypt = cryptodev_des_ecb_encrypt;
 		assisted++;
 		/* test we can do 3DES */
 		ses.cipher = CRYPTO_3DES_CBC;
 		ses.keylen = 24;
 		if (ioctl(cryptodev_fd, CIOCGSESSION, &ses) != -1 &&
-				ioctl(cryptodev_fd, CIOCFSESSION, &ses.ses) != -1) {
-			openswan_log("OCF assist for IKE for 3DES crypto enabled");
-			oswcrypto.des_ede3_cbc_encrypt = cryptodev_des_ede3_cbc_encrypt;
+		    ioctl(cryptodev_fd, CIOCFSESSION, &ses.ses) != -1) {
+			openswan_log(
+				"OCF assist for IKE for 3DES crypto enabled");
+			oswcrypto.des_ede3_cbc_encrypt =
+				cryptodev_des_ede3_cbc_encrypt;
 			//DAVIDM 3des setkey is technically needed if HW can only do DES
 			assisted++;
 		}

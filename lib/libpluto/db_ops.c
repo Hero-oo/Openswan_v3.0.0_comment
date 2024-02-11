@@ -91,66 +91,73 @@ struct db_ops_alloc_cache {
  * 	displayed in db_ops_show_status()
  */
 struct db_ops_stats {
-	int st_curr_cnt;	/* current number of allocations */
-	int st_total_cnt;	/* total allocations so far */
-	size_t st_maxsz;	/* max. size requested */
+	int st_curr_cnt; /* current number of allocations */
+	int st_total_cnt; /* total allocations so far */
+	size_t st_maxsz; /* max. size requested */
 };
-#define DB_OPS_ZERO { 0, 0, 0};
-#define DB_OPS_STATS_DESC   "{curr_cnt, total_cnt, maxsz}"
-#define DB_OPS_STATS_STR(name)  name "={%d,%d,%d} "
-#define DB_OPS_STATS_F(st) (st).st_curr_cnt, (st).st_total_cnt, (int)(st).st_maxsz
+#define DB_OPS_ZERO { 0, 0, 0 };
+#define DB_OPS_STATS_DESC "{curr_cnt, total_cnt, maxsz}"
+#define DB_OPS_STATS_STR(name) name "={%d,%d,%d} "
+#define DB_OPS_STATS_F(st) \
+	(st).st_curr_cnt, (st).st_total_cnt, (int)(st).st_maxsz
 static struct db_ops_stats db_context_st = DB_OPS_ZERO;
 static struct db_ops_stats db_trans_st = DB_OPS_ZERO;
 static struct db_ops_stats db_attrs_st = DB_OPS_ZERO;
-static __inline__ void * alloc_bytes_st (size_t size, const char *str, struct db_ops_stats *st)
+static __inline__ void *alloc_bytes_st(size_t size, const char *str,
+				       struct db_ops_stats *st)
 {
 	void *ptr = alloc_bytes(size, str);
-	if (ptr)  {
+	if (ptr) {
 		st->st_curr_cnt++;
 		st->st_total_cnt++;
-		if (size > st->st_maxsz) st->st_maxsz=size;
+		if (size > st->st_maxsz)
+			st->st_maxsz = size;
 	}
 	return ptr;
 }
-#define ALLOC_BYTES_ST(z,s,st) alloc_bytes_st(z, s, &st);
-#define PFREE_ST(p,st)         do { st.st_curr_cnt--; pfree(p);  } while (0);
+#define ALLOC_BYTES_ST(z, s, st) alloc_bytes_st(z, s, &st);
+#define PFREE_ST(p, st)           \
+	do {                      \
+		st.st_curr_cnt--; \
+		pfree(p);         \
+	} while (0);
 
 #else
 
-#define ALLOC_BYTES_ST(z,s,n) alloc_bytes(z, s);
-#define PFREE_ST(p,n)         pfree(p);
+#define ALLOC_BYTES_ST(z, s, n) alloc_bytes(z, s);
+#define PFREE_ST(p, n) pfree(p);
 
 #endif /* NO_DB_OPS_STATS */
 
 void free_sa_trans(struct db_trans *tr)
 {
-  /* attributes point into the context, so do not need to be freed on their own */
-  tr->attrs=NULL;
+	/* attributes point into the context, so do not need to be freed on their own */
+	tr->attrs = NULL;
 }
 
 void free_sa_prop(struct db_prop *dp)
 {
-    unsigned int i;
-    for(i=0; i<dp->trans_cnt; i++) {
-	free_sa_trans(&dp->trans[i]);
-    }
-    if(dp->trans) {
-	pfree(dp->trans);
-	dp->trans=NULL;
-    }
+	unsigned int i;
+	for (i = 0; i < dp->trans_cnt; i++) {
+		free_sa_trans(&dp->trans[i]);
+	}
+	if (dp->trans) {
+		pfree(dp->trans);
+		dp->trans = NULL;
+	}
 }
 
 void free_sa_prop_conj(struct db_sa *f, struct db_prop_conj *pc)
 {
-    unsigned int i;
-    for(i=0; i<pc->prop_cnt; i++) {
-	free_sa_prop(&pc->props[i]);
-    }
-    /* special case when there there only one props */
-    if(pc->props && pc->props != &f->prop_v1_ctx->prop) {
-	pfree(pc->props);
-        pc->props=NULL;
-    }
+	unsigned int i;
+	for (i = 0; i < pc->prop_cnt; i++) {
+		free_sa_prop(&pc->props[i]);
+	}
+	/* special case when there there only one props */
+	if (pc->props && pc->props != &f->prop_v1_ctx->prop) {
+		pfree(pc->props);
+		pc->props = NULL;
+	}
 }
 
 extern void db_destroy(struct db_context *ctx);
@@ -159,24 +166,27 @@ extern void db_destroy(struct db_context *ctx);
  *	max_trans and max_attrs can be 0, will be dynamically expanded
  *	as a result of "add" operations
  */
-int
-db_prop_init(struct db_context *ctx, u_int8_t protoid, int max_trans, int max_attrs)
+int db_prop_init(struct db_context *ctx, u_int8_t protoid, int max_trans,
+		 int max_attrs)
 {
-	int ret=-1;
+	int ret = -1;
 
 	ctx->trans0 = NULL;
 	ctx->attrs0 = NULL;
 
 	if (max_trans > 0) { /* quite silly if not */
-		ctx->trans0 = ALLOC_BYTES_ST ( sizeof (struct db_trans) * max_trans,
-			"db_context->trans", db_trans_st);
-		if (!ctx->trans0) goto out;
+		ctx->trans0 =
+			ALLOC_BYTES_ST(sizeof(struct db_trans) * max_trans,
+				       "db_context->trans", db_trans_st);
+		if (!ctx->trans0)
+			goto out;
 	}
 
 	if (max_attrs > 0) { /* quite silly if not */
-		ctx->attrs0 = ALLOC_BYTES_ST (sizeof (struct db_attr) * max_attrs,
-				"db_context->attrs", db_attrs_st);
-		if (!ctx->attrs0) goto out;
+		ctx->attrs0 = ALLOC_BYTES_ST(sizeof(struct db_attr) * max_attrs,
+					     "db_context->attrs", db_attrs_st);
+		if (!ctx->attrs0)
+			goto out;
 	}
 	ret = 0;
 out:
@@ -195,8 +205,7 @@ out:
 }
 
 /*	Expand storage for transforms by number delta_trans */
-static int
-db_trans_expand(struct db_context *ctx, int delta_trans)
+static int db_trans_expand(struct db_context *ctx, int delta_trans)
 {
 	int ret = -1;
 	struct db_trans *new_trans, *old_trans;
@@ -204,8 +213,8 @@ db_trans_expand(struct db_context *ctx, int delta_trans)
 	ptrdiff_t offset;
 
 	old_trans = ctx->trans0;
-	new_trans = ALLOC_BYTES_ST ( sizeof (struct db_trans) * max_trans,
-			"db_context->trans (expand)", db_trans_st);
+	new_trans = ALLOC_BYTES_ST(sizeof(struct db_trans) * max_trans,
+				   "db_context->trans (expand)", db_trans_st);
 	if (!new_trans)
 		goto out;
 	memcpy(new_trans, old_trans, ctx->max_trans * sizeof(struct db_trans));
@@ -216,14 +225,14 @@ db_trans_expand(struct db_context *ctx, int delta_trans)
 	offset = (char *)(new_trans) - (char *)(old_trans);
 
 	{
-	  char *cctx = (char *)(ctx->trans_cur);
+		char *cctx = (char *)(ctx->trans_cur);
 
-	  cctx += offset;
-	  ctx->trans_cur = (struct db_trans *)cctx;
+		cctx += offset;
+		ctx->trans_cur = (struct db_trans *)cctx;
 	}
 	/* update elem count */
 	ctx->max_trans = max_trans;
-	if(old_trans) {
+	if (old_trans) {
 		PFREE_ST(old_trans, db_trans_st);
 	}
 	ret = 0;
@@ -234,8 +243,7 @@ out:
  *	Expand storage for attributes by delta_attrs number AND
  *	rewrite trans->attr pointers
  */
-static int
-db_attrs_expand(struct db_context *ctx, int delta_attrs)
+static int db_attrs_expand(struct db_context *ctx, int delta_attrs)
 {
 	int ret = -1;
 	struct db_attr *new_attrs, *old_attrs;
@@ -245,8 +253,8 @@ db_attrs_expand(struct db_context *ctx, int delta_attrs)
 	ptrdiff_t offset;
 
 	old_attrs = ctx->attrs0;
-	new_attrs = ALLOC_BYTES_ST ( sizeof (struct db_attr) * max_attrs,
-			"db_context->attrs (expand)", db_attrs_st);
+	new_attrs = ALLOC_BYTES_ST(sizeof(struct db_attr) * max_attrs,
+				   "db_context->attrs (expand)", db_attrs_st);
 	if (!new_attrs)
 		goto out;
 
@@ -256,61 +264,63 @@ db_attrs_expand(struct db_context *ctx, int delta_attrs)
 	offset = (char *)(new_attrs) - (char *)(old_attrs);
 
 	{
-	  char *actx = (char *)(ctx->attrs0);
+		char *actx = (char *)(ctx->attrs0);
 
-	  actx += offset;
-	  ctx->attrs0 = (struct db_attr *)actx;
+		actx += offset;
+		ctx->attrs0 = (struct db_attr *)actx;
 
-	  actx = (char *)ctx->attrs_cur;
-	  actx += offset;
-	  ctx->attrs_cur = (struct db_attr *)actx;
+		actx = (char *)ctx->attrs_cur;
+		actx += offset;
+		ctx->attrs_cur = (struct db_attr *)actx;
 	}
 
 	/* for each transform, rewrite attrs pointer by offsetting it */
-	for (t=ctx->prop.trans, ti=0; ti < ctx->prop.trans_cnt; t++, ti++) {
-	  {
-	    char *actx = (char *)(t->attrs);
+	for (t = ctx->prop.trans, ti = 0; ti < ctx->prop.trans_cnt; t++, ti++) {
+		{
+			char *actx = (char *)(t->attrs);
 
-	    actx += offset;
-	    t->attrs = (struct db_attr *)actx;
-	  }
+			actx += offset;
+			t->attrs = (struct db_attr *)actx;
+		}
 	}
 	/* update elem count */
 	ctx->max_attrs = max_attrs;
-	if(old_attrs) PFREE_ST(old_attrs, db_attrs_st);
+	if (old_attrs)
+		PFREE_ST(old_attrs, db_attrs_st);
 	ret = 0;
 out:
 	return ret;
 }
 
 /*	Allocate a new db object */
-struct db_context *
-db_prop_new(u_int8_t protoid, int max_trans, int max_attrs)
+struct db_context *db_prop_new(u_int8_t protoid, int max_trans, int max_attrs)
 {
 	struct db_context *ctx;
-	ctx = ALLOC_BYTES_ST ( sizeof (struct db_context), "db_context", db_context_st);
-	if (!ctx) goto out;
+	ctx = ALLOC_BYTES_ST(sizeof(struct db_context), "db_context",
+			     db_context_st);
+	if (!ctx)
+		goto out;
 
 	if (db_prop_init(ctx, protoid, max_trans, max_attrs) < 0) {
 		PFREE_ST(ctx, db_context_st);
-		ctx=NULL;
+		ctx = NULL;
 	}
 out:
 	return ctx;
 }
 
 /*	Free a db object */
-void
-db_destroy(struct db_context *ctx)
+void db_destroy(struct db_context *ctx)
 {
-    if (ctx->trans0) PFREE_ST(ctx->trans0, db_trans_st);
-    if (ctx->attrs0) PFREE_ST(ctx->attrs0, db_attrs_st);
-    PFREE_ST(ctx, db_context_st);
+	if (ctx->trans0)
+		PFREE_ST(ctx->trans0, db_trans_st);
+	if (ctx->attrs0)
+		PFREE_ST(ctx->attrs0, db_attrs_st);
+	PFREE_ST(ctx, db_context_st);
 }
 
 /*	Start a new transform, expand trans0 is needed */
-int
-db_trans_add(struct db_context *ctx, u_int8_t transid)
+int db_trans_add(struct db_context *ctx, u_int8_t transid)
 {
 	/*	skip incrementing current trans pointer the 1st time*/
 	if (ctx->trans_cur && ctx->trans_cur->attr_cnt)
@@ -326,19 +336,18 @@ db_trans_add(struct db_context *ctx, u_int8_t transid)
 	passert(ctx->trans_cur != NULL);
 	if ((ctx->trans_cur - ctx->trans0) >= ctx->max_trans) {
 		/* XXX:jjo if fails should shout and flag it */
-		if (db_trans_expand(ctx, ctx->max_trans/2 + 1)<0)
+		if (db_trans_expand(ctx, ctx->max_trans / 2 + 1) < 0)
 			return -1;
 	}
 	ctx->trans_cur->transid = transid;
-	ctx->trans_cur->attrs=ctx->attrs_cur;
+	ctx->trans_cur->attrs = ctx->attrs_cur;
 	ctx->trans_cur->attr_cnt = 0;
 	ctx->prop.trans_cnt++;
 	return 0;
 }
 
 /*	Add attr copy to current transform, expanding attrs0 if needed */
-int
-db_attr_add(struct db_context *ctx, const struct db_attr *a)
+int db_attr_add(struct db_context *ctx, const struct db_attr *a)
 {
 	/*
 	 *	Strategy: if more space is needed, expand by
@@ -346,10 +355,10 @@ db_attr_add(struct db_context *ctx, const struct db_attr *a)
 	 */
 	if ((ctx->attrs_cur - ctx->attrs0) >= ctx->max_attrs) {
 		/* XXX:jjo if fails should shout and flag it */
-		if (db_attrs_expand(ctx, ctx->max_attrs/2 + 1) < 0)
+		if (db_attrs_expand(ctx, ctx->max_attrs / 2 + 1) < 0)
 			return -1;
 	}
-	*ctx->attrs_cur++=*a;
+	*ctx->attrs_cur++ = *a;
 	ctx->trans_cur->attr_cnt++;
 	return 0;
 }
@@ -357,50 +366,54 @@ db_attr_add(struct db_context *ctx, const struct db_attr *a)
 /*	Add attr copy (by value) to current transform,
  *	expanding attrs0 if needed, just calls db_attr_add().
  */
-int
-db_attr_add_values(struct db_context *ctx,  u_int16_t type, u_int16_t val)
+int db_attr_add_values(struct db_context *ctx, u_int16_t type, u_int16_t val)
 {
 	struct db_attr attr;
 	attr.type.oakley = type;
 	attr.val = val;
-	return db_attr_add (ctx, &attr);
+	return db_attr_add(ctx, &attr);
 }
 
 /*	Add attr copy (by value) to current transform,
  *	expanding attrs0 if needed, just calls db_attr_add(), but for IPsec attributes
  */
-int
-db_attr_add_ipsec_values(struct db_context *ctx,  u_int16_t type, u_int16_t val)
+int db_attr_add_ipsec_values(struct db_context *ctx, u_int16_t type,
+			     u_int16_t val)
 {
 	struct db_attr attr;
 	attr.type.ipsec = type;
 	attr.val = val;
-	return db_attr_add (ctx, &attr);
+	return db_attr_add(ctx, &attr);
 }
 
 #if defined(TEST)
 
-void
-passert_fail(const char *pred_str, const char *file_str, unsigned long line_no);
+void passert_fail(const char *pred_str, const char *file_str,
+		  unsigned long line_no);
 void abort(void);
-void
-passert_fail(const char *pred_str, const char *file_str, unsigned long line_no)
+void passert_fail(const char *pred_str, const char *file_str,
+		  unsigned long line_no)
 {
-    fprintf(stderr, "ASSERTION FAILED at %s:%lu: %s", file_str, line_no, pred_str);
-    abort();	/* exiting correctly doesn't always work */
+	fprintf(stderr, "ASSERTION FAILED at %s:%lu: %s", file_str, line_no,
+		pred_str);
+	abort(); /* exiting correctly doesn't always work */
 }
-int main(void) {
-	struct db_context *ctx=db_prop_new(PROTO_ISAKMP, 0, 0);
+int main(void)
+{
+	struct db_context *ctx = db_prop_new(PROTO_ISAKMP, 0, 0);
 	db_trans_add(ctx, KEY_IKE);
 	db_attr_add_values(ctx, OAKLEY_ENCRYPTION_ALGORITHM, OAKLEY_3DES_CBC);
 	db_attr_add_values(ctx, OAKLEY_HASH_ALGORITHM, OAKLEY_MD5);
 	db_attr_add_values(ctx, OAKLEY_AUTHENTICATION_METHOD, OAKLEY_RSA_SIG);
-	db_attr_add_values(ctx, OAKLEY_GROUP_DESCRIPTION, OAKLEY_GROUP_MODP1024);
+	db_attr_add_values(ctx, OAKLEY_GROUP_DESCRIPTION,
+			   OAKLEY_GROUP_MODP1024);
 	db_trans_add(ctx, KEY_IKE);
 	db_attr_add_values(ctx, OAKLEY_ENCRYPTION_ALGORITHM, OAKLEY_AES_CBC);
 	db_attr_add_values(ctx, OAKLEY_HASH_ALGORITHM, OAKLEY_MD5);
-	db_attr_add_values(ctx, OAKLEY_AUTHENTICATION_METHOD, OAKLEY_PRESHARED_KEY);
-	db_attr_add_values(ctx, OAKLEY_GROUP_DESCRIPTION, OAKLEY_GROUP_MODP1536);
+	db_attr_add_values(ctx, OAKLEY_AUTHENTICATION_METHOD,
+			   OAKLEY_PRESHARED_KEY);
+	db_attr_add_values(ctx, OAKLEY_GROUP_DESCRIPTION,
+			   OAKLEY_GROUP_MODP1536);
 	db_trans_add(ctx, ESP_3DES);
 	db_attr_add_values(ctx, AUTH_ALGORITHM, AUTH_ALGORITHM_HMAC_SHA1);
 	db_print(ctx);

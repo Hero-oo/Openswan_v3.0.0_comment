@@ -37,118 +37,127 @@
 
 struct db_sa *alginfo2parent_db2(struct alg_info_ike *ai)
 {
-    struct db_v2_context *dc;
-    struct db_sa *sadb;
-    struct ike_info *ike_info;
-    int cnt;
+	struct db_v2_context *dc;
+	struct db_sa *sadb;
+	struct ike_info *ike_info;
+	int cnt;
 
-    sadb = alloc_thing(struct db_sa, "v2 policy database");
-    dc = sadb->prop_ctx = db2_prop_new(2,2,2);
-    if(ai == NULL) {
-        ai = alg_info_ike_defaults();
-    }
+	sadb = alloc_thing(struct db_sa, "v2 policy database");
+	dc = sadb->prop_ctx = db2_prop_new(2, 2, 2);
+	if (ai == NULL) {
+		ai = alg_info_ike_defaults();
+	}
 
-    passert(ai->alg_info_protoid == PROTO_ISAKMP);
-    ALG_INFO_IKE_FOREACH((struct alg_info_ike *)ai, ike_info, cnt) {
-        char missing_alg_buf[96];
-        char *ptr = missing_alg_buf;
-        int ret = -1;
+	passert(ai->alg_info_protoid == PROTO_ISAKMP);
+	ALG_INFO_IKE_FOREACH((struct alg_info_ike *)ai, ike_info, cnt)
+	{
+		char missing_alg_buf[96];
+		char *ptr = missing_alg_buf;
+		int ret = -1;
 
-        alg_info_snprint_ike2(ike_info, ike_info->ike_eklen, ike_info->ike_hklen
-                                  , &ret, ptr, sizeof(missing_alg_buf));
+		alg_info_snprint_ike2(ike_info, ike_info->ike_eklen,
+				      ike_info->ike_hklen, &ret, ptr,
+				      sizeof(missing_alg_buf));
 
-        bool enc_present = ike_alg_enc_present(ike_info->ike_ealg, ike_info->ike_eklen);
-        bool integ_present=ikev2_alg_integ_present(ike_info->ike_halg, ike_info->ike_hklen);
-        bool prf_present = ike_alg_prf_present(ike_info->ike_prfalg);
-        bool group_present=ike_alg_group_present(ike_info->ike_modp);
+		bool enc_present = ike_alg_enc_present(ike_info->ike_ealg,
+						       ike_info->ike_eklen);
+		bool integ_present = ikev2_alg_integ_present(
+			ike_info->ike_halg, ike_info->ike_hklen);
+		bool prf_present = ike_alg_prf_present(ike_info->ike_prfalg);
+		bool group_present = ike_alg_group_present(ike_info->ike_modp);
 
-        if(!enc_present
-           || !integ_present
-           || !prf_present
-           || !group_present) {
+		if (!enc_present || !integ_present || !prf_present ||
+		    !group_present) {
+			DBG(DBG_EMITTING,
+			    DBG_log("not including %s in policy, as algorithm missing"
+				    "(enc:%u,integ:%u,prf:%u,group:%u)",
+				    missing_alg_buf, enc_present, integ_present,
+				    prf_present, group_present));
+			continue;
+		}
 
-            DBG(DBG_EMITTING,
-                DBG_log("not including %s in policy, as algorithm missing"
-                        "(enc:%u,integ:%u,prf:%u,group:%u)"
-                        , missing_alg_buf
-                        , enc_present, integ_present, prf_present, group_present));
-            continue;
-        }
+		DBG(DBG_EMITTING,
+		    DBG_log("found algorithm: %s", missing_alg_buf));
 
-        DBG(DBG_EMITTING,
-            DBG_log("found algorithm: %s"
-                    , missing_alg_buf));
+		db2_prop_add(dc, PROTO_ISAKMP, 0);
+		db2_trans_add(dc, IKEv2_TRANS_TYPE_ENCR, ike_info->ike_ealg);
+		if (ike_info->ike_eklen) {
+			db2_attr_add(dc, IKEv2_KEY_LENGTH, ike_info->ike_eklen);
+		}
+		db2_trans_add(dc, IKEv2_TRANS_TYPE_PRF, ike_info->ike_prfalg);
+		db2_trans_add(dc, IKEv2_TRANS_TYPE_INTEG, ike_info->ike_halg);
+		if (ike_info->ike_hklen) {
+			db2_attr_add(dc, IKEv2_KEY_LENGTH, ike_info->ike_hklen);
+		}
+		db2_trans_add(dc, IKEv2_TRANS_TYPE_DH, ike_info->ike_modp);
+		db2_prop_close(dc);
+	}
 
-        db2_prop_add(dc, PROTO_ISAKMP, 0);
-        db2_trans_add(dc,IKEv2_TRANS_TYPE_ENCR,  ike_info->ike_ealg);
-        if(ike_info->ike_eklen) {
-            db2_attr_add(dc, IKEv2_KEY_LENGTH, ike_info->ike_eklen);
-        }
-        db2_trans_add(dc,IKEv2_TRANS_TYPE_PRF,   ike_info->ike_prfalg);
-        db2_trans_add(dc,IKEv2_TRANS_TYPE_INTEG, ike_info->ike_halg);
-        if(ike_info->ike_hklen) {
-            db2_attr_add(dc, IKEv2_KEY_LENGTH, ike_info->ike_hklen);
-        }
-        db2_trans_add(dc,IKEv2_TRANS_TYPE_DH,    ike_info->ike_modp);
-        db2_prop_close(dc);
-    }
+	sadb->prop_disj = &sadb->prop_ctx->prop;
+	sadb->prop_disj_cnt = 1;
 
-    sadb->prop_disj = &sadb->prop_ctx->prop;
-    sadb->prop_disj_cnt = 1;
-
-    return sadb;
+	return sadb;
 }
 
 struct db_sa *alginfo2child_db2(struct alg_info_esp *ai)
 {
-    struct db_v2_context *dc;
-    struct db_sa *sadb;
-    struct esp_info *esp_info;
-    int cnt;
+	struct db_v2_context *dc;
+	struct db_sa *sadb;
+	struct esp_info *esp_info;
+	int cnt;
 
-    sadb = alloc_thing(struct db_sa, "v2 policy database");
-    dc = sadb->prop_ctx = db2_prop_new(10,10,10);
+	sadb = alloc_thing(struct db_sa, "v2 policy database");
+	dc = sadb->prop_ctx = db2_prop_new(10, 10, 10);
 
-    if(ai == NULL) {
-        ai = alg_info_esp_defaults();
-    }
+	if (ai == NULL) {
+		ai = alg_info_esp_defaults();
+	}
 
-    switch(ai->alg_info_protoid) {
-    case PROTO_IPSEC_ESP:
-        ALG_INFO_ESP_FOREACH((struct alg_info_esp *)ai, esp_info, cnt) {
-            db2_prop_add(dc, PROTO_IPSEC_ESP, 4);
-            db2_trans_add(dc,IKEv2_TRANS_TYPE_ENCR,  esp_info->transid);
-            if(esp_info->enckeylen) {
-                db2_attr_add(dc, IKEv2_KEY_LENGTH, esp_info->enckeylen);
-            }
-            db2_trans_add(dc,IKEv2_TRANS_TYPE_INTEG, esp_info->auth);
-            if(esp_info->authkeylen) {
-                db2_attr_add(dc, IKEv2_KEY_LENGTH, esp_info->authkeylen);
-            }
-            db2_trans_add(dc,IKEv2_TRANS_TYPE_ESN, IKEv2_ESN_DISABLED);
-            db2_prop_close(dc);
-        }
-        break;
+	switch (ai->alg_info_protoid) {
+	case PROTO_IPSEC_ESP:
+		ALG_INFO_ESP_FOREACH((struct alg_info_esp *)ai, esp_info, cnt)
+		{
+			db2_prop_add(dc, PROTO_IPSEC_ESP, 4);
+			db2_trans_add(dc, IKEv2_TRANS_TYPE_ENCR,
+				      esp_info->transid);
+			if (esp_info->enckeylen) {
+				db2_attr_add(dc, IKEv2_KEY_LENGTH,
+					     esp_info->enckeylen);
+			}
+			db2_trans_add(dc, IKEv2_TRANS_TYPE_INTEG,
+				      esp_info->auth);
+			if (esp_info->authkeylen) {
+				db2_attr_add(dc, IKEv2_KEY_LENGTH,
+					     esp_info->authkeylen);
+			}
+			db2_trans_add(dc, IKEv2_TRANS_TYPE_ESN,
+				      IKEv2_ESN_DISABLED);
+			db2_prop_close(dc);
+		}
+		break;
 
-    case PROTO_IPSEC_AH:
-        ALG_INFO_ESP_FOREACH((struct alg_info_esp *)ai, esp_info, cnt) {
-            db2_prop_add(dc, PROTO_IPSEC_AH, 4);
-            db2_trans_add(dc,IKEv2_TRANS_TYPE_INTEG, esp_info->auth);
-            if(esp_info->authkeylen) {
-                db2_attr_add(dc, IKEv2_KEY_LENGTH, esp_info->authkeylen);
-            }
-            db2_prop_close(dc);
-        }
-    break;
+	case PROTO_IPSEC_AH:
+		ALG_INFO_ESP_FOREACH((struct alg_info_esp *)ai, esp_info, cnt)
+		{
+			db2_prop_add(dc, PROTO_IPSEC_AH, 4);
+			db2_trans_add(dc, IKEv2_TRANS_TYPE_INTEG,
+				      esp_info->auth);
+			if (esp_info->authkeylen) {
+				db2_attr_add(dc, IKEv2_KEY_LENGTH,
+					     esp_info->authkeylen);
+			}
+			db2_prop_close(dc);
+		}
+		break;
 
-    case PROTO_ISAKMP:
-        return NULL;
-    }
+	case PROTO_ISAKMP:
+		return NULL;
+	}
 
-    sadb->prop_disj = &sadb->prop_ctx->prop;
-    sadb->prop_disj_cnt = 1;
+	sadb->prop_disj = &sadb->prop_ctx->prop;
+	sadb->prop_disj_cnt = 1;
 
-    return sadb;
+	return sadb;
 }
 
 /*

@@ -32,22 +32,22 @@ extern struct inet_protocol ah_protocol;
 
 struct options;
 
-struct ahhdr				/* Generic AH header */
+struct ahhdr /* Generic AH header */
 {
-	__u8	ah_nh;			/* Next header (protocol) */
-	__u8	ah_hl;			/* AH length, in 32-bit words */
-	__u16	ah_rv;			/* reserved, must be 0 */
-	__u32	ah_spi;			/* Security Parameters Index */
-        __u32   ah_rpl;                 /* Replay prevention */
-	__u8	ah_data[AHHMAC_HASHLEN];/* Authentication hash */
+	__u8 ah_nh; /* Next header (protocol) */
+	__u8 ah_hl; /* AH length, in 32-bit words */
+	__u16 ah_rv; /* reserved, must be 0 */
+	__u32 ah_spi; /* Security Parameters Index */
+	__u32 ah_rpl; /* Replay prevention */
+	__u8 ah_data[AHHMAC_HASHLEN]; /* Authentication hash */
 };
-#define AH_BASIC_LEN 8      /* basic AH header is 8 bytes, nh,hl,rv,spi
-			     * and the ah_hl, says how many bytes after that
-			     * to cover. */
+#define AH_BASIC_LEN \
+	8 /* basic AH header is 8 bytes, nh,hl,rv,spi      \
+						* and the ah_hl, says how many bytes after that \
+						* to cover. */
 
 extern struct xform_functions ah_xform_funcs[];
 
 #include "openswan/ipsec_sysctl.h"
 
 #endif /* __KERNEL__ */
-

@@ -11,6 +11,3 @@ extern Tcl_Obj *tpm_PbStreamToInstanceObj(struct packet_byte_stream *pbs);
 extern Tcl_Obj *tpm_IntPToInstanceObj(int *ip);
 extern void pbs_bytes(struct packet_byte_stream *pbs, char *out, int *max);
 extern void tpm_initCallbacks(Tcl_Interp *PlutoInterp);
-
-
-

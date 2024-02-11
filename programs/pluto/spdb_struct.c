@@ -37,15 +37,15 @@
 #ifdef XAUTH_USEPAM
 #include <security/pam_appl.h>
 #endif
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "pluto/state.h"
 #include "packet.h"
 #include "keys.h"
 #include "secrets.h"
-#include "kernel.h"	/* needs connections.h */
+#include "kernel.h" /* needs connections.h */
 #include "log.h"
 #include "pluto/spdb.h"
-#include "whack.h"	/* for RC_LOG_SERIOUS */
+#include "whack.h" /* for RC_LOG_SERIOUS */
 #include "pluto/plutoalg.h"
 
 #include "sha1.h"
@@ -65,21 +65,21 @@
  * empty structure, for clone use.
  */
 static struct db_attr otempty[] = {
-	{ .type.oakley=OAKLEY_ENCRYPTION_ALGORITHM, -1 },
-	{ .type.oakley=OAKLEY_HASH_ALGORITHM,       -1 },
-	{ .type.oakley=OAKLEY_AUTHENTICATION_METHOD, -1 },
-	{ .type.oakley=OAKLEY_GROUP_DESCRIPTION,    -1 },
-	{ .type.oakley=OAKLEY_KEY_LENGTH,    -1 },
-	};
-
-static struct db_trans oakley_trans_empty[] = {
-    { AD_TR(KEY_IKE, otempty) },
+	{ .type.oakley = OAKLEY_ENCRYPTION_ALGORITHM, -1 },
+	{ .type.oakley = OAKLEY_HASH_ALGORITHM, -1 },
+	{ .type.oakley = OAKLEY_AUTHENTICATION_METHOD, -1 },
+	{ .type.oakley = OAKLEY_GROUP_DESCRIPTION, -1 },
+	{ .type.oakley = OAKLEY_KEY_LENGTH, -1 },
 };
 
-static struct db_prop oakley_pc_empty[] =
-{ { AD_PR(PROTO_ISAKMP, oakley_trans_empty) } };
+static struct db_trans oakley_trans_empty[] = {
+	{ AD_TR(KEY_IKE, otempty) },
+};
 
-static struct db_prop_conj oakley_props_empty[] = {{ AD_PC(oakley_pc_empty) }};
+static struct db_prop oakley_pc_empty[] = { { AD_PR(PROTO_ISAKMP,
+						    oakley_trans_empty) } };
+
+static struct db_prop_conj oakley_props_empty[] = { { AD_PC(oakley_pc_empty) } };
 
 struct db_sa oakley_empty = { AD_SAp(oakley_props_empty) };
 

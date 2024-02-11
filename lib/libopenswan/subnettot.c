@@ -22,27 +22,26 @@
  */
 bool isvalidsubnet(const ip_subnet *sub)
 {
-    int t=addrtypeof(&sub->addr);
+	int t = addrtypeof(&sub->addr);
 
-    switch(t) {
-    case AF_INET:
-	if(sub->maskbits <= 0 && sub->maskbits > 32) {
-	    return FALSE;
+	switch (t) {
+	case AF_INET:
+		if (sub->maskbits <= 0 && sub->maskbits > 32) {
+			return FALSE;
+		}
+		break;
+
+	case AF_INET6:
+		if (sub->maskbits <= 0 && sub->maskbits > 128) {
+			return FALSE;
+		}
+		break;
+
+	default:
+		return FALSE;
 	}
-	break;
 
-    case AF_INET6:
-	if(sub->maskbits <= 0 && sub->maskbits > 128) {
-	    return FALSE;
-	}
-	break;
-
-    default:
-	return FALSE;
-    }
-
-
-    return TRUE;
+	return TRUE;
 }
 
 /*
@@ -50,11 +49,10 @@ bool isvalidsubnet(const ip_subnet *sub)
  * returns number of characters that is printed, or if buffer is exceeded, like
  * snprintf(), returns how many would be needed, without actually exceeding the buffer.
  */
-size_t				/* space needed for full conversion */
-subnettot(sub, format, dst, dstlen)
-const ip_subnet *sub;
-int format;			/* character */
-char *dst;			/* need not be valid if dstlen is 0 */
+size_t /* space needed for full conversion */
+	subnettot(sub, format, dst, dstlen) const ip_subnet *sub;
+int format; /* character */
+char *dst; /* need not be valid if dstlen is 0 */
 size_t dstlen;
 {
 	size_t len;
@@ -79,41 +77,37 @@ size_t dstlen;
 		rest = 0;
 	}
 
-
 	len += ultoa((unsigned long)sub->maskbits, 10, p, rest);
 
 	return len;
 }
 
-size_t
-subnetporttot(sub, format, dst, dstlen)
-const ip_subnet *sub;
+size_t subnetporttot(sub, format, dst, dstlen) const ip_subnet *sub;
 int format;
 char *dst;
 size_t dstlen;
 {
-  size_t len, alen;
-  char *end;
+	size_t len, alen;
+	char *end;
 
-  len = subnettot(sub, format, dst, dstlen);
+	len = subnettot(sub, format, dst, dstlen);
 
-  /* if port is zero, then return */
-  if(portof(&sub->addr) == 0) {
-    return len;
-  }
+	/* if port is zero, then return */
+	if (portof(&sub->addr) == 0) {
+		return len;
+	}
 
-  /* else, append to the format, decimal representation */
-  alen = strlen(dst);
-  end = dst + alen;
-  if((alen + ULTOT_BUF) > dstlen) {
-    /* we failed to find enough space, let caller know */
-    return len + ULTOT_BUF;
-  }
+	/* else, append to the format, decimal representation */
+	alen = strlen(dst);
+	end = dst + alen;
+	if ((alen + ULTOT_BUF) > dstlen) {
+		/* we failed to find enough space, let caller know */
+		return len + ULTOT_BUF;
+	}
 
-  /* base = 10 */
-  *end++ = ':';
-  len += ultoa(ntohs(portof(&sub->addr)), 10, end, dstlen-(alen+1));
+	/* base = 10 */
+	*end++ = ':';
+	len += ultoa(ntohs(portof(&sub->addr)), 10, end, dstlen - (alen + 1));
 
-  return len;
+	return len;
 }
-

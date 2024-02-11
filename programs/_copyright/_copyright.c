@@ -25,15 +25,29 @@
 
 char usage[] = "Usage: ipsec _copyright";
 struct option opts[] = {
-  {"help",	0,	NULL,	'h',},
-  {"version",	0,	NULL,	'v',},
-  {0,		0,	NULL,	0, },
+	{
+		"help",
+		0,
+		NULL,
+		'h',
+	},
+	{
+		"version",
+		0,
+		NULL,
+		'v',
+	},
+	{
+		0,
+		0,
+		NULL,
+		0,
+	},
 };
 
-char me[] = "ipsec _copyright";	/* for messages */
+char me[] = "ipsec _copyright"; /* for messages */
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int opt;
 	extern int optind;
@@ -44,11 +58,11 @@ main(int argc, char *argv[])
 
 	while ((opt = getopt_long(argc, argv, "", opts, NULL)) != EOF)
 		switch (opt) {
-		case 'h':	/* help */
+		case 'h': /* help */
 			printf("%s\n", usage);
 			exit(0);
 			break;
-		case 'v':	/* version */
+		case 'v': /* version */
 			printf("%s %s\n", me, version);
 			exit(0);
 			break;

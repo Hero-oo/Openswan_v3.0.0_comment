@@ -40,35 +40,33 @@
 
 err_t ipsec_policy_cgilookup(struct ipsec_policy_cmd_query *result)
 {
-  err_t ret;
-  char *us, *them;
+	err_t ret;
+	char *us, *them;
 
-  /* clear it all out */
-  memset(result, 0, sizeof(*result));
+	/* clear it all out */
+	memset(result, 0, sizeof(*result));
 
-  /* setup it up */
-  result->head.ipm_version = IPSEC_POLICY_MSG_REVISION;
-  result->head.ipm_msg_len = sizeof(*result);
-  result->head.ipm_msg_type = IPSEC_CMD_QUERY_HOSTPAIR;
-  result->head.ipm_msg_seq = ipsec_policy_seq();
+	/* setup it up */
+	result->head.ipm_version = IPSEC_POLICY_MSG_REVISION;
+	result->head.ipm_msg_len = sizeof(*result);
+	result->head.ipm_msg_type = IPSEC_CMD_QUERY_HOSTPAIR;
+	result->head.ipm_msg_seq = ipsec_policy_seq();
 
+	us = getenv("SERVER_ADDR");
+	them = getenv("REMOTE_ADDR");
+	if (!us || !them) {
+		return "$SERVER_ADDR and $REMOTE_ADDR must be set";
+	}
 
-  us   = getenv("SERVER_ADDR");
-  them = getenv("REMOTE_ADDR");
-  if(!us || !them) {
-    return "$SERVER_ADDR and $REMOTE_ADDR must be set";
-  }
+	ret = ttoaddr(us, 0, AF_INET, &result->query_local);
+	if (ret != NULL) {
+		return ret;
+	}
 
-  ret = ttoaddr(us, 0, AF_INET, &result->query_local);
-  if(ret != NULL) {
-    return ret;
-  }
+	ret = ttoaddr(them, 0, AF_INET, &result->query_remote);
+	if (ret != NULL) {
+		return ret;
+	}
 
-  ret = ttoaddr(them, 0, AF_INET, &result->query_remote);
-  if(ret != NULL) {
-    return ret;
-  }
-  
-  return ipsec_policy_sendrecv((unsigned char *)result, sizeof(*result));
+	return ipsec_policy_sendrecv((unsigned char *)result, sizeof(*result));
 }
-

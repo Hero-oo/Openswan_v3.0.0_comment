@@ -38,7 +38,6 @@ typedef __u32 UINT4;
 #define PROTO_LIST(list) ()
 #endif /* PROTOTYPES */
 
-
 /* MD5.H - header file for MD5C.C
  */
 
@@ -66,14 +65,13 @@ documentation and/or software.
 
 /* MD5 context. */
 typedef struct {
-  UINT4 state[4];                                   /* state (ABCD) */
-  UINT4 count[2];        /* number of bits, modulo 2^64 (lsb first) */
-  unsigned char buffer[64];                         /* input buffer */
+	UINT4 state[4]; /* state (ABCD) */
+	UINT4 count[2]; /* number of bits, modulo 2^64 (lsb first) */
+	unsigned char buffer[64]; /* input buffer */
 } MD5_CTX;
 
-void osMD5Init PROTO_LIST ((void *));
-void osMD5Update PROTO_LIST
-  ((void *, unsigned char *, __u32));
-void osMD5Final PROTO_LIST ((unsigned char [16], void *));
+void osMD5Init PROTO_LIST((void *));
+void osMD5Update PROTO_LIST((void *, unsigned char *, __u32));
+void osMD5Final PROTO_LIST((unsigned char[16], void *));
 
 #endif /* _IPSEC_MD5H_H_ */

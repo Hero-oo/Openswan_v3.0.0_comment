@@ -17,8 +17,7 @@
 /*
  - subnetof - given address and mask, return subnet part
  */
-struct in_addr
-subnetof(addr, mask)
+struct in_addr subnetof(addr, mask)
 struct in_addr addr;
 struct in_addr mask;
 {
@@ -31,8 +30,7 @@ struct in_addr mask;
 /*
  - hostof - given address and mask, return host part
  */
-struct in_addr
-hostof(addr, mask)
+struct in_addr hostof(addr, mask)
 struct in_addr addr;
 struct in_addr mask;
 {
@@ -45,8 +43,7 @@ struct in_addr mask;
 /*
  - broadcastof - given (network) address and mask, return broadcast address
  */
-struct in_addr
-broadcastof(addr, mask)
+struct in_addr broadcastof(addr, mask)
 struct in_addr addr;
 struct in_addr mask;
 {

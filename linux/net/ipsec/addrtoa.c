@@ -15,22 +15,22 @@
  */
 #include "openswan.h"
 
-#define	NBYTES	4		/* bytes in an address */
-#define	PERBYTE	4		/* three digits plus a dot or NUL */
-#define	BUFLEN	(NBYTES*PERBYTE)
+#define NBYTES 4 /* bytes in an address */
+#define PERBYTE 4 /* three digits plus a dot or NUL */
+#define BUFLEN (NBYTES * PERBYTE)
 
 #if ADDRTOA_BUF < BUFLEN
-#error	"ADDRTOA_BUF in openswan.h inconsistent with addrtoa() code"
+#error "ADDRTOA_BUF in openswan.h inconsistent with addrtoa() code"
 #endif
 
 /*
  - addrtoa - convert binary address to ASCII dotted decimal
  */
-size_t				/* space needed for full conversion */
+size_t /* space needed for full conversion */
 addrtoa(addr, format, dst, dstlen)
 struct in_addr addr;
-int format;			/* character */
-char *dst;			/* need not be valid if dstlen is 0 */
+int format; /* character */
+char *dst; /* need not be valid if dstlen is 0 */
 size_t dstlen;
 {
 	unsigned long a = ntohl(addr.s_addr);
@@ -49,11 +49,11 @@ size_t dstlen;
 	}
 
 	p = buf;
-	for (i = NBYTES-1; i >= 0; i--) {
-		byte = (a >> (i*8)) & 0xff;
+	for (i = NBYTES - 1; i >= 0; i--) {
+		byte = (a >> (i * 8)) & 0xff;
 		p += ultoa(byte, 10, p, PERBYTE);
 		if (i != 0)
-			*(p-1) = '.';
+			*(p - 1) = '.';
 	}
 	n = p - buf;
 

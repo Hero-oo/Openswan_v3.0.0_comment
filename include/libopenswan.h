@@ -8,7 +8,3 @@ extern int ikev2_calc_iprangediff(ip_address low, ip_address high);
 extern const char *family2str(unsigned int family);
 
 #endif /* _LIBOPENSWAN_H */
-
-
-
-

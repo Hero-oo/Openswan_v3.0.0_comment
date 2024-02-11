@@ -39,7 +39,7 @@
 #include "x509.h"
 #include "pgp.h"
 #include "certs.h"
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "pluto/state.h"
 #include "packet.h"
 #include "md5.h"
@@ -58,18 +58,18 @@ stf_status ikev2_derive_child_keys(struct state *st, enum phase1_role role)
 	struct state *pst;
 	enum ikev2_trans_type_prf alg;
 
-	chunk_t ikeymat,rkeymat;
+	chunk_t ikeymat, rkeymat;
 	struct ipsec_proto_info *ipi = &st->st_esp;
 
 	kernel_alg_esp_info(&ipi->attrs.transattrs.ei,
-		ipi->attrs.transattrs.encrypt,
-		ipi->attrs.transattrs.enckeylen,
-		ipi->attrs.transattrs.integ_hash);
+			    ipi->attrs.transattrs.encrypt,
+			    ipi->attrs.transattrs.enckeylen,
+			    ipi->attrs.transattrs.integ_hash);
 
 	memset(&childsacalc, 0, sizeof(childsacalc));
 
 	pst = st;
-	if(st && st->st_clonedfrom) {
+	if (st && st->st_clonedfrom) {
 		/* find parent state for PRF hash alg */
 		pst = state_with_serialno(st->st_clonedfrom);
 	}
@@ -77,43 +77,38 @@ stf_status ikev2_derive_child_keys(struct state *st, enum phase1_role role)
 	alg = pst->st_oakley.prf_hash;
 	childsacalc.prf_hasher = ike_alg_get_prf(alg);
 	if (!childsacalc.prf_hasher) {
-		DBG(DBG_CONTROL,
-		    DBG_log("unsupported prf+ algorithm %d", alg));
+		DBG(DBG_CONTROL, DBG_log("unsupported prf+ algorithm %d", alg));
 		return STF_FAIL;
 	}
 
 	DBG(DBG_CRYPT,
 	    DBG_log("%s: using %s for prf+ (SA #%ld cloned from #%ld)",
-		    __FUNCTION__, childsacalc.prf_hasher
-			    ?  childsacalc.prf_hasher->common.name
-			    : "n/a",
+		    __FUNCTION__,
+		    childsacalc.prf_hasher ?
+			    childsacalc.prf_hasher->common.name :
+			    "n/a",
 		    st->st_serialno, st->st_clonedfrom));
 
-	DBG(DBG_CRYPT,
-		char buf[256];
-		struct connection *c = st->st_connection;
-		if (c->alg_info_ike) {
+	DBG(
+		DBG_CRYPT, char buf[256];
+		struct connection *c = st->st_connection; if (c->alg_info_ike) {
 			alg_info_snprint(buf, sizeof(buf),
-				 (struct alg_info *)c->alg_info_ike);
+					 (struct alg_info *)c->alg_info_ike);
 			DBG_log("SA #%lu IKE alg: %s", st->st_serialno, buf);
-		}
-		if (c->alg_info_esp) {
+		} if (c->alg_info_esp) {
 			alg_info_snprint(buf, sizeof(buf),
-				 (struct alg_info *)c->alg_info_esp);
+					 (struct alg_info *)c->alg_info_esp);
 			DBG_log("SA #%lu ESP alg: %s", st->st_serialno, buf);
-		}
-		c = pst->st_connection;
+		} c = pst->st_connection;
 		if (st != pst && c->alg_info_ike) {
 			alg_info_snprint(buf, sizeof(buf),
-				 (struct alg_info *)c->alg_info_ike);
+					 (struct alg_info *)c->alg_info_ike);
 			DBG_log("SA #%lu IKE alg: %s", pst->st_serialno, buf);
-		}
-		if (st != pst && c->alg_info_esp) {
+		} if (st != pst && c->alg_info_esp) {
 			alg_info_snprint(buf, sizeof(buf),
-				 (struct alg_info *)c->alg_info_esp);
+					 (struct alg_info *)c->alg_info_esp);
 			DBG_log("SA #%lu ESP alg: %s", pst->st_serialno, buf);
-		}
-	);
+		});
 
 	setchunk(childsacalc.ni, st->st_ni.ptr, st->st_ni.len);
 	setchunk(childsacalc.nr, st->st_nr.ptr, st->st_nr.len);
@@ -122,18 +117,17 @@ stf_status ikev2_derive_child_keys(struct state *st, enum phase1_role role)
 	    DBG_dump("childsacalc.ni", childsacalc.ni.ptr, childsacalc.ni.len);
 	    DBG_dump("childsacalc.nr", childsacalc.nr.ptr, childsacalc.nr.len));
 
-	childsacalc.spii.len=0;
-	childsacalc.spir.len=0;
+	childsacalc.spii.len = 0;
+	childsacalc.spir.len = 0;
 
 	childsacalc.counter[0] = 1;
 	childsacalc.skeyseed = &st->st_skey_d;
 
 	st->st_esp.present = TRUE;
-	st->st_esp.keymat_len = st->st_esp.attrs.transattrs.ei.enckeylen+
-		st->st_esp.attrs.transattrs.ei.authkeylen;
+	st->st_esp.keymat_len = st->st_esp.attrs.transattrs.ei.enckeylen +
+				st->st_esp.attrs.transattrs.ei.authkeylen;
 
-
-/*
+	/*
  *
  * Keying material MUST be taken from the expanded KEYMAT in the
  * following order:
@@ -154,31 +148,26 @@ stf_status ikev2_derive_child_keys(struct state *st, enum phase1_role role)
 	DBG(DBG_CRYPT,
 	    DBG_log("%s: my role is %s", __FUNCTION__, ROLE_NAME(role)));
 
-	v2genbytes(&ikeymat, st->st_esp.keymat_len
-		   , "initiator keys", &childsacalc);
+	v2genbytes(&ikeymat, st->st_esp.keymat_len, "initiator keys",
+		   &childsacalc);
 
-	v2genbytes(&rkeymat, st->st_esp.keymat_len
-		   , "responder keys", &childsacalc);
+	v2genbytes(&rkeymat, st->st_esp.keymat_len, "responder keys",
+		   &childsacalc);
 
-	if(role != INITIATOR) {
-	    DBG(DBG_CRYPT,
-		DBG_dump_chunk("our  keymat", ikeymat);
-		DBG_dump_chunk("peer keymat", rkeymat);
-	    );
-	    st->st_esp.our_keymat = ikeymat.ptr;
-	    st->st_esp.peer_keymat= rkeymat.ptr;
+	if (role != INITIATOR) {
+		DBG(DBG_CRYPT, DBG_dump_chunk("our  keymat", ikeymat);
+		    DBG_dump_chunk("peer keymat", rkeymat););
+		st->st_esp.our_keymat = ikeymat.ptr;
+		st->st_esp.peer_keymat = rkeymat.ptr;
 	} else {
-	    DBG(DBG_CRYPT,
-		DBG_dump_chunk("our  keymat", rkeymat);
-		DBG_dump_chunk("peer keymat", ikeymat);
-	    );
-	    st->st_esp.peer_keymat= ikeymat.ptr;
-	    st->st_esp.our_keymat = rkeymat.ptr;
+		DBG(DBG_CRYPT, DBG_dump_chunk("our  keymat", rkeymat);
+		    DBG_dump_chunk("peer keymat", ikeymat););
+		st->st_esp.peer_keymat = ikeymat.ptr;
+		st->st_esp.our_keymat = rkeymat.ptr;
 	}
 
 	return STF_OK;
 }
-
 
 /*
  * Local Variables:
@@ -186,4 +175,3 @@ stf_status ikev2_derive_child_keys(struct state *st, enum phase1_role role)
  * c-style: pluto
  * End:
  */
-

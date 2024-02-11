@@ -43,63 +43,63 @@
 
 static void init_local_interface(void)
 {
-    init_parker_interface(TRUE);
+	init_parker_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/parker.secrets"
-			       , NULL, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/parker.secrets", NULL, NULL);
 }
 
 int main(int argc, char *argv[])
 {
-    char *infile;
-    int  regression = 0;
+	char *infile;
+	int regression = 0;
 
 #ifdef HAVE_EFENCE
-    EF_PROTECT_FREE=1;
+	EF_PROTECT_FREE = 1;
 #endif
 
-    progname = argv[0];
-    leak_detective = 1;
+	progname = argv[0];
+	leak_detective = 1;
 
-    if(argc != 3 && argc!=4) {
-	fprintf(stderr, "Usage: %s [-r] <whackrecord>\n", progname);
-	exit(10);
-    }
-    /* skip argv0 */
-    argc--; argv++;
+	if (argc != 3 && argc != 4) {
+		fprintf(stderr, "Usage: %s [-r] <whackrecord>\n", progname);
+		exit(10);
+	}
+	/* skip argv0 */
+	argc--;
+	argv++;
 
-    if(strcmp(argv[0], "-r")==0) {
-        regression = 1;
-        argc--; argv++;
-    }
+	if (strcmp(argv[0], "-r") == 0) {
+		regression = 1;
+		argc--;
+		argv++;
+	}
 
-    (void)regression;
+	(void)regression;
 
-    tool_init_log();
-    load_oswcrypto();
-    init_fake_vendorid();
-    init_fake_secrets();
-    init_local_interface();
+	tool_init_log();
+	load_oswcrypto();
+	init_fake_vendorid();
+	init_fake_secrets();
+	init_local_interface();
 
-    infile = argv[0];
+	infile = argv[0];
 
-    cur_debugging = DBG_CONTROL|DBG_CONTROLMORE;
-    if(readwhackmsg(infile) == 0) exit(11);
+	cur_debugging = DBG_CONTROL | DBG_CONTROLMORE;
+	if (readwhackmsg(infile) == 0)
+		exit(11);
 
-    hostpair_list();
-    report_leaks();
+	hostpair_list();
+	report_leaks();
 
-    tool_close_log();
-    exit(0);
+	tool_close_log();
+	exit(0);
 }
 
-
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

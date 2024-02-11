@@ -1,4 +1,4 @@
-#define _GNU_SOURCE         /* for ppoll(2) */
+#define _GNU_SOURCE /* for ppoll(2) */
 #define LEAK_DETECTIVE
 #define AGGRESSIVE 1
 #define XAUTH
@@ -36,122 +36,124 @@
 #include "seam_hostpair.c"
 #include "seam_adns.c"
 
-const char *progname=NULL;
-int verbose=0;
+const char *progname = NULL;
+int verbose = 0;
 int warningsarefatal = 0;
 
 #define TESTNAME "adnstest"
 
 int children_exited = 0;
 
-static void
-childhandler(int sig UNUSED)
+static void childhandler(int sig UNUSED)
 {
-    children_exited++;
+	children_exited++;
 }
 
 void moon_continue(struct adns_continuation *cr, err_t ugh)
 {
-    DBG_log("moon continue with: %s", ugh ? ugh : "no-error");
+	DBG_log("moon continue with: %s", ugh ? ugh : "no-error");
 }
 
 void cassidy_continue(struct adns_continuation *cr, err_t ugh)
 {
-    if(ugh) {
-        DBG_log("cassidy error: %s", ugh);
-        /* continuation is freed by dnskey */
-        return;
-    }
+	if (ugh) {
+		DBG_log("cassidy error: %s", ugh);
+		/* continuation is freed by dnskey */
+		return;
+	}
 }
 
 void cassidy_host_continue(struct adns_continuation *cr, err_t ugh)
 {
-    if(ugh) {
-        DBG_log("cassidy error: %s", ugh);
-        /* continuation is freed by dnskey */
-        return;
-    }
-    struct addrinfo *ai = sort_addr_info(cr->ipanswers);
-    dump_addr_info(ai);
-    cr->ipanswers = ai;
+	if (ugh) {
+		DBG_log("cassidy error: %s", ugh);
+		/* continuation is freed by dnskey */
+		return;
+	}
+	struct addrinfo *ai = sort_addr_info(cr->ipanswers);
+	dump_addr_info(ai);
+	cr->ipanswers = ai;
 }
 
-void process_dns_results(void) {
-    send_unsent_ADNS_queries();
-    while(adns_any_in_flight()) {
-        struct pollfd one;
-        struct timespec waiting;
-        int n;
+void process_dns_results(void)
+{
+	send_unsent_ADNS_queries();
+	while (adns_any_in_flight()) {
+		struct pollfd one;
+		struct timespec waiting;
+		int n;
 
-        one.fd = adns_afd;
-        one.events = POLLIN;
-        waiting.tv_sec = 30;
-        waiting.tv_nsec= 0;
-        n = ppoll(&one, 1, &waiting, NULL);
-        if(n==1 && one.revents & POLLIN) {
-            handle_adns_answer();
-        } else {
-            DBG_log("poll failed with: %d", n);
-            exit(5);
-        }
+		one.fd = adns_afd;
+		one.events = POLLIN;
+		waiting.tv_sec = 30;
+		waiting.tv_nsec = 0;
+		n = ppoll(&one, 1, &waiting, NULL);
+		if (n == 1 && one.revents & POLLIN) {
+			handle_adns_answer();
+		} else {
+			DBG_log("poll failed with: %d", n);
+			exit(5);
+		}
 
-        send_unsent_ADNS_queries();
-    }
+		send_unsent_ADNS_queries();
+	}
 }
 
 int main(int argc, char *argv[])
 {
-    bool  recalculate = FALSE;
-    err_t e;
-    struct id moon, cassidy;
-    struct adns_continuation *cr1 = NULL;
+	bool recalculate = FALSE;
+	err_t e;
+	struct id moon, cassidy;
+	struct adns_continuation *cr1 = NULL;
 
 #ifdef HAVE_EFENCE
-    EF_PROTECT_FREE=1;
+	EF_PROTECT_FREE = 1;
 #endif
 
-    initproctitle(argc, argv);
-    progname = argv[0];
-    leak_detective = 1;
+	initproctitle(argc, argv);
+	progname = argv[0];
+	leak_detective = 1;
 
-    if(argc != 3 && argc!=4) {
-	fprintf(stderr, "Usage: %s [-r] <whackrecord> <conn-name>\n", progname);
-	exit(10);
-    }
-    /* skip argv0 */
-    argc--; argv++;
+	if (argc != 3 && argc != 4) {
+		fprintf(stderr, "Usage: %s [-r] <whackrecord> <conn-name>\n",
+			progname);
+		exit(10);
+	}
+	/* skip argv0 */
+	argc--;
+	argv++;
 
-    if(strcmp(argv[0], "-r")==0) {
-        recalculate = 1;    /* do all crypto */
-        argc--; argv++;
-    }
+	if (strcmp(argv[0], "-r") == 0) {
+		recalculate = 1; /* do all crypto */
+		argc--;
+		argv++;
+	}
 
-    (void)recalculate;
+	(void)recalculate;
 
-    tool_init_log();
-    cur_debugging |= DBG_DNS;
-    init_adns();
+	tool_init_log();
+	cur_debugging |= DBG_DNS;
+	init_adns();
 
-    {
-    	int r;
-	struct sigaction act;
+	{
+		int r;
+		struct sigaction act;
 
-	act.sa_handler = &childhandler;
-	act.sa_flags   = SA_RESTART;
-	r = sigaction(SIGCHLD, &act, NULL);
-	passert(r == 0);
-    }
+		act.sa_handler = &childhandler;
+		act.sa_flags = SA_RESTART;
+		r = sigaction(SIGCHLD, &act, NULL);
+		passert(r == 0);
+	}
 
-    reset_globals();
+	reset_globals();
 
-    /* setup a query */
-    cr1 = alloc_thing(struct adns_continuation, "moon lookup");
-    moon.kind = ID_FQDN;
-    strtochunk(moon.name, "moon.testing.openswan.org", "dns name");
-    e = start_adns_query(&moon, NULL, ns_t_key,
-                         moon_continue, cr1);
-    freeanychunk(moon.name);
-    process_dns_results();
+	/* setup a query */
+	cr1 = alloc_thing(struct adns_continuation, "moon lookup");
+	moon.kind = ID_FQDN;
+	strtochunk(moon.name, "moon.testing.openswan.org", "dns name");
+	e = start_adns_query(&moon, NULL, ns_t_key, moon_continue, cr1);
+	freeanychunk(moon.name);
+	process_dns_results();
 
 #if 0
     cr1 = alloc_thing(struct adns_continuation, "cassidy lookup");
@@ -162,30 +164,27 @@ int main(int argc, char *argv[])
     freeanychunk(cassidy.name);
     process_dns_results();
 #else
-    (void)cassidy;
+	(void)cassidy;
 #endif
 
-    /* re-use cassidy */
-    cr1 = alloc_thing(struct adns_continuation, "cassidy A lookup");
-    e = start_adns_hostname(AF_UNSPEC, "cassidy.sandelman.ca", cassidy_host_continue, cr1);
-    (void)e;
-    process_dns_results();
+	/* re-use cassidy */
+	cr1 = alloc_thing(struct adns_continuation, "cassidy A lookup");
+	e = start_adns_hostname(AF_UNSPEC, "cassidy.sandelman.ca",
+				cassidy_host_continue, cr1);
+	(void)e;
+	process_dns_results();
 
-    stop_adns();
-    report_leaks();
+	stop_adns();
+	report_leaks();
 
-    tool_close_log();
-    exit(0);
+	tool_close_log();
+	exit(0);
 }
 
-
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4
  * compile-command: "make check"
  * End:
  */
-
-
-

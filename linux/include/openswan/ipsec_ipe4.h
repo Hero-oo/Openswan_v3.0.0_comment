@@ -16,10 +16,10 @@
 
 /* The packet header is an IP header! */
 
-struct ipe4_xdata			/* transform table data */
+struct ipe4_xdata /* transform table data */
 {
-	struct in_addr	i4_src;
-	struct in_addr	i4_dst;
+	struct in_addr i4_src;
+	struct in_addr i4_dst;
 };
 
-#define EMT_IPE4_ULEN	8	/* coming from user mode */
+#define EMT_IPE4_ULEN 8 /* coming from user mode */

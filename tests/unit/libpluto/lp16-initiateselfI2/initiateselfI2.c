@@ -12,23 +12,23 @@
 
 static void init_local_interface(void)
 {
-    init_rw_interface();
+	init_rw_interface();
 }
 
 static void init_fake_secrets(void)
 {
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/rw.secrets"
-			       , NULL, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/rw.secrets", NULL, NULL);
 }
 
-static void init_loaded(void) {}
+static void init_loaded(void)
+{
+}
 
 #include "seam_parentI2.c"
 #include "../lp10-parentI2/parentI2_main.c"
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

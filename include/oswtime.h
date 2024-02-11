@@ -17,18 +17,15 @@
 
 extern bool now_regression;
 extern time_t regression_time;
-extern time_t now(void);	/* careful version of time(2) */
+extern time_t now(void); /* careful version of time(2) */
 
 /* no time defined in time_t */
-#define UNDEFINED_TIME	0
+#define UNDEFINED_TIME 0
 
 /* size of timetoa string buffer */
-#define TIMETOA_BUF	30
+#define TIMETOA_BUF 30
 
 /* display a date either in local or UTC time */
-extern char* timetoa(const time_t *timep, bool utc, char *buf, size_t blen);
-
+extern char *timetoa(const time_t *timep, bool utc, char *buf, size_t blen);
 
 #endif
-
-

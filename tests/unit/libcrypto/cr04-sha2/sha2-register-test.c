@@ -16,56 +16,56 @@ const char *progname;
 
 void exit_tool(int stat)
 {
-    exit(stat);
+	exit(stat);
 }
 
 extern int ike_alg_sha2_init(void);
 
 int main(int argc, char *argv[])
 {
-    int i;
-    err_t e = NULL;
-    const struct ike_integ_desc *sha256;
-    char  inbuf[256];
-    char  outbuf[256];
-    char *hash;
-    union hash_ctx hc;
+	int i;
+	err_t e = NULL;
+	const struct ike_integ_desc *sha256;
+	char inbuf[256];
+	char outbuf[256];
+	char *hash;
+	union hash_ctx hc;
 
-    progname = argv[0];
-    leak_detective=1;
-    tool_init_log();
+	progname = argv[0];
+	leak_detective = 1;
+	tool_init_log();
 
-    /* register it! */
-    ike_alg_sha2_init();
+	/* register it! */
+	ike_alg_sha2_init();
 
-    passert(ikev2_alg_integ_present(IKEv2_AUTH_HMAC_SHA2_256_128, 128));
+	passert(ikev2_alg_integ_present(IKEv2_AUTH_HMAC_SHA2_256_128, 128));
 
-    sha256 = ike_alg_get_integ(IKEv2_AUTH_HMAC_SHA2_256_128);
+	sha256 = ike_alg_get_integ(IKEv2_AUTH_HMAC_SHA2_256_128);
 
-    /* initialize the sample */
-    for(i=0; i<sizeof(inbuf); i++) {
-        inbuf[i] = i&0xff;
-    }
+	/* initialize the sample */
+	for (i = 0; i < sizeof(inbuf); i++) {
+		inbuf[i] = i & 0xff;
+	}
 
-    printf("plaintext input:\n");
-    hexdump(stdout, inbuf, 0, sizeof(outbuf));
+	printf("plaintext input:\n");
+	hexdump(stdout, inbuf, 0, sizeof(outbuf));
 
-    hash = alloc_bytes(sha256->hash_digest_len, "digest output");
+	hash = alloc_bytes(sha256->hash_digest_len, "digest output");
 
-    /* now encrypt! */
-    sha256->hash_init(&hc);
-    sha256->hash_update(&hc, inbuf, 256);
-    sha256->hash_update(&hc, inbuf, 256);
-    sha256->hash_final(hash, &hc);
+	/* now encrypt! */
+	sha256->hash_init(&hc);
+	sha256->hash_update(&hc, inbuf, 256);
+	sha256->hash_update(&hc, inbuf, 256);
+	sha256->hash_final(hash, &hc);
 
-    printf("hash output:\n");
-    hexdump(stdout, hash, 0, sha256->hash_digest_len);
+	printf("hash output:\n");
+	hexdump(stdout, hash, 0, sha256->hash_digest_len);
 
-    pfreeany(hash);
+	pfreeany(hash);
 
-    report_leaks();
-    tool_close_log();
-    exit(0);
+	report_leaks();
+	tool_close_log();
+	exit(0);
 }
 
 /*

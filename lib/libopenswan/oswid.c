@@ -21,37 +21,34 @@
 #include "oswlog.h"
 
 enum myid_state myid_state = MYID_UNKNOWN;
-struct id myids[MYID_SPECIFIED+1];	/* %myid */
+struct id myids[MYID_SPECIFIED + 1]; /* %myid */
 
 const struct id *resolve_myid(const struct id *id)
 {
-  if((id)->kind == ID_MYID) {
-    return &myids[myid_state];
-  } else {
-    return (id);
-  }
+	if ((id)->kind == ID_MYID) {
+		return &myids[myid_state];
+	} else {
+		return (id);
+	}
 }
 
-
-void calc_ckaid(char *ckaid_print_buf, size_t ckaid_print_buf_len
-                , const unsigned char *key, const unsigned int keylen)
+void calc_ckaid(char *ckaid_print_buf, size_t ckaid_print_buf_len,
+		const unsigned char *key, const unsigned int keylen)
 {
-    unsigned char key_ckaid[CKAID_BUFSIZE];
+	unsigned char key_ckaid[CKAID_BUFSIZE];
 
-    /* maybe #ifdef SHA2 ? */
-    /* calculate the hash of the public key, using SHA-2 */
-    sha256_hash_buffer(key, keylen, key_ckaid, sizeof(key_ckaid));
+	/* maybe #ifdef SHA2 ? */
+	/* calculate the hash of the public key, using SHA-2 */
+	sha256_hash_buffer(key, keylen, key_ckaid, sizeof(key_ckaid));
 
-    datatot(key_ckaid, sizeof(key_ckaid), 'G',
-            ckaid_print_buf, ckaid_print_buf_len);
+	datatot(key_ckaid, sizeof(key_ckaid), 'G', ckaid_print_buf,
+		ckaid_print_buf_len);
 }
 
 void log_ckaid(const char *fmt, const unsigned char *key, unsigned int keylen)
 {
-    char ckaid_print_buf[CKAID_PRINT_BUF_LEN];
+	char ckaid_print_buf[CKAID_PRINT_BUF_LEN];
 
-    calc_ckaid(ckaid_print_buf, sizeof(ckaid_print_buf), key, keylen);
-    DBG_log(fmt, ckaid_print_buf);
+	calc_ckaid(ckaid_print_buf, sizeof(ckaid_print_buf), key, keylen);
+	DBG_log(fmt, ckaid_print_buf);
 }
-
-

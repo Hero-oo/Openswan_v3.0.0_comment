@@ -5,24 +5,23 @@
 
 static void init_local_interface(bool doipv6)
 {
-    init_bob_interface(doipv6);
-    cur_debugging = DBG_CONTROL|DBG_CONTROLMORE;
+	init_bob_interface(doipv6);
+	cur_debugging = DBG_CONTROL | DBG_CONTROLMORE;
 }
 
 extern const struct osw_conf_options *osw_init_ipsecdir(const char *ipsec_dir);
 
 static void init_fake_secrets(void)
 {
-    prompt_pass_t pass;
-    memset(&pass, 0, sizeof(pass));
-    osw_init_ipsecdir("../../../functional/10-defaultroute/bob");
+	prompt_pass_t pass;
+	memset(&pass, 0, sizeof(pass));
+	osw_init_ipsecdir("../../../functional/10-defaultroute/bob");
 
-    rnd_offset = 13;
+	rnd_offset = 13;
 
-    osw_load_preshared_secrets(&pluto_secrets
-                               , TRUE
-                               , "../../../functional/10-defaultroute/bob.secrets"
-                               , NULL, NULL);
+	osw_load_preshared_secrets(
+		&pluto_secrets, TRUE,
+		"../../../functional/10-defaultroute/bob.secrets", NULL, NULL);
 }
 
 #include "../lp07-orient/orienttest_main.c"

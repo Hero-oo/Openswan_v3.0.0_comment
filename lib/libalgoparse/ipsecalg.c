@@ -51,23 +51,23 @@ struct oakley_group_desc;
 int /* __attribute__ ((unused)) */
 alg_info_esp_sadb2aa(int sadb_aalg)
 {
-	int auth=0;
-	switch(sadb_aalg) {
-		/* Paul: why is this using a mix of SADB_AALG_* and AUTH_ALGORITHM_* */
-		case SADB_AALG_MD5HMAC:
-		case SADB_AALG_SHA1HMAC:
-			auth=sadb_aalg-1;
-			break;
-			/* since they are the same ...  :)  */
-		case AUTH_ALGORITHM_HMAC_SHA2_256:
-		case AUTH_ALGORITHM_HMAC_SHA2_384:
-		case AUTH_ALGORITHM_HMAC_SHA2_512:
-		case AUTH_ALGORITHM_HMAC_RIPEMD:
-			auth=sadb_aalg;
-			break;
-		default:
-			/* loose ... */
-			auth=sadb_aalg;
+	int auth = 0;
+	switch (sadb_aalg) {
+	/* Paul: why is this using a mix of SADB_AALG_* and AUTH_ALGORITHM_* */
+	case SADB_AALG_MD5HMAC:
+	case SADB_AALG_SHA1HMAC:
+		auth = sadb_aalg - 1;
+		break;
+		/* since they are the same ...  :)  */
+	case AUTH_ALGORITHM_HMAC_SHA2_256:
+	case AUTH_ALGORITHM_HMAC_SHA2_384:
+	case AUTH_ALGORITHM_HMAC_SHA2_512:
+	case AUTH_ALGORITHM_HMAC_RIPEMD:
+		auth = sadb_aalg;
+		break;
+	default:
+		/* loose ... */
+		auth = sadb_aalg;
 	}
 	return auth;
 }
@@ -75,140 +75,130 @@ alg_info_esp_sadb2aa(int sadb_aalg)
 /*
  *	Raw add routine: only checks for no duplicates
  */
-static void
-__alg_info_esp_add (struct alg_info_esp *alg_info
-		    , int ealg_id, unsigned ek_bits
-		    , int aalg_id, unsigned ak_bits
-                    , enum ikev2_trans_type_dh    modp_id)
+static void __alg_info_esp_add(struct alg_info_esp *alg_info, int ealg_id,
+			       unsigned ek_bits, int aalg_id, unsigned ak_bits,
+			       enum ikev2_trans_type_dh modp_id)
 
 {
-	struct esp_info *esp_info=alg_info->esp;
-	unsigned cnt=alg_info->alg_info_cnt, i;
+	struct esp_info *esp_info = alg_info->esp;
+	unsigned cnt = alg_info->alg_info_cnt, i;
 	/* 	check for overflows 	*/
 	passert(cnt < elemsof(alg_info->esp));
 	/*	dont add duplicates	*/
-	for (i=0;i<cnt;i++)
-		if (	esp_info[i].esp_ealg_id==ealg_id &&
-			(!ek_bits || esp_info[i].esp_ealg_keylen==ek_bits) &&
-			esp_info[i].esp_aalg_id==aalg_id &&
-			(!ak_bits || esp_info[i].esp_aalg_keylen==ak_bits))
+	for (i = 0; i < cnt; i++)
+		if (esp_info[i].esp_ealg_id == ealg_id &&
+		    (!ek_bits || esp_info[i].esp_ealg_keylen == ek_bits) &&
+		    esp_info[i].esp_aalg_id == aalg_id &&
+		    (!ak_bits || esp_info[i].esp_aalg_keylen == ak_bits))
 			return;
-	esp_info[cnt].esp_ealg_id=ealg_id;
-	esp_info[cnt].esp_ealg_keylen=ek_bits;
-	esp_info[cnt].esp_aalg_id=aalg_id;
-	esp_info[cnt].esp_aalg_keylen=ak_bits;
-        esp_info[cnt].pfs_group = modp_id;
+	esp_info[cnt].esp_ealg_id = ealg_id;
+	esp_info[cnt].esp_ealg_keylen = ek_bits;
+	esp_info[cnt].esp_aalg_id = aalg_id;
+	esp_info[cnt].esp_aalg_keylen = ak_bits;
+	esp_info[cnt].pfs_group = modp_id;
 	/* sadb values */
 	alg_info->alg_info_cnt++;
 	DBG(DBG_CRYPT, DBG_log("__alg_info_esp_add() "
-				"ealg=%d/%dbit aalg=%d/%dbit cnt=%d",
-				ealg_id, ek_bits, aalg_id, ak_bits, alg_info->alg_info_cnt));
+			       "ealg=%d/%dbit aalg=%d/%dbit cnt=%d",
+			       ealg_id, ek_bits, aalg_id, ak_bits,
+			       alg_info->alg_info_cnt));
 }
 
 /*
  *	Add ESP alg info _with_ logic (policy):
  */
-void
-alg_info_esp_add (struct alg_info *alg_info,
-		  enum ikev2_trans_type_encr  ealg_id, int ek_bits,
-		  enum ikev2_trans_type_integ aalg_id, int ak_bits,
-                  enum ikev2_trans_type_prf   prfalg_id UNUSED,
-		  enum ikev2_trans_type_dh    modp_id)
+void alg_info_esp_add(struct alg_info *alg_info,
+		      enum ikev2_trans_type_encr ealg_id, int ek_bits,
+		      enum ikev2_trans_type_integ aalg_id, int ak_bits,
+		      enum ikev2_trans_type_prf prfalg_id UNUSED,
+		      enum ikev2_trans_type_dh modp_id)
 {
-    /*	Policy: default to AES_CBC */
-    if (ealg_id==0)
-        ealg_id=IKEv2_ENCR_AES_CBC;
+	/*	Policy: default to AES_CBC */
+	if (ealg_id == 0)
+		ealg_id = IKEv2_ENCR_AES_CBC;
 
-    if (ek_bits == 0)
-        ek_bits = kernel_alg_esp_enc_keylen(ealg_id) * BITS_PER_BYTE;
+	if (ek_bits == 0)
+		ek_bits = kernel_alg_esp_enc_keylen(ealg_id) * BITS_PER_BYTE;
 
-    if (ealg_id>0) {
-        if(aalg_id > 0) {
-            if (aalg_id == INT_MAX)
-                aalg_id = 0;
-            __alg_info_esp_add((struct alg_info_esp *)alg_info,
-                               ealg_id, ek_bits,
-                               aalg_id, ak_bits, modp_id);
-        } else  {
-            /*	Policy: default to SHA256 and SHA1 */
-            __alg_info_esp_add((struct alg_info_esp *)alg_info,
-                               ealg_id, ek_bits,
-                               IKEv2_AUTH_HMAC_SHA2_256_128, 0, modp_id);
-            __alg_info_esp_add((struct alg_info_esp *)alg_info,
-                               ealg_id, ek_bits,
-                               IKEv2_AUTH_HMAC_SHA1_96, 0, modp_id);
-        }
-    }
+	if (ealg_id > 0) {
+		if (aalg_id > 0) {
+			if (aalg_id == INT_MAX)
+				aalg_id = 0;
+			__alg_info_esp_add((struct alg_info_esp *)alg_info,
+					   ealg_id, ek_bits, aalg_id, ak_bits,
+					   modp_id);
+		} else {
+			/*	Policy: default to SHA256 and SHA1 */
+			__alg_info_esp_add((struct alg_info_esp *)alg_info,
+					   ealg_id, ek_bits,
+					   IKEv2_AUTH_HMAC_SHA2_256_128, 0,
+					   modp_id);
+			__alg_info_esp_add((struct alg_info_esp *)alg_info,
+					   ealg_id, ek_bits,
+					   IKEv2_AUTH_HMAC_SHA1_96, 0, modp_id);
+		}
+	}
 }
 
 /*
  *	Add AH alg info _with_ logic (policy):
  */
-void
-alg_info_ah_add (struct alg_info *alg_info,
-                 enum ikev2_trans_type_encr  ealg_id, int ek_bits,
-                 enum ikev2_trans_type_integ aalg_id, int ak_bits,
-                 enum ikev2_trans_type_prf   prfalg_id UNUSED,
-                 enum ikev2_trans_type_dh    modp_id)
+void alg_info_ah_add(struct alg_info *alg_info,
+		     enum ikev2_trans_type_encr ealg_id, int ek_bits,
+		     enum ikev2_trans_type_integ aalg_id, int ak_bits,
+		     enum ikev2_trans_type_prf prfalg_id UNUSED,
+		     enum ikev2_trans_type_dh modp_id)
 {
-    ealg_id = 0;  /* AH has no encryption */
+	ealg_id = 0; /* AH has no encryption */
 
-    if(aalg_id > 0)
-        {
-            __alg_info_esp_add((struct alg_info_esp *)alg_info,
-                               0, 0,
-                               aalg_id, ak_bits, modp_id);
-        }
-    else
-        {
-            /*	Policy: default to SHA256 and SHA1 */
-            __alg_info_esp_add((struct alg_info_esp *)alg_info,
-                               0,0,
-                               IKEv2_AUTH_HMAC_SHA2_256_128, 0, modp_id);
-            __alg_info_esp_add((struct alg_info_esp *)alg_info,
-                               0,0,
-                               IKEv2_AUTH_HMAC_SHA1_96, 0, modp_id);
-    }
+	if (aalg_id > 0) {
+		__alg_info_esp_add((struct alg_info_esp *)alg_info, 0, 0,
+				   aalg_id, ak_bits, modp_id);
+	} else {
+		/*	Policy: default to SHA256 and SHA1 */
+		__alg_info_esp_add((struct alg_info_esp *)alg_info, 0, 0,
+				   IKEv2_AUTH_HMAC_SHA2_256_128, 0, modp_id);
+		__alg_info_esp_add((struct alg_info_esp *)alg_info, 0, 0,
+				   IKEv2_AUTH_HMAC_SHA1_96, 0, modp_id);
+	}
 }
 
-struct alg_info_esp *
-alg_info_esp_defaults(void)
+struct alg_info_esp *alg_info_esp_defaults(void)
 {
-    struct alg_info_esp *esp_info;
+	struct alg_info_esp *esp_info;
 
-    esp_info=alloc_thing (struct alg_info_esp, "alg_info_esp");
-    if (!esp_info) goto out;
-    esp_info->alg_info_protoid=PROTO_IPSEC_ESP;
+	esp_info = alloc_thing(struct alg_info_esp, "alg_info_esp");
+	if (!esp_info)
+		goto out;
+	esp_info->alg_info_protoid = PROTO_IPSEC_ESP;
 
-    /* call with all zeros, to get entire default permutation */
-    alg_info_esp_add (ESPTOINFO(esp_info),0,0,
-                      0,0,
-                      0,0);
- out:
-    return esp_info;
+	/* call with all zeros, to get entire default permutation */
+	alg_info_esp_add(ESPTOINFO(esp_info), 0, 0, 0, 0, 0, 0);
+out:
+	return esp_info;
 }
 
 /* Translate from IKEv1->IKEv2 */
 enum ikev2_trans_type_integ ikev1toikev2integ(enum ikev1_auth_attribute num)
 {
-    switch(num) {
-    case AUTH_ALGORITHM_HMAC_MD5:
-        return IKEv2_AUTH_HMAC_MD5_96;
-    case AUTH_ALGORITHM_HMAC_SHA1:
-        return IKEv2_AUTH_HMAC_SHA1_96;
-    case AUTH_ALGORITHM_DES_MAC:
-        return IKEv2_AUTH_DES_MAC;
-    case AUTH_ALGORITHM_KPDK:
-        return IKEv2_AUTH_KPDK_MD5;
-    case AUTH_ALGORITHM_HMAC_SHA2_256:
-        return IKEv2_AUTH_HMAC_SHA2_256_128;
-    case AUTH_ALGORITHM_HMAC_SHA2_384:
-        return IKEv2_AUTH_HMAC_SHA2_384_192;
-    case AUTH_ALGORITHM_HMAC_SHA2_512:
-        return IKEv2_AUTH_HMAC_SHA2_512_256;
-    default:
-	return IKEv2_AUTH_NONE;
-    }
+	switch (num) {
+	case AUTH_ALGORITHM_HMAC_MD5:
+		return IKEv2_AUTH_HMAC_MD5_96;
+	case AUTH_ALGORITHM_HMAC_SHA1:
+		return IKEv2_AUTH_HMAC_SHA1_96;
+	case AUTH_ALGORITHM_DES_MAC:
+		return IKEv2_AUTH_DES_MAC;
+	case AUTH_ALGORITHM_KPDK:
+		return IKEv2_AUTH_KPDK_MD5;
+	case AUTH_ALGORITHM_HMAC_SHA2_256:
+		return IKEv2_AUTH_HMAC_SHA2_256_128;
+	case AUTH_ALGORITHM_HMAC_SHA2_384:
+		return IKEv2_AUTH_HMAC_SHA2_384_192;
+	case AUTH_ALGORITHM_HMAC_SHA2_512:
+		return IKEv2_AUTH_HMAC_SHA2_512_256;
+	default:
+		return IKEv2_AUTH_NONE;
+	}
 }
 
 /*

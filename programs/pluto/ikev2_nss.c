@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/time.h>		/* for gettimeofday */
+#include <sys/time.h> /* for gettimeofday */
 #include <gmp.h>
 #include <resolv.h>
 
@@ -37,22 +37,22 @@
 #ifdef XAUTH_USEPAM
 #include <security/pam_appl.h>
 #endif
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "hostpair.h"
 #include "pluto/keys.h"
 #include "keys.h"
 #include "packet.h"
-#include "demux.h"	/* needs packet.h */
-#include "adns.h"	/* needs <resolv.h> */
-#include "dnskey.h"	/* needs keys.h and adns.h */
-#include "kernel.h"	/* needs connections.h */
+#include "demux.h" /* needs packet.h */
+#include "adns.h" /* needs <resolv.h> */
+#include "dnskey.h" /* needs keys.h and adns.h */
+#include "kernel.h" /* needs connections.h */
 #include "log.h"
 #include "cookie.h"
 #include "pluto/server.h"
 #include "pluto/spdb.h"
 #include "timer.h"
 #include "rnd.h"
-#include "ipsec_doi.h"	/* needs demux.h and state.h */
+#include "ipsec_doi.h" /* needs demux.h and state.h */
 #include "whack.h"
 #include "fetch.h"
 #include "pkcs.h"
@@ -65,32 +65,32 @@
 /*
  * replaces try_RSA_signature_v2()
  */
-err_t
-try_RSA_signature_v2(const u_char hash_val[MAX_DIGEST_LEN]
-		     , size_t hash_len
-		     , const pb_stream *sig_pbs, struct pubkey *kr
-		     , struct state *st)
+err_t try_RSA_signature_v2(const u_char hash_val[MAX_DIGEST_LEN],
+			   size_t hash_len, const pb_stream *sig_pbs,
+			   struct pubkey *kr, struct state *st)
 {
-    const u_char *sig_val = sig_pbs->cur;
-    size_t sig_len = pbs_left(sig_pbs);
-    const struct RSA_public_key *k = &kr->u.rsa;
+	const u_char *sig_val = sig_pbs->cur;
+	size_t sig_len = pbs_left(sig_pbs);
+	const struct RSA_public_key *k = &kr->u.rsa;
 
-    if (k == NULL)
-	return "1""no key available";	/* failure: no key to use */
+	if (k == NULL)
+		return "1"
+		       "no key available"; /* failure: no key to use */
 
-    /* decrypt the signature -- reversing RSA_sign_hash */
-    if (sig_len != k->k)
-    {
-	return "1""SIG length does not match public key length";
-    }
+	/* decrypt the signature -- reversing RSA_sign_hash */
+	if (sig_len != k->k) {
+		return "1"
+		       "SIG length does not match public key length";
+	}
 
-    err_t ugh = RSA_signature_verify_nss (k,hash_val,hash_len,sig_val,sig_len);
-    if(ugh!=NULL) {
-	return ugh;
-    }
+	err_t ugh = RSA_signature_verify_nss(k, hash_val, hash_len, sig_val,
+					     sig_len);
+	if (ugh != NULL) {
+		return ugh;
+	}
 
-    unreference_key(&st->st_peer_pubkey);
-    st->st_peer_pubkey = reference_key(kr);
+	unreference_key(&st->st_peer_pubkey);
+	st->st_peer_pubkey = reference_key(kr);
 
-    return NULL;
+	return NULL;
 }

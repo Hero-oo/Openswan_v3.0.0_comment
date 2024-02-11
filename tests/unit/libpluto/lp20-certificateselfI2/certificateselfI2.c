@@ -12,26 +12,26 @@
 
 static void init_local_interface(void)
 {
-    init_rw_interface();
+	init_rw_interface();
 }
 
 static void init_fake_secrets(void)
 {
-    prompt_pass_t pass;
-    memset(&pass, 0, sizeof(pass));
-    osw_init_ipsecdir("../samples/rwcert");
+	prompt_pass_t pass;
+	memset(&pass, 0, sizeof(pass));
+	osw_init_ipsecdir("../samples/rwcert");
 
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/rwcert.secrets"
-			       , &pass, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/rwcert.secrets", &pass, NULL);
 }
-static void init_loaded(void) {}
+static void init_loaded(void)
+{
+}
 
 #include "seam_parentI2.c"
 #include "../lp10-parentI2/parentI2_main.c"
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

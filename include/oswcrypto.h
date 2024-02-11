@@ -23,43 +23,39 @@
 #include <crypto/aes_cbc.h>
 #include <crypto/des.h>
 
-#define clear_crypto_space(wc, space) do { \
-  (wc)->start = 0;  \
-  (wc)->len   = sizeof(space);                  \
-  } while(0)
-
-
+#define clear_crypto_space(wc, space)      \
+	do {                               \
+		(wc)->start = 0;           \
+		(wc)->len = sizeof(space); \
+	} while (0)
 
 /* XXX Qhis really HAS to go... */
 struct oswcrypto_meth {
 	void (*rsa_mod_exp_crt)(mpz_t dst, const mpz_t src, const mpz_t p,
-							const mpz_t dP, const mpz_t q, const mpz_t qP,
-							const mpz_t qInv);
+				const mpz_t dP, const mpz_t q, const mpz_t qP,
+				const mpz_t qInv);
 	void (*mod_exp)(mpz_t r0, const mpz_t mp_g, const mpz_t secret,
-							const mpz_t modulus);
+			const mpz_t modulus);
 
+	int (*aes_set_key)(aes_context *cx, const u_int8_t *in_key, int length);
+	int (*aes_cbc_encrypt)(aes_context *ctx, const u_int8_t *input,
+			       u_int8_t *output, int length,
+			       const u_int8_t *ivec, int enc);
 
-	int  (*aes_set_key)(aes_context *cx, const u_int8_t *in_key, int length);
-	int  (*aes_cbc_encrypt)(aes_context *ctx, const u_int8_t *input,
-							u_int8_t *output, int length, const u_int8_t *ivec,
-							int enc);
-
-
-	int  (*des_set_key)(des_cblock (*key), des_key_schedule schedule);
-	void (*des_cbc_encrypt)(des_cblock (*input), des_cblock (*output),
-							long length, des_key_schedule schedule,
-							des_cblock (*ivec), int enc);
+	int (*des_set_key)(des_cblock(*key), des_key_schedule schedule);
+	void (*des_cbc_encrypt)(des_cblock(*input), des_cblock(*output),
+				long length, des_key_schedule schedule,
+				des_cblock(*ivec), int enc);
 	void (*des_encrypt)(DES_LONG *data, des_key_schedule ks, int enc);
-	void (*des_ede3_cbc_encrypt)(des_cblock (*input), des_cblock (*output),
-							long length, des_key_schedule ks1,
-							des_key_schedule ks2, des_key_schedule ks3,
-							des_cblock (*ivec), int enc);
-	void (*des_ncbc_encrypt)(des_cblock (*input), des_cblock (*output),
-							long length, des_key_schedule schedule,
-							des_cblock (*ivec), int enc);
-	void (*des_ecb_encrypt)(des_cblock (*input), des_cblock (*output),
-							des_key_schedule ks, int enc);
-
+	void (*des_ede3_cbc_encrypt)(des_cblock(*input), des_cblock(*output),
+				     long length, des_key_schedule ks1,
+				     des_key_schedule ks2, des_key_schedule ks3,
+				     des_cblock(*ivec), int enc);
+	void (*des_ncbc_encrypt)(des_cblock(*input), des_cblock(*output),
+				 long length, des_key_schedule schedule,
+				 des_cblock(*ivec), int enc);
+	void (*des_ecb_encrypt)(des_cblock(*input), des_cblock(*output),
+				des_key_schedule ks, int enc);
 };
 
 extern struct oswcrypto_meth oswcrypto;
@@ -69,4 +65,3 @@ extern void load_oswcrypto(void);
 extern void load_cryptodev(void);
 #endif
 #endif /* _OSW_CRYPTO_H */
-

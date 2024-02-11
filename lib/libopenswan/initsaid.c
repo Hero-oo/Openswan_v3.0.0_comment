@@ -19,9 +19,7 @@
 /*
  - initsaid - initialize SA ID from bits
  */
-void
-initsaid(addr, spi, proto, dst)
-const ip_address *addr;
+void initsaid(addr, spi, proto, dst) const ip_address *addr;
 ipsec_spi_t spi;
 int proto;
 ip_said *dst;

@@ -62,318 +62,333 @@
 #include "pkcs.h"
 #include "log.h"
 
-#define OCSP_BUF_LEN			512
+#define OCSP_BUF_LEN 512
 
 /*
  *  list all X.509 certs in a chained list
  */
-static void
-list_x509cert_chain(const char *caption, x509cert_t* cert, u_char auth_flags
- , bool utc)
+static void list_x509cert_chain(const char *caption, x509cert_t *cert,
+				u_char auth_flags, bool utc)
 {
-    bool first = TRUE;
-    time_t tnow;
+	bool first = TRUE;
+	time_t tnow;
 
-    /* determine the current time */
-    time(&tnow);
+	/* determine the current time */
+	time(&tnow);
 
-    while (cert != NULL)
-    {
-	if (auth_flags == AUTH_NONE || (auth_flags & cert->authority_flags))
-	{
-	    unsigned keysize;
-	    char keyid[KEYID_BUF];
-	    char buf[ASN1_BUF_LEN];
-	    char tbuf[TIMETOA_BUF];
+	while (cert != NULL) {
+		if (auth_flags == AUTH_NONE ||
+		    (auth_flags & cert->authority_flags)) {
+			unsigned keysize;
+			char keyid[KEYID_BUF];
+			char buf[ASN1_BUF_LEN];
+			char tbuf[TIMETOA_BUF];
 
-	    cert_t c;
+			cert_t c;
 
-	    c.type = CERT_X509_SIGNATURE;
-	    c.u.x509 = cert;
+			c.type = CERT_X509_SIGNATURE;
+			c.u.x509 = cert;
 
-	    if (first)
-	    {
-		whack_log(RC_COMMENT, " ");
-		whack_log(RC_COMMENT, "List of X.509 %s Certificates:", caption);
-		whack_log(RC_COMMENT, " ");
-		first = FALSE;
-	    }
+			if (first) {
+				whack_log(RC_COMMENT, " ");
+				whack_log(RC_COMMENT,
+					  "List of X.509 %s Certificates:",
+					  caption);
+				whack_log(RC_COMMENT, " ");
+				first = FALSE;
+			}
 
-	    whack_log(RC_COMMENT, "%s, count: %d", timetoa(&cert->installed, utc, tbuf, sizeof(tbuf)),
-		      cert->count);
-	    dntoa(buf, ASN1_BUF_LEN, cert->subject);
-	    whack_log(RC_COMMENT, "       subject: '%s'", buf);
-	    dntoa(buf, ASN1_BUF_LEN, cert->issuer);
-	    whack_log(RC_COMMENT, "       issuer:  '%s'", buf);
-	    datatot(cert->serialNumber.ptr, cert->serialNumber.len, ':'
-		, buf, ASN1_BUF_LEN);
-	    whack_log(RC_COMMENT, "       serial:   %s", buf);
-	    form_keyid(cert->publicExponent, cert->modulus, keyid, &keysize);
-	    whack_log(RC_COMMENT, "       pubkey:   %4d RSA Key %s%s"
-		, 8*keysize, keyid
-		, has_private_key(c)? ", has private key" : "");
-	    whack_log(RC_COMMENT, "       validity: not before %s %s",
-		timetoa(&cert->notBefore, utc, tbuf, sizeof(tbuf)),
-		(cert->notBefore < tnow)?"ok":"fatal (not valid yet)");
-	    whack_log(RC_COMMENT, "                 not after  %s %s",
-		timetoa(&cert->notAfter, utc, tbuf, sizeof(tbuf)),
-		check_expiry(cert->notAfter, CA_CERT_WARNING_INTERVAL, TRUE));
-	    if (cert->subjectKeyID.ptr != NULL)
-	    {
-		datatot(cert->subjectKeyID.ptr, cert->subjectKeyID.len, ':'
-		    , buf, ASN1_BUF_LEN);
-		whack_log(RC_COMMENT, "       subjkey:  %s", buf);
-	    }
-	    if (cert->authKeyID.ptr != NULL)
-	    {
-		datatot(cert->authKeyID.ptr, cert->authKeyID.len, ':'
-		    , buf, ASN1_BUF_LEN);
-		whack_log(RC_COMMENT, "       authkey:  %s", buf);
-	    }
-	    if (cert->authKeySerialNumber.ptr != NULL)
-	    {
-		datatot(cert->authKeySerialNumber.ptr, cert->authKeySerialNumber.len
-		    , ':', buf, ASN1_BUF_LEN);
-		whack_log(RC_COMMENT, "       aserial:  %s", buf);
-	    }
+			whack_log(RC_COMMENT, "%s, count: %d",
+				  timetoa(&cert->installed, utc, tbuf,
+					  sizeof(tbuf)),
+				  cert->count);
+			dntoa(buf, ASN1_BUF_LEN, cert->subject);
+			whack_log(RC_COMMENT, "       subject: '%s'", buf);
+			dntoa(buf, ASN1_BUF_LEN, cert->issuer);
+			whack_log(RC_COMMENT, "       issuer:  '%s'", buf);
+			datatot(cert->serialNumber.ptr, cert->serialNumber.len,
+				':', buf, ASN1_BUF_LEN);
+			whack_log(RC_COMMENT, "       serial:   %s", buf);
+			form_keyid(cert->publicExponent, cert->modulus, keyid,
+				   &keysize);
+			whack_log(
+				RC_COMMENT, "       pubkey:   %4d RSA Key %s%s",
+				8 * keysize, keyid,
+				has_private_key(c) ? ", has private key" : "");
+			whack_log(RC_COMMENT,
+				  "       validity: not before %s %s",
+				  timetoa(&cert->notBefore, utc, tbuf,
+					  sizeof(tbuf)),
+				  (cert->notBefore < tnow) ?
+					  "ok" :
+					  "fatal (not valid yet)");
+			whack_log(RC_COMMENT,
+				  "                 not after  %s %s",
+				  timetoa(&cert->notAfter, utc, tbuf,
+					  sizeof(tbuf)),
+				  check_expiry(cert->notAfter,
+					       CA_CERT_WARNING_INTERVAL, TRUE));
+			if (cert->subjectKeyID.ptr != NULL) {
+				datatot(cert->subjectKeyID.ptr,
+					cert->subjectKeyID.len, ':', buf,
+					ASN1_BUF_LEN);
+				whack_log(RC_COMMENT, "       subjkey:  %s",
+					  buf);
+			}
+			if (cert->authKeyID.ptr != NULL) {
+				datatot(cert->authKeyID.ptr,
+					cert->authKeyID.len, ':', buf,
+					ASN1_BUF_LEN);
+				whack_log(RC_COMMENT, "       authkey:  %s",
+					  buf);
+			}
+			if (cert->authKeySerialNumber.ptr != NULL) {
+				datatot(cert->authKeySerialNumber.ptr,
+					cert->authKeySerialNumber.len, ':', buf,
+					ASN1_BUF_LEN);
+				whack_log(RC_COMMENT, "       aserial:  %s",
+					  buf);
+			}
+		}
+		cert = cert->next;
 	}
-	cert = cert->next;
-    }
 }
 
 /*
  *  list all X.509 end certificates in a chained list
  */
-void
-list_x509_end_certs(bool utc)
+void list_x509_end_certs(bool utc)
 {
-    list_x509cert_chain("End", x509certs, AUTH_NONE, utc);
+	list_x509cert_chain("End", x509certs, AUTH_NONE, utc);
 }
 
 /*
  *  list all X.509 authcerts with given auth flags in a chained list
  */
-void
-list_authcerts(const char *caption, u_char auth_flags, bool utc)
+void list_authcerts(const char *caption, u_char auth_flags, bool utc)
 {
-    lock_authcert_list("list_authcerts");
-    list_x509cert_chain(caption, x509_get_authcerts_chain(), auth_flags, utc);
-    unlock_authcert_list("list_authcerts");
+	lock_authcert_list("list_authcerts");
+	list_x509cert_chain(caption, x509_get_authcerts_chain(), auth_flags,
+			    utc);
+	unlock_authcert_list("list_authcerts");
 }
 
 /*
  *  list all X.509 crls in the chained list
  */
-void
-list_crls(bool utc, bool strict)
+void list_crls(bool utc, bool strict)
 {
-    x509crl_t *crl;
+	x509crl_t *crl;
 
-    lock_crl_list("list_crls");
-    crl = x509crls;
+	lock_crl_list("list_crls");
+	crl = x509crls;
 
-    if (crl != NULL)
-    {
-	whack_log(RC_COMMENT, " ");
-	whack_log(RC_COMMENT, "List of X.509 CRLs:");
-	whack_log(RC_COMMENT, " ");
-    }
+	if (crl != NULL) {
+		whack_log(RC_COMMENT, " ");
+		whack_log(RC_COMMENT, "List of X.509 CRLs:");
+		whack_log(RC_COMMENT, " ");
+	}
 
-    while (crl != NULL)
-    {
-	char buf[ASN1_BUF_LEN];
-	u_int revoked = 0;
-	revokedCert_t *revokedCert = crl->revokedCertificates;
-	char tbuf[TIMETOA_BUF];
+	while (crl != NULL) {
+		char buf[ASN1_BUF_LEN];
+		u_int revoked = 0;
+		revokedCert_t *revokedCert = crl->revokedCertificates;
+		char tbuf[TIMETOA_BUF];
 
-	/* count number of revoked certificates in CRL */
-	while (revokedCert != NULL)
-	{
-	    revoked++;
-	    revokedCert = revokedCert->next;
-        }
+		/* count number of revoked certificates in CRL */
+		while (revokedCert != NULL) {
+			revoked++;
+			revokedCert = revokedCert->next;
+		}
 
-	whack_log(RC_COMMENT, "%s, revoked certs: %d",
-		  timetoa(&crl->installed, utc, tbuf, sizeof(tbuf)), revoked);
-	dntoa(buf, ASN1_BUF_LEN, crl->issuer);
-	whack_log(RC_COMMENT, "       issuer:  '%s'", buf);
+		whack_log(RC_COMMENT, "%s, revoked certs: %d",
+			  timetoa(&crl->installed, utc, tbuf, sizeof(tbuf)),
+			  revoked);
+		dntoa(buf, ASN1_BUF_LEN, crl->issuer);
+		whack_log(RC_COMMENT, "       issuer:  '%s'", buf);
 
 #ifdef HAVE_THREADS
-	/* list all distribution points */
-	list_distribution_points(crl->distributionPoints);
+		/* list all distribution points */
+		list_distribution_points(crl->distributionPoints);
 #endif
 
-	whack_log(RC_COMMENT, "       updates:  this %s",
-		  timetoa(&crl->thisUpdate, utc, tbuf, sizeof(tbuf)));
-	whack_log(RC_COMMENT, "                 next %s %s"
-		  , timetoa(&crl->nextUpdate, utc, tbuf, sizeof(tbuf))
-		  , check_expiry(crl->nextUpdate, CRL_WARNING_INTERVAL, strict));
-	if (crl->authKeyID.ptr != NULL)
-	{
-	    datatot(crl->authKeyID.ptr, crl->authKeyID.len, ':'
-		, buf, ASN1_BUF_LEN);
-	    whack_log(RC_COMMENT, "       authkey:  %s", buf);
-	}
-	if (crl->authKeySerialNumber.ptr != NULL)
-	{
-	    datatot(crl->authKeySerialNumber.ptr, crl->authKeySerialNumber.len, ':'
-		, buf, ASN1_BUF_LEN);
-	    whack_log(RC_COMMENT, "       aserial:  %s", buf);
-	}
+		whack_log(RC_COMMENT, "       updates:  this %s",
+			  timetoa(&crl->thisUpdate, utc, tbuf, sizeof(tbuf)));
+		whack_log(RC_COMMENT, "                 next %s %s",
+			  timetoa(&crl->nextUpdate, utc, tbuf, sizeof(tbuf)),
+			  check_expiry(crl->nextUpdate, CRL_WARNING_INTERVAL,
+				       strict));
+		if (crl->authKeyID.ptr != NULL) {
+			datatot(crl->authKeyID.ptr, crl->authKeyID.len, ':',
+				buf, ASN1_BUF_LEN);
+			whack_log(RC_COMMENT, "       authkey:  %s", buf);
+		}
+		if (crl->authKeySerialNumber.ptr != NULL) {
+			datatot(crl->authKeySerialNumber.ptr,
+				crl->authKeySerialNumber.len, ':', buf,
+				ASN1_BUF_LEN);
+			whack_log(RC_COMMENT, "       aserial:  %s", buf);
+		}
 
-	crl = crl->next;
-    }
-    unlock_crl_list("list_crls");
+		crl = crl->next;
+	}
+	unlock_crl_list("list_crls");
 }
 
 /*
  *  list all PGP end certificates in a chained list
  */
-void
-list_pgp_end_certs(bool utc)
+void list_pgp_end_certs(bool utc)
 {
-   pgpcert_t *cert = pgpcerts;
+	pgpcert_t *cert = pgpcerts;
 
-    /* determine the current time */
+	/* determine the current time */
 
-    if (cert != NULL)
-    {
-	whack_log(RC_COMMENT, " ");
-	whack_log(RC_COMMENT, "List of PGP End certificates:");
-	whack_log(RC_COMMENT, " ");
-    }
+	if (cert != NULL) {
+		whack_log(RC_COMMENT, " ");
+		whack_log(RC_COMMENT, "List of PGP End certificates:");
+		whack_log(RC_COMMENT, " ");
+	}
 
-    while (cert != NULL)
-    {
-	unsigned keysize;
-	char buf[ASN1_BUF_LEN];
-	char tbuf[TIMETOA_BUF];
-	cert_t c;
+	while (cert != NULL) {
+		unsigned keysize;
+		char buf[ASN1_BUF_LEN];
+		char tbuf[TIMETOA_BUF];
+		cert_t c;
 
-	c.type = CERT_PGP;
-	c.u.pgp = cert;
+		c.type = CERT_PGP;
+		c.u.pgp = cert;
 
-	whack_log(RC_COMMENT, "%s, count: %d"
-		  , timetoa(&cert->installed, utc, tbuf, sizeof(tbuf))
-		  , cert->count);
-	datatot((unsigned char *)cert->fingerprint, PGP_FINGERPRINT_SIZE, 'x', buf, ASN1_BUF_LEN);
-	whack_log(RC_COMMENT, "       fingerprint:  %s", buf);
-	form_keyid(cert->publicExponent, cert->modulus, buf, &keysize);
-	whack_log(RC_COMMENT, "       pubkey:   %4d RSA Key %s%s", 8*keysize, buf,
-		(has_private_key(c))? ", has private key" : "");
-	whack_log(RC_COMMENT, "       created:  %s"
-		  , timetoa(&cert->created, utc, tbuf, sizeof(tbuf)));
-	whack_log(RC_COMMENT, "       until:    %s %s"
-		  , timetoa(&cert->until, utc, tbuf, sizeof(tbuf)),
-		check_expiry(cert->until, CA_CERT_WARNING_INTERVAL, TRUE));
-	cert = cert->next;
-    }
+		whack_log(RC_COMMENT, "%s, count: %d",
+			  timetoa(&cert->installed, utc, tbuf, sizeof(tbuf)),
+			  cert->count);
+		datatot((unsigned char *)cert->fingerprint,
+			PGP_FINGERPRINT_SIZE, 'x', buf, ASN1_BUF_LEN);
+		whack_log(RC_COMMENT, "       fingerprint:  %s", buf);
+		form_keyid(cert->publicExponent, cert->modulus, buf, &keysize);
+		whack_log(RC_COMMENT, "       pubkey:   %4d RSA Key %s%s",
+			  8 * keysize, buf,
+			  (has_private_key(c)) ? ", has private key" : "");
+		whack_log(RC_COMMENT, "       created:  %s",
+			  timetoa(&cert->created, utc, tbuf, sizeof(tbuf)));
+		whack_log(RC_COMMENT, "       until:    %s %s",
+			  timetoa(&cert->until, utc, tbuf, sizeof(tbuf)),
+			  check_expiry(cert->until, CA_CERT_WARNING_INTERVAL,
+				       TRUE));
+		cert = cert->next;
+	}
 }
 
 /*
  *  list all X.509 and OpenPGP end certificates
  */
-void
-list_certs(bool utc)
+void list_certs(bool utc)
 {
-    list_x509_end_certs(utc);
-    list_pgp_end_certs(utc);
+	list_x509_end_certs(utc);
+	list_pgp_end_certs(utc);
 }
 
 /*
  * list a chained list of ocsp_locations
  */
-void
-list_ocsp_locations(ocsp_location_t *location, bool requests, bool utc
-, bool strict)
+void list_ocsp_locations(ocsp_location_t *location, bool requests, bool utc,
+			 bool strict)
 {
-    bool first = TRUE;
+	bool first = TRUE;
 
-    while (location != NULL)
-    {
-	ocsp_certinfo_t *certinfo = location->certinfo;
+	while (location != NULL) {
+		ocsp_certinfo_t *certinfo = location->certinfo;
 
-	if (certinfo != NULL)
-	{
-	    char buf[OCSP_BUF_LEN];
+		if (certinfo != NULL) {
+			char buf[OCSP_BUF_LEN];
 
-	    if (first)
-	    {
-		whack_log(RC_COMMENT, " ");
-		whack_log(RC_COMMENT, "List of OCSP %s:", requests?
-		    "fetch requests":"responses");
-		first = FALSE;
-            }
-	    whack_log(RC_COMMENT, " ");
-	    if (location->issuer.ptr != NULL)
-	    {
-		dntoa(buf, OCSP_BUF_LEN, location->issuer);
-		whack_log(RC_COMMENT, "       issuer:  '%s'", buf);
-	    }
-	    whack_log(RC_COMMENT, "       uri:     '%.*s", (int)location->uri.len
-		, location->uri.ptr);
-	    if (location->authNameID.ptr != NULL)
-	    {
-		datatot(location->authNameID.ptr, location->authNameID.len, ':'
-		    , buf, OCSP_BUF_LEN);
-		whack_log(RC_COMMENT, "       authname: %s", buf);
-	    }
-	    if (location->authKeyID.ptr != NULL)
-	    {
-		datatot(location->authKeyID.ptr, location->authKeyID.len, ':'
-		    , buf, OCSP_BUF_LEN);
-		whack_log(RC_COMMENT, "       authkey:  %s", buf);
-	    }
-	    if (location->authKeySerialNumber.ptr != NULL)
-	    {
-		datatot(location->authKeySerialNumber.ptr
-		    , location->authKeySerialNumber.len, ':', buf, OCSP_BUF_LEN);
-		whack_log(RC_COMMENT, "       aserial:  %s", buf);
-	    }
-	    while (certinfo != NULL)
-	    {
-		char thisUpdate[TIMETOA_BUF];
+			if (first) {
+				whack_log(RC_COMMENT, " ");
+				whack_log(RC_COMMENT, "List of OCSP %s:",
+					  requests ? "fetch requests" :
+						     "responses");
+				first = FALSE;
+			}
+			whack_log(RC_COMMENT, " ");
+			if (location->issuer.ptr != NULL) {
+				dntoa(buf, OCSP_BUF_LEN, location->issuer);
+				whack_log(RC_COMMENT, "       issuer:  '%s'",
+					  buf);
+			}
+			whack_log(RC_COMMENT, "       uri:     '%.*s",
+				  (int)location->uri.len, location->uri.ptr);
+			if (location->authNameID.ptr != NULL) {
+				datatot(location->authNameID.ptr,
+					location->authNameID.len, ':', buf,
+					OCSP_BUF_LEN);
+				whack_log(RC_COMMENT, "       authname: %s",
+					  buf);
+			}
+			if (location->authKeyID.ptr != NULL) {
+				datatot(location->authKeyID.ptr,
+					location->authKeyID.len, ':', buf,
+					OCSP_BUF_LEN);
+				whack_log(RC_COMMENT, "       authkey:  %s",
+					  buf);
+			}
+			if (location->authKeySerialNumber.ptr != NULL) {
+				datatot(location->authKeySerialNumber.ptr,
+					location->authKeySerialNumber.len, ':',
+					buf, OCSP_BUF_LEN);
+				whack_log(RC_COMMENT, "       aserial:  %s",
+					  buf);
+			}
+			while (certinfo != NULL) {
+				char thisUpdate[TIMETOA_BUF];
 
-		timetoa(&certinfo->thisUpdate, utc, thisUpdate, sizeof(thisUpdate));
+				timetoa(&certinfo->thisUpdate, utc, thisUpdate,
+					sizeof(thisUpdate));
 
-		if (requests)
-		{
-		    whack_log(RC_COMMENT, "%s, trials: %d", thisUpdate
-			, certinfo->trials);
+				if (requests) {
+					whack_log(RC_COMMENT, "%s, trials: %d",
+						  thisUpdate, certinfo->trials);
+				} else if (certinfo->once) {
+					whack_log(RC_COMMENT,
+						  "%s, onetime use%s",
+						  thisUpdate,
+						  (certinfo->nextUpdate <
+						   time(NULL)) ?
+							  " (expired)" :
+							  "");
+				} else {
+					char tbuf2[TIMETOA_BUF];
+
+					whack_log(RC_COMMENT, "%s, until %s %s",
+						  thisUpdate,
+						  timetoa(&certinfo->nextUpdate,
+							  utc, tbuf2,
+							  sizeof(tbuf2)),
+						  check_expiry(
+							  certinfo->nextUpdate,
+							  OCSP_WARNING_INTERVAL,
+							  strict));
+				}
+				datatot(certinfo->serialNumber.ptr,
+					certinfo->serialNumber.len, ':', buf,
+					OCSP_BUF_LEN);
+				whack_log(RC_COMMENT, "       serial:   %s, %s",
+					  buf,
+					  cert_status_names[certinfo->status]);
+				certinfo = certinfo->next;
+			}
 		}
-		else if (certinfo->once)
-		{
-		    whack_log(RC_COMMENT, "%s, onetime use%s", thisUpdate
-			, (certinfo->nextUpdate < time(NULL))? " (expired)": "");
-		}
-		else
-		{
-		    char tbuf2[TIMETOA_BUF];
-
-		    whack_log(RC_COMMENT, "%s, until %s %s", thisUpdate
-			      , timetoa(&certinfo->nextUpdate, utc, tbuf2, sizeof(tbuf2))
-			      , check_expiry(certinfo->nextUpdate, OCSP_WARNING_INTERVAL, strict));
-		}
-		datatot(certinfo->serialNumber.ptr, certinfo->serialNumber.len, ':'
-		    , buf, OCSP_BUF_LEN);
-		whack_log(RC_COMMENT, "       serial:   %s, %s", buf
-		    , cert_status_names[certinfo->status]);
-		certinfo = certinfo->next;
-	    }
+		location = location->next;
 	}
-	location = location->next;
-    }
 }
 
 /*
  * list the ocsp cache
  */
-void
-list_ocsp_cache(bool utc, bool strict)
+void list_ocsp_cache(bool utc, bool strict)
 {
-    lock_ocsp_cache("list_ocsp_cache");
-    list_ocsp_locations(ocsp_cache, FALSE, utc, strict);
-    unlock_ocsp_cache("list_ocsp_cache");
+	lock_ocsp_cache("list_ocsp_cache");
+	list_ocsp_locations(ocsp_cache, FALSE, utc, strict);
+	unlock_ocsp_cache("list_ocsp_cache");
 }
 
 /*

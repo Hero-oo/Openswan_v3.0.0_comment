@@ -51,37 +51,39 @@
 /*
  * 	Show registered IKE algorithms
  */
-void
-ike_alg_show_status(void)
+void ike_alg_show_status(void)
 {
 	unsigned alg, i;
 	struct ike_alg *algo;
-	IKE_EALG_FOR_EACH(algo) {
+	IKE_EALG_FOR_EACH(algo)
+	{
 		passert(algo != NULL);
-		alg=algo->ikev1_algo_id;
-		whack_log(RC_COMMENT, "algorithm IKE encrypt: id=%d, name=%s, blocksize=%d, keydeflen=%d"
-			, alg
-			, enum_name(&oakley_enc_names, alg)
-			, (int)((struct ike_encr_desc *)algo)->enc_blocksize
-			, ((struct ike_encr_desc *)algo)->keydeflen
-			);
-
+		alg = algo->ikev1_algo_id;
+		whack_log(
+			RC_COMMENT,
+			"algorithm IKE encrypt: id=%d, name=%s, blocksize=%d, keydeflen=%d",
+			alg, enum_name(&oakley_enc_names, alg),
+			(int)((struct ike_encr_desc *)algo)->enc_blocksize,
+			((struct ike_encr_desc *)algo)->keydeflen);
 	}
-	IKE_HALG_FOR_EACH(algo) {
-		whack_log(RC_COMMENT, "algorithm IKE hash: id=%d, name=%s, hashsize=%d"
-			, algo->ikev1_algo_id
-			, enum_name(&oakley_hash_names, algo->ikev1_algo_id)
-			, (int)((struct ike_integ_desc *)algo)->hash_digest_len
-			);
+	IKE_HALG_FOR_EACH(algo)
+	{
+		whack_log(
+			RC_COMMENT,
+			"algorithm IKE hash: id=%d, name=%s, hashsize=%d",
+			algo->ikev1_algo_id,
+			enum_name(&oakley_hash_names, algo->ikev1_algo_id),
+			(int)((struct ike_integ_desc *)algo)->hash_digest_len);
 	}
-#define IKE_DH_ALG_FOR_EACH(idx) for(idx = 0; idx != oakley_group_size; idx++)
-	IKE_DH_ALG_FOR_EACH(i) {
-		const struct oakley_group_desc *gdesc=oakley_group+i;
-		whack_log(RC_COMMENT, "algorithm IKE dh group: id=%d, name=%s, bits=%d"
-			, gdesc->group
-			, enum_name(&oakley_group_names, gdesc->group)
-			, (int)gdesc->bytes*BITS_PER_BYTE
-			);
+#define IKE_DH_ALG_FOR_EACH(idx) for (idx = 0; idx != oakley_group_size; idx++)
+	IKE_DH_ALG_FOR_EACH(i)
+	{
+		const struct oakley_group_desc *gdesc = oakley_group + i;
+		whack_log(RC_COMMENT,
+			  "algorithm IKE dh group: id=%d, name=%s, bits=%d",
+			  gdesc->group,
+			  enum_name(&oakley_group_names, gdesc->group),
+			  (int)gdesc->bytes * BITS_PER_BYTE);
 	}
 }
 /*
@@ -89,38 +91,33 @@ ike_alg_show_status(void)
  * 	- this connection (result from ike= string)
  * 	- newest SA
  */
-void
-ike_alg_show_connection(struct connection *c, const char *instance)
+void ike_alg_show_connection(struct connection *c, const char *instance)
 {
 	struct state *st;
 	if (c->alg_info_ike) {
 		char buf[1024];
 
-		alg_info_snprint(buf, sizeof(buf)-1,
+		alg_info_snprint(buf, sizeof(buf) - 1,
 				 (struct alg_info *)c->alg_info_ike);
-		whack_log(RC_COMMENT
-		    , "\"%s\"%s:   IKE algorithms wanted: %s"
-		    , c->name
-		    , instance
-		    , buf);
+		whack_log(RC_COMMENT, "\"%s\"%s:   IKE algorithms wanted: %s",
+			  c->name, instance, buf);
 
 		alg_info_snprint_ike(buf, sizeof(buf), c->alg_info_ike);
-		whack_log(RC_COMMENT
-		    , "\"%s\"%s:   IKE algorithms found:  %s"
-		    , c->name
-		    , instance
-		    , buf);
+		whack_log(RC_COMMENT, "\"%s\"%s:   IKE algorithms found:  %s",
+			  c->name, instance, buf);
 	}
 	st = state_with_serialno(c->newest_isakmp_sa);
 	if (st)
-		whack_log(RC_COMMENT
-		, "\"%s\"%s:   IKE algorithm newest: %s_%03d-%s-%s"
-		, c->name
-		, instance
-		, enum_show(&trans_type_encr_names, st->st_oakley.encrypt)
-		, st->st_oakley.enckeylen
-		, enum_show(&trans_type_integ_names, st->st_oakley.prf_hash)
-		, enum_show(&oakley_group_names, st->st_oakley.group->group)
-		+13 /* strlen("OAKLEY_GROUP_") */
-	 );
+		whack_log(RC_COMMENT,
+			  "\"%s\"%s:   IKE algorithm newest: %s_%03d-%s-%s",
+			  c->name, instance,
+			  enum_show(&trans_type_encr_names,
+				    st->st_oakley.encrypt),
+			  st->st_oakley.enckeylen,
+			  enum_show(&trans_type_integ_names,
+				    st->st_oakley.prf_hash),
+			  enum_show(&oakley_group_names,
+				    st->st_oakley.group->group) +
+				  13 /* strlen("OAKLEY_GROUP_") */
+		);
 }

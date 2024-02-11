@@ -29,15 +29,15 @@
  * locked it if we don't already have the tdb_lock
  */
 
-#define LOCK_PRNG() \
-	int ul = 0; \
+#define LOCK_PRNG()                       \
+	int ul = 0;                       \
 	if (spin_trylock_bh(&tdb_lock)) { \
-		ul = 1; \
+		ul = 1;                   \
 	} else
 
-#define UNLOCK_PRNG() \
-	if (ul) { \
-		ul = 0; \
+#define UNLOCK_PRNG()                      \
+	if (ul) {                          \
+		ul = 0;                    \
 		spin_unlock_bh(&tdb_lock); \
 	} else
 
@@ -48,13 +48,10 @@
 
 #endif
 
-
 /*
  - prng_init - initialize PRNG from a key
  */
-void
-prng_init(prng, key, keylen)
-struct prng *prng;
+void prng_init(prng, key, keylen) struct prng *prng;
 const unsigned char *key;
 size_t keylen;
 {
@@ -78,7 +75,7 @@ size_t keylen;
 		t = prng->sbox[i];
 		prng->sbox[i] = prng->sbox[j];
 		prng->sbox[j] = t;
-		k[i] = 0;	/* clear out key memory */
+		k[i] = 0; /* clear out key memory */
 	}
 	prng->i = 0;
 	prng->j = 0;
@@ -88,16 +85,14 @@ size_t keylen;
 /*
  - prng_bytes - get some pseudorandom bytes from PRNG
  */
-void
-prng_bytes(prng, dst, dstlen)
-struct prng *prng;
+void prng_bytes(prng, dst, dstlen) struct prng *prng;
 unsigned char *dst;
 size_t dstlen;
 {
 	int i, j, t;
 	unsigned char *p = dst;
 	size_t remain = dstlen;
-#	define	MAXCOUNT	4000000000ul
+#define MAXCOUNT 4000000000ul
 
 	LOCK_PRNG();
 
@@ -124,8 +119,7 @@ size_t dstlen;
 /*
  - prnt_count - how many bytes have been extracted from PRNG so far?
  */
-unsigned long
-prng_count(prng)
+unsigned long prng_count(prng)
 struct prng *prng;
 {
 	unsigned long c;
@@ -138,9 +132,7 @@ struct prng *prng;
 /*
  - prng_final - clear out PRNG to ensure nothing left in memory
  */
-void
-prng_final(prng)
-struct prng *prng;
+void prng_final(prng) struct prng *prng;
 {
 	int i;
 
@@ -148,10 +140,8 @@ struct prng *prng;
 		prng->sbox[i] = 0;
 	prng->i = 0;
 	prng->j = 0;
-	prng->count = 0;	/* just for good measure */
+	prng->count = 0; /* just for good measure */
 }
-
-
 
 #ifdef PRNG_MAIN
 
@@ -160,8 +150,7 @@ struct prng *prng;
 
 void regress();
 
-int
-main(argc, argv)
+int main(argc, argv)
 int argc;
 char *argv[];
 {
@@ -191,8 +180,7 @@ char *argv[];
 	exit(0);
 }
 
-void
-regress()
+void regress()
 {
 	struct prng pr;
 	unsigned char buf[100];
@@ -202,12 +190,12 @@ regress()
 	unsigned char key[] = "here we go gathering nuts in May";
 	/* first thirty bytes of output from that key */
 	unsigned char good[] = "\x3f\x02\x8e\x4a\x2a\xea\x23\x18\x92\x7c"
-				"\x09\x52\x83\x61\xaa\x26\xce\xbb\x9d\x71"
-				"\x71\xe5\x10\x22\xaf\x60\x54\x8d\x5b\x28";
+			       "\x09\x52\x83\x61\xaa\x26\xce\xbb\x9d\x71"
+			       "\x71\xe5\x10\x22\xaf\x60\x54\x8d\x5b\x28";
 	unsigned int nzero, none;
 	int show = 0;
-        nzero = 0;
-        none  = 0;
+	nzero = 0;
+	none = 0;
 
 	prng_init(&pr, key, strlen(key));
 	prng_bytes(&pr, buf, sizeof(buf));

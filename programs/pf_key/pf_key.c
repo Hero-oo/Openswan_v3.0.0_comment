@@ -49,10 +49,10 @@ char *progname;
 uint32_t pfkey_seq = 0;
 int pfkey_sock;
 
-static void
-Usage(void)
+static void Usage(void)
 {
-	fprintf(stderr, "%s: Usage: %s [--help]\n"
+	fprintf(stderr,
+		"%s: Usage: %s [--help]\n"
 		"\tby default listens for AH, ESP, IPIP and IPCOMP\n"
 		"\t--daemon <file>     fork before printing, stuffing the PID in the file\n"
 		"\t--dumpfile <file>   decode file of pfkey messages\n"
@@ -66,37 +66,36 @@ Usage(void)
 	exit(1);
 }
 
-void
-pfkey_register(uint8_t satype) {
+void pfkey_register(uint8_t satype)
+{
 	/* for registering SA types that can be negotiated */
 	int error = 0;
 	struct sadb_ext *extensions[K_SADB_EXT_MAX + 1];
 	struct sadb_msg *pfkey_msg;
 
 	pfkey_extensions_init(extensions);
-	if((error = pfkey_msg_hdr_build(&extensions[0],
-					SADB_REGISTER,
-					satype,
-					0,
-					++pfkey_seq,
-					getpid()))) {
-		fprintf(stderr, "%s: Trouble building message header, error=%d.\n",
+	if ((error = pfkey_msg_hdr_build(&extensions[0], SADB_REGISTER, satype,
+					 0, ++pfkey_seq, getpid()))) {
+		fprintf(stderr,
+			"%s: Trouble building message header, error=%d.\n",
 			progname, error);
 		pfkey_extensions_free(extensions);
 		exit(1);
 	}
-	if((error = pfkey_msg_build(&pfkey_msg, extensions, EXT_BITS_IN))) {
-		fprintf(stderr, "%s: Trouble building pfkey message, error=%d.\n",
+	if ((error = pfkey_msg_build(&pfkey_msg, extensions, EXT_BITS_IN))) {
+		fprintf(stderr,
+			"%s: Trouble building pfkey message, error=%d.\n",
 			progname, error);
 		pfkey_extensions_free(extensions);
 		pfkey_msg_free(&pfkey_msg);
 		exit(1);
 	}
-	if(write(pfkey_sock, pfkey_msg,
-		 pfkey_msg->sadb_msg_len * IPSEC_PFKEYv2_ALIGN) !=
-	   (ssize_t)(pfkey_msg->sadb_msg_len * IPSEC_PFKEYv2_ALIGN)) {
+	if (write(pfkey_sock, pfkey_msg,
+		  pfkey_msg->sadb_msg_len * IPSEC_PFKEYv2_ALIGN) !=
+	    (ssize_t)(pfkey_msg->sadb_msg_len * IPSEC_PFKEYv2_ALIGN)) {
 		/* cleanup code here */
-		fprintf(stderr, "%s: Trouble writing to channel PF_KEY.\n", progname);
+		fprintf(stderr, "%s: Trouble writing to channel PF_KEY.\n",
+			progname);
 		pfkey_extensions_free(extensions);
 		pfkey_msg_free(&pfkey_msg);
 		exit(1);
@@ -115,8 +114,7 @@ void controlC(int foo)
 	exit(0);
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int opt;
 	ssize_t readlen;
@@ -132,40 +130,39 @@ main(int argc, char *argv[])
 	static int ipip_register;
 	static int ipcomp_register;
 
-	static struct option long_options[] =
-	{
-		{"help",        no_argument, 0, 'h'},
-		{"daemon",      required_argument, 0, 'f'},
-		{"dumpfile",    required_argument, 0, 'd'},
-		{"encodefile",  required_argument, 0, 'e'},
-		{"ah",          no_argument, &ah_register, 1},
-		{"esp",         no_argument, &esp_register, 1},
-		{"ipip",        no_argument, &ipip_register, 1},
-		{"ipcomp",      no_argument, &ipcomp_register, 1},
+	static struct option long_options[] = {
+		{ "help", no_argument, 0, 'h' },
+		{ "daemon", required_argument, 0, 'f' },
+		{ "dumpfile", required_argument, 0, 'd' },
+		{ "encodefile", required_argument, 0, 'e' },
+		{ "ah", no_argument, &ah_register, 1 },
+		{ "esp", no_argument, &esp_register, 1 },
+		{ "ipip", no_argument, &ipip_register, 1 },
+		{ "ipcomp", no_argument, &ipcomp_register, 1 },
 	};
 
-	ah_register   = 0;
-	esp_register  = 0;
+	ah_register = 0;
+	esp_register = 0;
 	ipip_register = 0;
-	ipcomp_register=0;
+	ipcomp_register = 0;
 	dienow = 0;
-	fork_after_register=0;
+	fork_after_register = 0;
 
 	pidfilename = NULL;
-	infilename  = NULL;
+	infilename = NULL;
 	outfilename = NULL;
 
 	progname = argv[0];
-	if(strrchr(progname, '/')) {
-		progname=strrchr(progname, '/')+1;
+	if (strrchr(progname, '/')) {
+		progname = strrchr(progname, '/') + 1;
 	}
 
-	while((opt = getopt_long(argc, argv, "hd:e:f:",
-				 long_options, NULL)) !=  EOF) {
-		switch(opt) {
+	while ((opt = getopt_long(argc, argv, "hd:e:f:", long_options, NULL)) !=
+	       EOF) {
+		switch (opt) {
 		case 'f':
-			pidfilename=optarg;
-			fork_after_register=1;
+			pidfilename = optarg;
+			fork_after_register = 1;
 			break;
 
 		case 'd':
@@ -185,40 +182,37 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if(infilename  == NULL &&
-	   outfilename == NULL)
-	{
-		if((pfkey_sock = safe_socket(PF_KEY, SOCK_RAW, PF_KEY_V2) ) < 0)
-		{
-			fprintf(stderr, "%s: failed to open PF_KEY family socket: %s\n",
+	if (infilename == NULL && outfilename == NULL) {
+		if ((pfkey_sock = safe_socket(PF_KEY, SOCK_RAW, PF_KEY_V2)) <
+		    0) {
+			fprintf(stderr,
+				"%s: failed to open PF_KEY family socket: %s\n",
 				progname, strerror(errno));
 			exit(1);
 		}
 
-		if(ah_register == 0 &&
-		   esp_register== 0 &&
-		   ipip_register==0 &&
-		   ipcomp_register==0) {
-			ah_register=1;
-			esp_register=1;
-			ipip_register=1;
-			ipcomp_register=1;
+		if (ah_register == 0 && esp_register == 0 &&
+		    ipip_register == 0 && ipcomp_register == 0) {
+			ah_register = 1;
+			esp_register = 1;
+			ipip_register = 1;
+			ipcomp_register = 1;
 		}
 
-		if(ah_register) {
+		if (ah_register) {
 			pfkey_register(K_SADB_SATYPE_AH);
 		}
-		if(esp_register) {
+		if (esp_register) {
 			pfkey_register(K_SADB_SATYPE_ESP);
 		}
-		if(ipip_register) {
+		if (ipip_register) {
 			pfkey_register(K_SADB_X_SATYPE_IPIP);
 		}
-		if(ipcomp_register) {
+		if (ipcomp_register) {
 			pfkey_register(K_SADB_X_SATYPE_COMP);
 		}
 
-		if(fork_after_register) {
+		if (fork_after_register) {
 			/*
 			 * to aid in regression testing, we offer to register
 			 * everything first, and then we fork. As part of this
@@ -231,13 +225,13 @@ main(int argc, char *argv[])
 			fflush(stdout);
 			fflush(stderr);
 
-			pid=fork();
-			if(pid!=0) {
+			pid = fork();
+			if (pid != 0) {
 				/* in parent! */
 				exit(0);
 			}
 
-			if((pidfile=fopen(pidfilename, "w"))==NULL) {
+			if ((pidfile = fopen(pidfilename, "w")) == NULL) {
 				perror(pidfilename);
 			} else {
 				fprintf(pidfile, "%d", getpid());
@@ -245,50 +239,45 @@ main(int argc, char *argv[])
 			}
 		}
 
-	} else if(infilename != NULL) {
+	} else if (infilename != NULL) {
 		pfkey_sock = open(infilename, O_RDONLY);
-		if(pfkey_sock < 0) {
-			fprintf(stderr, "%s: failed to open %s: %s\n",
-				progname, infilename, strerror(errno));
+		if (pfkey_sock < 0) {
+			fprintf(stderr, "%s: failed to open %s: %s\n", progname,
+				infilename, strerror(errno));
 			exit(1);
 		}
-	} else if(outfilename != NULL) {
+	} else if (outfilename != NULL) {
 		/* call encoder */
 		exit(1);
 	}
 
-	signal(SIGINT,  controlC);
+	signal(SIGINT, controlC);
 	signal(SIGTERM, controlC);
 
-	while((readlen = read(pfkey_sock, pfkey_buf, sizeof(pfkey_buf))) > 0) {
+	while ((readlen = read(pfkey_sock, pfkey_buf, sizeof(pfkey_buf))) > 0) {
 		msg = (struct sadb_msg *)pfkey_buf;
 
 		/* first, see if we got enough for an sadb_msg */
-		if((size_t)readlen < sizeof(struct sadb_msg)) {
-			printf("%s: runt packet of size: %d (<%lu)\n",
-			       progname, (int)readlen, (unsigned long)sizeof(struct sadb_msg));
+		if ((size_t)readlen < sizeof(struct sadb_msg)) {
+			printf("%s: runt packet of size: %d (<%lu)\n", progname,
+			       (int)readlen,
+			       (unsigned long)sizeof(struct sadb_msg));
 			continue;
 		}
 
 		/* okay, we got enough for a message, print it out */
 		printf("\npfkey v%d msg. type=%d(%s) seq=%d len=%d pid=%d errno=%d satype=%d(%s)\n",
-		       msg->sadb_msg_version,
-		       msg->sadb_msg_type,
+		       msg->sadb_msg_version, msg->sadb_msg_type,
 		       pfkey_v2_sadb_type_string(msg->sadb_msg_type),
-		       msg->sadb_msg_seq,
-		       msg->sadb_msg_len,
-		       msg->sadb_msg_pid,
-		       msg->sadb_msg_errno,
-		       msg->sadb_msg_satype,
+		       msg->sadb_msg_seq, msg->sadb_msg_len, msg->sadb_msg_pid,
+		       msg->sadb_msg_errno, msg->sadb_msg_satype,
 		       satype2name(msg->sadb_msg_satype));
 
-		if((size_t)readlen != msg->sadb_msg_len * IPSEC_PFKEYv2_ALIGN)
-		{
+		if ((size_t)readlen !=
+		    msg->sadb_msg_len * IPSEC_PFKEYv2_ALIGN) {
 			printf("%s: packet size read from socket=%d doesn't equal sadb_msg_len %d * %u; message not decoded\n",
-			       progname,
-			       (int) readlen,
-			       msg->sadb_msg_len,
-			       (int) IPSEC_PFKEYv2_ALIGN);
+			       progname, (int)readlen, msg->sadb_msg_len,
+			       (int)IPSEC_PFKEYv2_ALIGN);
 			continue;
 		}
 
@@ -300,7 +289,7 @@ main(int argc, char *argv[])
 
 void exit_tool(int val)
 {
-  exit(val);
+	exit(val);
 }
 
 /*

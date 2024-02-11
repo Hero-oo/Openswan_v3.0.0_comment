@@ -14,25 +14,25 @@
 #ifndef _LEX_H
 #define _LEX_H
 
-struct file_lex_position
-{
-    int depth;	/* how deeply we are nested */
-    const char *root_dir;
-    const char *filename;
-    FILE *fp;
-    enum { B_none, B_record, B_file } bdry;	/* current boundary */
-    int lino;	/* line number in file */
-    char    *tok_buffer;
-    size_t   tok_buflen;
-    char *cur;	/* cursor */
-    char under;	/* except in shift(): character orignally at *cur */
-    char *tok;
-    struct file_lex_position *previous;
+struct file_lex_position {
+	int depth; /* how deeply we are nested */
+	const char *root_dir;
+	const char *filename;
+	FILE *fp;
+	enum { B_none, B_record, B_file } bdry; /* current boundary */
+	int lino; /* line number in file */
+	char *tok_buffer;
+	size_t tok_buflen;
+	char *cur; /* cursor */
+	char under; /* except in shift(): character orignally at *cur */
+	char *tok;
+	struct file_lex_position *previous;
 };
 
 extern struct file_lex_position *flp;
 
-extern bool lexopen(struct file_lex_position *new_flp, const char *name, bool optional);
+extern bool lexopen(struct file_lex_position *new_flp, const char *name,
+		    bool optional);
 extern void lexclose(void);
 
 #define tokeq(s) (streq(flp->tok, (s)))

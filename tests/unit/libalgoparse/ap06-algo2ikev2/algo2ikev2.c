@@ -24,46 +24,46 @@ const char *progname;
 
 void exit_tool(int stat)
 {
-    exit(stat);
+	exit(stat);
 }
 
 int main(int argc, char *argv[])
 {
-    int i;
-    struct id one;
-    struct alg_info_ike *ei;
-    struct db_sa *sadb = NULL;
-    char info_buf[1024];
+	int i;
+	struct id one;
+	struct alg_info_ike *ei;
+	struct db_sa *sadb = NULL;
+	char info_buf[1024];
 
-    leak_detective = 1;
+	leak_detective = 1;
 
-    tool_init_log();
-    init_crypto();
-    load_oswcrypto();
+	tool_init_log();
+	init_crypto();
+	load_oswcrypto();
 
-    progname = argv[0];
-    cur_debugging = DBG_EMITTING;
+	progname = argv[0];
+	cur_debugging = DBG_EMITTING;
 
-    zero(info_buf);
-    ei = alg_info_ike_defaults();
-    alg_info_snprint_ike(info_buf, sizeof(info_buf), ei);
-    DBG_log("EI starts with: %s", info_buf);
+	zero(info_buf);
+	ei = alg_info_ike_defaults();
+	alg_info_snprint_ike(info_buf, sizeof(info_buf), ei);
+	DBG_log("EI starts with: %s", info_buf);
 
-    sadb = alginfo2parent_db2(ei);
+	sadb = alginfo2parent_db2(ei);
 
-    DBG_log("IKEv2 outsa starts ");
-    sa_v2_print(sadb);
+	DBG_log("IKEv2 outsa starts ");
+	sa_v2_print(sadb);
 
-    passert(extrapolate_v1_from_v2(sadb, LEMPTY, INITIATOR) == TRUE);
-    DBG_log("IKEv1 outsa is now ");
-    sa_print(sadb);
+	passert(extrapolate_v1_from_v2(sadb, LEMPTY, INITIATOR) == TRUE);
+	DBG_log("IKEv1 outsa is now ");
+	sa_print(sadb);
 
-    DBG_log("free now");
-    free_sa(sadb);
+	DBG_log("free now");
+	free_sa(sadb);
 
-    report_leaks();
-    tool_close_log();
-    exit(0);
+	report_leaks();
+	tool_close_log();
+	exit(0);
 }
 
 /*

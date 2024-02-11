@@ -29,86 +29,88 @@ bool no_cr_send = TRUE;
 
 static void init_local_interface(void)
 {
-    nat_traversal_support_non_ike = TRUE;
-    nat_traversal_support_port_floating = TRUE;
-    nat_traversal_enabled = TRUE;
-    init_sun_interface(TRUE);
+	nat_traversal_support_non_ike = TRUE;
+	nat_traversal_support_port_floating = TRUE;
+	nat_traversal_enabled = TRUE;
+	init_sun_interface(TRUE);
 }
 
 static void init_fake_secrets(void)
 {
-    prompt_pass_t pass;
-    memset(&pass, 0, sizeof(pass));
+	prompt_pass_t pass;
+	memset(&pass, 0, sizeof(pass));
 
-    osw_init_ipsecdir(SAMPLEDIR "moon");
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , SAMPLEDIR "moon.secrets"
-			       , &pass, NULL);
+	osw_init_ipsecdir(SAMPLEDIR "moon");
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   SAMPLEDIR "moon.secrets", &pass, NULL);
 }
 
 static void init_loaded(void)
-{   /* nothing */ }
-
+{ /* nothing */
+}
 
 #define PCAP_INPUT_COUNT 2
 
 static void update_ngi_tc3(struct pcr_kenonce *kn)
 {
+	if (kn->thespace.len == 0) {
+		fprintf(stderr, "failed to setup crypto_req, exiting\n");
+		exit(89);
+	}
 
-    if(kn->thespace.len == 0) {
-        fprintf(stderr, "failed to setup crypto_req, exiting\n");
-        exit(89);
-    }
-
-    /* now fill in the KE values from a constant.. not calculated */
-    clonetowirechunk(&kn->thespace, kn->space, &kn->secret, SS(secret.ptr), SS(secret.len));
-    clonetowirechunk(&kn->thespace, kn->space, &kn->n,      SS(ni.ptr), SS(ni.len));
-    clonetowirechunk(&kn->thespace, kn->space, &kn->gi,     SS(gi.ptr), SS(gi.len));
+	/* now fill in the KE values from a constant.. not calculated */
+	clonetowirechunk(&kn->thespace, kn->space, &kn->secret, SS(secret.ptr),
+			 SS(secret.len));
+	clonetowirechunk(&kn->thespace, kn->space, &kn->n, SS(ni.ptr),
+			 SS(ni.len));
+	clonetowirechunk(&kn->thespace, kn->space, &kn->gi, SS(gi.ptr),
+			 SS(gi.len));
 }
 
-void recv_pcap_packet1ikev1(u_char *user
-                      , const struct pcap_pkthdr *h
-                      , const u_char *bytes)
+void recv_pcap_packet1ikev1(u_char *user, const struct pcap_pkthdr *h,
+			    const u_char *bytes)
 {
-    struct state *st;
-    struct pcr_kenonce *kn = &crypto_req->pcr_d.kn;
+	struct state *st;
+	struct pcr_kenonce *kn = &crypto_req->pcr_d.kn;
 
-    recv_pcap_packet_gen(user, h, bytes);
+	recv_pcap_packet_gen(user, h, bytes);
 
-    /* find st involved */
-    st = state_with_serialno(1);
-    if(st) {
-      st->st_connection->extra_debugging = DBG_PRIVATE|DBG_CRYPT|DBG_PARSING|DBG_EMITTING|DBG_CONTROL|DBG_CONTROLMORE;
-    }
+	/* find st involved */
+	st = state_with_serialno(1);
+	if (st) {
+		st->st_connection->extra_debugging =
+			DBG_PRIVATE | DBG_CRYPT | DBG_PARSING | DBG_EMITTING |
+			DBG_CONTROL | DBG_CONTROLMORE;
+	}
 }
 
-void recv_pcap_packet2ikev1_128(u_char *user
-                      , const struct pcap_pkthdr *h
-                      , const u_char *bytes)
+void recv_pcap_packet2ikev1_128(u_char *user, const struct pcap_pkthdr *h,
+				const u_char *bytes)
 {
-    struct state *st;
-    struct pcr_kenonce *kn = &crypto_req->pcr_d.kn;
+	struct state *st;
+	struct pcr_kenonce *kn = &crypto_req->pcr_d.kn;
 
-    recv_pcap_packet_gen(user, h, bytes);
+	recv_pcap_packet_gen(user, h, bytes);
 
-    /* find st involved */
-    st = state_with_serialno(1);
-    if(st) {
-      st->st_connection->extra_debugging = DBG_PRIVATE|DBG_CRYPT|DBG_PARSING|DBG_EMITTING|DBG_CONTROL|DBG_CONTROLMORE;
-      update_ngi_tc3(kn);
-      run_one_continuation(crypto_req);
-    }
+	/* find st involved */
+	st = state_with_serialno(1);
+	if (st) {
+		st->st_connection->extra_debugging =
+			DBG_PRIVATE | DBG_CRYPT | DBG_PARSING | DBG_EMITTING |
+			DBG_CONTROL | DBG_CONTROLMORE;
+		update_ngi_tc3(kn);
+		run_one_continuation(crypto_req);
+	}
 }
 
-recv_pcap recv_inputs[PCAP_INPUT_COUNT]={
-    recv_pcap_packet1ikev1,
-    recv_pcap_packet2ikev1_128,
+recv_pcap recv_inputs[PCAP_INPUT_COUNT] = {
+	recv_pcap_packet1ikev1,
+	recv_pcap_packet2ikev1_128,
 };
 
 #include "../lp12-parentR2/parentR2_main.c"
 
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

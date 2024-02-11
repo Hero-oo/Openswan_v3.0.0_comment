@@ -37,8 +37,8 @@ int socket(int domain, int type, int protocol)
 	}
 
 	if (saref != UNASSIGNED_SAREF && saref != INVALID_SAREF)
-		(void) setsockopt(sk, IPPROTO_IP, IP_IPSEC_BINDREF, &saref,
-				sizeof(saref));
+		(void)setsockopt(sk, IPPROTO_IP, IP_IPSEC_BINDREF, &saref,
+				 sizeof(saref));
 
 	return sk;
 }

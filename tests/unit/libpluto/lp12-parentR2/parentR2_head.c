@@ -29,9 +29,7 @@
 #include "seam_kernelalgs.c"
 #include "seam_rsasig.c"
 
-void recv_pcap_packet_with_ke(u_char *user
-                              , const struct pcap_pkthdr *h
-                              , const u_char *bytes);
-void recv_pcap_packet2_with_ke(u_char *user
-                               , const struct pcap_pkthdr *h
-                               , const u_char *bytes);
+void recv_pcap_packet_with_ke(u_char *user, const struct pcap_pkthdr *h,
+			      const u_char *bytes);
+void recv_pcap_packet2_with_ke(u_char *user, const struct pcap_pkthdr *h,
+			       const u_char *bytes);

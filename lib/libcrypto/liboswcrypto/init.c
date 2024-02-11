@@ -40,7 +40,7 @@
 
 #include <glob.h>
 #ifndef GLOB_ABORTED
-# define GLOB_ABORTED    GLOB_ABEND	/* fix for old versions */
+#define GLOB_ABORTED GLOB_ABEND /* fix for old versions */
 #endif
 
 #include <openswan.h>
@@ -62,24 +62,24 @@
 #include "oswcrypto.h"
 
 #ifdef HAVE_LIBNSS
- /* nspr */
-# include <prerror.h>
-# include <prinit.h>
-# include <prmem.h>
- /* nss */
-# include <key.h>
-# include <keyt.h>
-# include <nss.h>
-# include <pk11pub.h>
-# include <seccomon.h>
-# include <secerr.h>
-# include <secport.h>
-# include <time.h>
-# include "oswconf.h"
+/* nspr */
+#include <prerror.h>
+#include <prinit.h>
+#include <prmem.h>
+/* nss */
+#include <key.h>
+#include <keyt.h>
+#include <nss.h>
+#include <pk11pub.h>
+#include <seccomon.h>
+#include <secerr.h>
+#include <secport.h>
+#include <time.h>
+#include "oswconf.h"
 #endif
 
 /* leave the {0}, it is required on OSX */
-struct oswcrypto_meth oswcrypto = {0};
+struct oswcrypto_meth oswcrypto = { 0 };
 
 /*
  * Local Variables:

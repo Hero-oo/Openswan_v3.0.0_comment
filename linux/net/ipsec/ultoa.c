@@ -17,14 +17,14 @@
 /*
  - ultoa - convert unsigned long to decimal ASCII
  */
-size_t				/* length required for full conversion */
+size_t /* length required for full conversion */
 ultoa(n, base, dst, dstlen)
 unsigned long n;
 int base;
-char *dst;			/* need not be valid if dstlen is 0 */
+char *dst; /* need not be valid if dstlen is 0 */
 size_t dstlen;
 {
-	char buf[3*sizeof(unsigned long) + 1];
+	char buf[3 * sizeof(unsigned long) + 1];
 	char *bufend = buf + sizeof(buf);
 	size_t len;
 	char *p;
@@ -34,19 +34,19 @@ size_t dstlen;
 	*--p = '\0';
 	if (base == 10) {
 		do {
-			*--p = n%10 + '0';
+			*--p = n % 10 + '0';
 			n /= 10;
 		} while (n != 0);
 	} else if (base == 16) {
 		do {
-			*--p = hex[n&0xf];
+			*--p = hex[n & 0xf];
 			n >>= 4;
 		} while (n != 0);
 		*--p = 'x';
 		*--p = '0';
 	} else if (base == 8) {
 		do {
-			*--p = (n&07) + '0';
+			*--p = (n & 07) + '0';
 			n >>= 3;
 		} while (n != 0);
 		*--p = '0';

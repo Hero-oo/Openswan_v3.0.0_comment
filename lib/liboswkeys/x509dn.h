@@ -17,30 +17,30 @@
 #ifndef _X509_DN_H
 
 /* Maximum length of ASN.1 distinquished name */
-#define ASN1_BUF_LEN	      512
+#define ASN1_BUF_LEN 512
 
-#define BASIC_CONSTRAINTS_CA	1
-#define BASIC_CONSTRAINTS_ROOF	4
+#define BASIC_CONSTRAINTS_CA 1
+#define BASIC_CONSTRAINTS_ROOF 4
 
-#define X509_TIME_UTC		0
-#define X509_TIME_GENERALIZED	2
-#define X509_TIME_ROOF		4
+#define X509_TIME_UTC 0
+#define X509_TIME_GENERALIZED 2
+#define X509_TIME_ROOF 4
 
-#define GN_OBJ_OTHER_NAME	 0
-#define GN_OBJ_RFC822_NAME	 2
-#define GN_OBJ_DNS_NAME		 4
-#define GN_OBJ_X400_ADDRESS	 6
-#define GN_OBJ_DIRECTORY_NAME	 8
-#define GN_OBJ_EDI_PARTY_NAME	10
-#define GN_OBJ_URI		12
-#define GN_OBJ_IP_ADDRESS	14
-#define GN_OBJ_REGISTERED_ID	16
-#define GN_OBJ_ROOF		18
+#define GN_OBJ_OTHER_NAME 0
+#define GN_OBJ_RFC822_NAME 2
+#define GN_OBJ_DNS_NAME 4
+#define GN_OBJ_X400_ADDRESS 6
+#define GN_OBJ_DIRECTORY_NAME 8
+#define GN_OBJ_EDI_PARTY_NAME 10
+#define GN_OBJ_URI 12
+#define GN_OBJ_IP_ADDRESS 14
+#define GN_OBJ_REGISTERED_ID 16
+#define GN_OBJ_ROOF 18
 
 extern void update_chunk(chunk_t *ch, int n);
 extern err_t init_rdn(chunk_t dn, chunk_t *rdn, chunk_t *attribute, bool *next);
-extern err_t get_next_rdn(chunk_t *rdn, chunk_t * attribute, chunk_t *oid, chunk_t *value
-                          , asn1_t *type, bool *next);
+extern err_t get_next_rdn(chunk_t *rdn, chunk_t *attribute, chunk_t *oid,
+			  chunk_t *value, asn1_t *type, bool *next);
 
 #define _X509_DN_H
 #endif

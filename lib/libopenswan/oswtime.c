@@ -32,53 +32,45 @@ bool now_regression = FALSE;
 time_t regression_time = 0;
 
 /* monotonic version of time(3) */
-time_t
-now(void)
+time_t now(void)
 {
-    static time_t delta = 0
-	, last_time = 0;
-    time_t n;
-    if(now_regression) {
-      n = regression_time;
-    } else {
-      n = time(NULL);
-    }
+	static time_t delta = 0, last_time = 0;
+	time_t n;
+	if (now_regression) {
+		n = regression_time;
+	} else {
+		n = time(NULL);
+	}
 
-    passert(n != (time_t)-1);
-    if (last_time > n)
-    {
-	openswan_log("time moved backwards %ld seconds", (long)(last_time - n));
-	delta += last_time - n;
-    }
-    last_time = n;
-    return n + delta;
+	passert(n != (time_t)-1);
+	if (last_time > n) {
+		openswan_log("time moved backwards %ld seconds",
+			     (long)(last_time - n));
+		delta += last_time - n;
+	}
+	last_time = n;
+	return n + delta;
 }
 
 /* Names of the months */
 
-static const char* months[] = {
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
-
+static const char *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+				"Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
 /*
  *  Display a date either in local or UTC time
  */
-char *
-timetoa(const time_t *timep, bool utc, char *b, size_t blen)
+char *timetoa(const time_t *timep, bool utc, char *b, size_t blen)
 {
-    if (*timep == UNDEFINED_TIME)
-	snprintf(b, blen, "--- -- --:--:--%s----", (utc)?" UTC ":" ");
-    else
-    {
-	struct tm *t = (utc)? gmtime(timep) : localtime(timep);
+	if (*timep == UNDEFINED_TIME)
+		snprintf(b, blen, "--- -- --:--:--%s----",
+			 (utc) ? " UTC " : " ");
+	else {
+		struct tm *t = (utc) ? gmtime(timep) : localtime(timep);
 
-	snprintf(b, blen, "%s %02d %02d:%02d:%02d%s%04d",
-	    months[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec,
-	    (utc)?" UTC ":" ", t->tm_year + 1900
-	);
-    }
-    return b;
+		snprintf(b, blen, "%s %02d %02d:%02d:%02d%s%04d",
+			 months[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min,
+			 t->tm_sec, (utc) ? " UTC " : " ", t->tm_year + 1900);
+	}
+	return b;
 }
-

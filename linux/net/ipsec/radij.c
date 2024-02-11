@@ -54,7 +54,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 #include <linux/kernel.h> /* printk() */
@@ -62,15 +62,15 @@
 #include "openswan/ipsec_param.h"
 
 #include <linux/slab.h> /* kmalloc() */
-#include <linux/errno.h>  /* error codes */
-#include <linux/types.h>  /* size_t */
+#include <linux/errno.h> /* error codes */
+#include <linux/types.h> /* size_t */
 #include <linux/interrupt.h> /* mark_bh */
 
-#include <linux/netdevice.h>   /* struct device, and other headers */
+#include <linux/netdevice.h> /* struct device, and other headers */
 #include <linux/etherdevice.h> /* eth_type_trans */
-#include <linux/ip.h>          /* struct iphdr */
+#include <linux/ip.h> /* struct iphdr */
 #include <linux/skbuff.h>
-# include <linux/in6.h>
+#include <linux/in6.h>
 
 #include <net/ip.h>
 
@@ -80,7 +80,7 @@
 #include "openswan/ipsec_encap.h"
 #include "openswan/ipsec_radij.h"
 
-int	maj_keylen;
+int maj_keylen;
 struct radij_mask *rj_mkfreelist;
 struct radij_node_head *mask_rjhead;
 static int gotOddMasks;
@@ -89,9 +89,10 @@ static char *rj_zeroes, *rj_ones;
 
 #define rj_masktop (mask_rjhead->rnh_treetop)
 #ifdef Bcmp
-# undef Bcmp
+#undef Bcmp
 #endif /* Bcmp */
-#define Bcmp(a, b, l) (l == 0 ? 0 : memcmp((caddr_t)(b), (caddr_t)(a), (size_t)l))
+#define Bcmp(a, b, l) \
+	(l == 0 ? 0 : memcmp((caddr_t)(b), (caddr_t)(a), (size_t)l))
 /*
  * The data structure for the keys is a radix tree with one way
  * branching removed.  The index rj_b at an internal node n represents a bit
@@ -122,10 +123,8 @@ static char *rj_zeroes, *rj_ones;
  * node as high in the tree as we can go.
  */
 
-struct radij_node *
-rj_search(v_arg, head)
-	void *v_arg;
-	struct radij_node *head;
+struct radij_node *rj_search(v_arg, head) void *v_arg;
+struct radij_node *head;
 {
 	register struct radij_node *x;
 	register caddr_t v;
@@ -139,10 +138,9 @@ rj_search(v_arg, head)
 	return (x);
 };
 
-struct radij_node *
-rj_search_m(v_arg, head, m_arg)
-	struct radij_node *head;
-	void *v_arg, *m_arg;
+struct radij_node *rj_search_m(v_arg, head, m_arg)
+struct radij_node *head;
+void *v_arg, *m_arg;
 {
 	register struct radij_node *x;
 	register caddr_t v = v_arg, m = m_arg;
@@ -157,9 +155,7 @@ rj_search_m(v_arg, head, m_arg)
 	return x;
 };
 
-int
-rj_refines(m_arg, n_arg)
-	void *m_arg, *n_arg;
+int rj_refines(m_arg, n_arg) void *m_arg, *n_arg;
 {
 	register caddr_t m = m_arg, n = n_arg;
 	register caddr_t lim, lim2 = lim = n + *(u_char *)n;
@@ -173,23 +169,19 @@ rj_refines(m_arg, n_arg)
 			return 0;
 		if (*n++ != *m++)
 			masks_are_equal = 0;
-
 	}
 	while (n < lim2)
 		if (*n++)
 			return 0;
 	if (masks_are_equal && (longer < 0))
-		for (lim2 = m - longer; m < lim2; )
+		for (lim2 = m - longer; m < lim2;)
 			if (*m++)
 				return 1;
 	return (!masks_are_equal);
 }
 
-
-struct radij_node *
-rj_match(v_arg, head)
-	void *v_arg;
-	struct radij_node_head *head;
+struct radij_node *rj_match(v_arg, head) void *v_arg;
+struct radij_node_head *head;
 {
 	caddr_t v = v_arg;
 	register struct radij_node *t = head->rnh_treetop, *x;
@@ -202,7 +194,7 @@ rj_match(v_arg, head)
 	 * Open code rj_search(v, top) to avoid overhead of extra
 	 * subroutine call.
 	 */
-	for (; t->rj_b >= 0; ) {
+	for (; t->rj_b >= 0;) {
 		if (t->rj_bmask & cp[t->rj_off])
 			t = t->rj_r;
 		else
@@ -215,7 +207,9 @@ rj_match(v_arg, head)
 		    "klips_debug:rj_match: "
 		    "* See if we match exactly as a host destination\n");
 
-	cp += off; cp2 = t->rj_key + off; cplim = v + vlen;
+	cp += off;
+	cp2 = t->rj_key + off;
+	cplim = v + vlen;
 	for (; cp < cplim; cp++, cp2++)
 		if (*cp != *cp2)
 			goto on1;
@@ -231,23 +225,24 @@ on1:
 	saved_t = t;
 	KLIPS_PRINT(debug_radij,
 		    "klips_debug:rj_match: "
-		    "** try to match a leaf, t=0p%p\n", t);
+		    "** try to match a leaf, t=0p%p\n",
+		    t);
 	do {
-	    if (t->rj_mask) {
-		/*
+		if (t->rj_mask) {
+			/*
 		 * Even if we don't match exactly as a hosts;
 		 * we may match if the leaf we wound up at is
 		 * a route to a net.
 		 */
-		cp3 = matched_off + t->rj_mask;
-		cp2 = matched_off + t->rj_key;
-		for (; cp < cplim; cp++)
-			if ((*cp2++ ^ *cp) & *cp3++)
-				break;
-		if (cp == cplim)
-			return t;
-		cp = matched_off + v;
-	    }
+			cp3 = matched_off + t->rj_mask;
+			cp2 = matched_off + t->rj_key;
+			for (; cp < cplim; cp++)
+				if ((*cp2++ ^ *cp) & *cp3++)
+					break;
+			if (cp == cplim)
+				return t;
+			cp = matched_off + v;
+		}
 	} while ((t = t->rj_dupedkey));
 	t = saved_t;
 	/* start searching up the tree */
@@ -283,59 +278,60 @@ on1:
 					    "***** cp2=0p%p cp3=0p%p\n",
 					    cp2, cp3);
 				for (cp = v + off; cp < cplim;)
-					*cp2++ =  *cp++ & *cp3++;
+					*cp2++ = *cp++ & *cp3++;
 				x = rj_search(maskedKey, t);
 				while (x && x->rj_mask != m->rm_mask)
 					x = x->rj_dupedkey;
-				if (x &&
-				    (Bcmp(mstart, x->rj_key + off,
-					vlen - off) == 0))
-					    return x;
+				if (x && (Bcmp(mstart, x->rj_key + off,
+					       vlen - off) == 0))
+					return x;
 			} while ((m = m->rm_mklist));
 		}
 	} while (t != top);
-	KLIPS_PRINT(debug_radij,
-		    "klips_debug:rj_match: "
-		    "***** not found.\n");
+	KLIPS_PRINT(debug_radij, "klips_debug:rj_match: "
+				 "***** not found.\n");
 	return 0;
 };
 
 #ifdef RJ_DEBUG
-int	rj_nodenum;
-struct	radij_node *rj_clist;
-int	rj_saveinfo;
+int rj_nodenum;
+struct radij_node *rj_clist;
+int rj_saveinfo;
 DEBUG_NO_STATIC void traverse(struct radij_node *);
 #ifdef RJ_DEBUG2
-int	rj_debug =  1;
+int rj_debug = 1;
 #else
-int	rj_debug =  0;
+int rj_debug = 0;
 #endif /* RJ_DEBUG2 */
 #endif /* RJ_DEBUG */
 
-struct radij_node *
-rj_newpair(v, b, nodes)
-	void *v;
-	int b;
-	struct radij_node nodes[2];
+struct radij_node *rj_newpair(v, b, nodes) void *v;
+int b;
+struct radij_node nodes[2];
 {
 	register struct radij_node *tt = nodes, *t = tt + 1;
-	t->rj_b = b; t->rj_bmask = 0x80 >> (b & 7);
-	t->rj_l = tt; t->rj_off = b >> 3;
-	tt->rj_b = -1; tt->rj_key = (caddr_t)v; tt->rj_p = t;
+	t->rj_b = b;
+	t->rj_bmask = 0x80 >> (b & 7);
+	t->rj_l = tt;
+	t->rj_off = b >> 3;
+	tt->rj_b = -1;
+	tt->rj_key = (caddr_t)v;
+	tt->rj_p = t;
 	tt->rj_flags = t->rj_flags = RJF_ACTIVE;
 #ifdef RJ_DEBUG
-	tt->rj_info = rj_nodenum++; t->rj_info = rj_nodenum++;
-	tt->rj_twin = t; tt->rj_ybro = rj_clist; rj_clist = tt;
+	tt->rj_info = rj_nodenum++;
+	t->rj_info = rj_nodenum++;
+	tt->rj_twin = t;
+	tt->rj_ybro = rj_clist;
+	rj_clist = tt;
 #endif /* RJ_DEBUG */
 	return t;
 }
 
-struct radij_node *
-rj_insert(v_arg, head, dupentry, nodes)
-	void *v_arg;
-	struct radij_node_head *head;
-	int *dupentry;
-	struct radij_node nodes[2];
+struct radij_node *rj_insert(v_arg, head, dupentry, nodes) void *v_arg;
+struct radij_node_head *head;
+int *dupentry;
+struct radij_node nodes[2];
 {
 	caddr_t v = v_arg;
 	struct radij_node *top = head->rnh_treetop;
@@ -344,61 +340,67 @@ rj_insert(v_arg, head, dupentry, nodes)
 	register caddr_t cp = v + head_off;
 	register int b;
 	struct radij_node *tt;
-    	/*
+	/*
 	 *find first bit at which v and t->rj_key differ
 	 */
-    {
-	register caddr_t cp2 = t->rj_key + head_off;
-	register int cmp_res;
-	caddr_t cplim = v + vlen;
+	{
+		register caddr_t cp2 = t->rj_key + head_off;
+		register int cmp_res;
+		caddr_t cplim = v + vlen;
 
-	while (cp < cplim)
-		if (*cp2++ != *cp++)
-			goto on1;
-	*dupentry = 1;
-	return t;
+		while (cp < cplim)
+			if (*cp2++ != *cp++)
+				goto on1;
+		*dupentry = 1;
+		return t;
 on1:
-	*dupentry = 0;
-	cmp_res = (cp[-1] ^ cp2[-1]) & 0xff;
-	for (b = (cp - v) << 3; cmp_res; b--)
-		cmp_res >>= 1;
-    }
-    {
-	register struct radij_node *p, *x = top;
-	cp = v;
-	do {
-		p = x;
-		if (cp[x->rj_off] & x->rj_bmask)
-			x = x->rj_r;
-		else x = x->rj_l;
-	} while (b > (unsigned) x->rj_b); /* x->rj_b < b && x->rj_b >= 0 */
-#ifdef RJ_DEBUG
-	if (rj_debug)
-		printk("klips_debug:rj_insert: Going In:\n"), traverse(p);
-#endif /* RJ_DEBUG */
-	t = rj_newpair(v_arg, b, nodes); tt = t->rj_l;
-	if ((cp[p->rj_off] & p->rj_bmask) == 0)
-		p->rj_l = t;
-	else
-		p->rj_r = t;
-	x->rj_p = t; t->rj_p = p; /* frees x, p as temp vars below */
-	if ((cp[t->rj_off] & t->rj_bmask) == 0) {
-		t->rj_r = x;
-	} else {
-		t->rj_r = tt; t->rj_l = x;
+		*dupentry = 0;
+		cmp_res = (cp[-1] ^ cp2[-1]) & 0xff;
+		for (b = (cp - v) << 3; cmp_res; b--)
+			cmp_res >>= 1;
 	}
+	{
+		register struct radij_node *p, *x = top;
+		cp = v;
+		do {
+			p = x;
+			if (cp[x->rj_off] & x->rj_bmask)
+				x = x->rj_r;
+			else
+				x = x->rj_l;
+		} while (b >
+			 (unsigned)x->rj_b); /* x->rj_b < b && x->rj_b >= 0 */
 #ifdef RJ_DEBUG
-	if (rj_debug)
-		printk("klips_debug:rj_insert: Coming out:\n"), traverse(p);
+		if (rj_debug)
+			printk("klips_debug:rj_insert: Going In:\n"),
+				traverse(p);
 #endif /* RJ_DEBUG */
-    }
+		t = rj_newpair(v_arg, b, nodes);
+		tt = t->rj_l;
+		if ((cp[p->rj_off] & p->rj_bmask) == 0)
+			p->rj_l = t;
+		else
+			p->rj_r = t;
+		x->rj_p = t;
+		t->rj_p = p; /* frees x, p as temp vars below */
+		if ((cp[t->rj_off] & t->rj_bmask) == 0) {
+			t->rj_r = x;
+		} else {
+			t->rj_r = tt;
+			t->rj_l = x;
+		}
+#ifdef RJ_DEBUG
+		if (rj_debug)
+			printk("klips_debug:rj_insert: Coming out:\n"),
+				traverse(p);
+#endif /* RJ_DEBUG */
+	}
 	return (tt);
 }
 
-struct radij_node *
-rj_addmask(n_arg, search, skip)
-	int search, skip;
-	void *n_arg;
+struct radij_node *rj_addmask(n_arg, search, skip)
+int search, skip;
+void *n_arg;
 {
 	caddr_t netmask = (caddr_t)n_arg;
 	register struct radij_node *x;
@@ -413,10 +415,10 @@ rj_addmask(n_arg, search, skip)
 		if (Bcmp(netmask, x->rj_key, mlen) == 0)
 			return (x);
 	}
-	R_Malloc(x, struct radij_node *, maj_keylen + 2 * sizeof (*x));
+	R_Malloc(x, struct radij_node *, maj_keylen + 2 * sizeof(*x));
 	if (x == 0)
 		return (0);
-	Bzero(x, maj_keylen + 2 * sizeof (*x));
+	Bzero(x, maj_keylen + 2 * sizeof(*x));
 	cp = (caddr_t)(x + 2);
 	Bcopy(netmask, cp, mlen);
 	netmask = cp;
@@ -448,14 +450,12 @@ struct radij_node *
 unsigned char *dumper;
 int dumper_len;
 
-int
-rj_addroute(v_arg, n_arg, head, treenodes)
-	void *v_arg, *n_arg;
-	struct radij_node_head *head;
-	struct radij_node treenodes[2];
+int rj_addroute(v_arg, n_arg, head, treenodes) void *v_arg, *n_arg;
+struct radij_node_head *head;
+struct radij_node treenodes[2];
 {
 	caddr_t v = (caddr_t)v_arg, netmask = (caddr_t)n_arg;
-	register struct radij_node *t, *x=NULL, *tt;
+	register struct radij_node *t, *x = NULL, *tt;
 	struct radij_node *saved_tt, *top = head->rnh_treetop;
 	short b = 0, b_leaf;
 	int mlen, keyduplicated;
@@ -469,7 +469,7 @@ rj_addroute(v_arg, n_arg, head, treenodes)
 	 * the mask to speed avoiding duplicate references at
 	 * nodes and possibly save time in calculating indices.
 	 */
-	if (netmask)  {
+	if (netmask) {
 		x = rj_search(netmask, rj_masktop);
 		mlen = *(u_char *)netmask;
 		if (Bcmp(netmask, x->rj_key, mlen) != 0) {
@@ -507,23 +507,31 @@ rj_addroute(v_arg, n_arg, head, treenodes)
 		 * the head of the list.
 		 */
 		if (tt && t == saved_tt) {
-			struct	radij_node *xx = x;
+			struct radij_node *xx = x;
 			/* link in at head of list */
 			(tt = treenodes)->rj_dupedkey = t;
 			tt->rj_flags = t->rj_flags;
 			tt->rj_p = x = t->rj_p;
-			if (x->rj_l == t) x->rj_l = tt; else x->rj_r = tt;
-			saved_tt = tt; x = xx;
+			if (x->rj_l == t)
+				x->rj_l = tt;
+			else
+				x->rj_r = tt;
+			saved_tt = tt;
+			x = xx;
 		} else {
 			(tt = treenodes)->rj_dupedkey = t->rj_dupedkey;
 			t->rj_dupedkey = tt;
 		}
 #ifdef RJ_DEBUG
-		t=tt+1; tt->rj_info = rj_nodenum++; t->rj_info = rj_nodenum++;
-		tt->rj_twin = t; tt->rj_ybro = rj_clist; rj_clist = tt;
+		t = tt + 1;
+		tt->rj_info = rj_nodenum++;
+		t->rj_info = rj_nodenum++;
+		tt->rj_twin = t;
+		tt->rj_ybro = rj_clist;
+		rj_clist = tt;
 #endif /* RJ_DEBUG */
 		t = saved_tt;
-		tt->rj_key = (caddr_t) v;
+		tt->rj_key = (caddr_t)v;
 		tt->rj_b = -1;
 		tt->rj_flags = t->rj_flags & ~RJF_ROOT;
 	}
@@ -536,7 +544,10 @@ rj_addroute(v_arg, n_arg, head, treenodes)
 	}
 	t = saved_tt->rj_p;
 	b_leaf = -1 - t->rj_b;
-	if (t->rj_r == saved_tt) x = t->rj_l; else x = t->rj_r;
+	if (t->rj_r == saved_tt)
+		x = t->rj_l;
+	else
+		x = t->rj_r;
 	/* Promote general routes from below */
 	if (x->rj_b < 0) {
 		if (x->rj_mask && (x->rj_b >= b_leaf) && x->rj_mklist == 0) {
@@ -555,12 +566,14 @@ rj_addroute(v_arg, n_arg, head, treenodes)
 		for (mp = &x->rj_mklist; (m = *mp); mp = &m->rm_mklist)
 			if (m->rm_b >= b_leaf)
 				break;
-		t->rj_mklist = m; *mp = 0;
+		t->rj_mklist = m;
+		*mp = 0;
 	}
 	/* Add new route to highest possible ancestor's list */
-	if ((netmask == 0) || (b > t->rj_b )) {
+	if ((netmask == 0) || (b > t->rj_b)) {
 #ifdef RJ_DEBUG
-	        printk("klips:radij.c: netmask = %p or b(%d)>t->rjb(%d)\n", netmask, b, t->rj_b);
+		printk("klips:radij.c: netmask = %p or b(%d)>t->rjb(%d)\n",
+		       netmask, b, t->rj_b);
 #endif
 		return 0; /* tt rgb */ /* can't lift at all */
 	}
@@ -585,7 +598,8 @@ rj_addroute(v_arg, n_arg, head, treenodes)
 			m->rm_refs++;
 			tt->rj_mklist = m;
 #ifdef RJ_DEBUG
-			printk("klips:radij.c: m->rm_mask %p == netmask\n", netmask);
+			printk("klips:radij.c: m->rm_mask %p == netmask\n",
+			       netmask);
 #endif
 			return 0; /* tt rgb */
 		}
@@ -610,11 +624,9 @@ rj_addroute(v_arg, n_arg, head, treenodes)
 	return 0; /* tt rgb */
 }
 
-int
-rj_delete(v_arg, netmask_arg, head, node)
-	void *v_arg, *netmask_arg;
-	struct radij_node_head *head;
-	struct radij_node **node;
+int rj_delete(v_arg, netmask_arg, head, node) void *v_arg, *netmask_arg;
+struct radij_node_head *head;
+struct radij_node **node;
 {
 	register struct radij_node *t, *p, *x, *tt;
 	struct radij_mask *m, *saved_m, **mp;
@@ -627,7 +639,7 @@ rj_delete(v_arg, netmask_arg, head, node)
 	x = head->rnh_treetop;
 	tt = rj_search(v, x);
 	head_off = x->rj_off;
-	vlen =  *(u_char *)v;
+	vlen = *(u_char *)v;
 	saved_tt = tt;
 	top = x;
 	if (tt == 0 ||
@@ -677,36 +689,58 @@ on1:
 		return -EFAULT; /* (0) rgb */
 #ifdef RJ_DEBUG
 	/* Get us out of the creation list */
-	for (t = rj_clist; t && t->rj_ybro != tt; t = t->rj_ybro) {}
-	if (t) t->rj_ybro = tt->rj_ybro;
+	for (t = rj_clist; t && t->rj_ybro != tt; t = t->rj_ybro) {
+	}
+	if (t)
+		t->rj_ybro = tt->rj_ybro;
 #endif /* RJ_DEBUG */
 	t = tt->rj_p;
 	if (dupedkey) {
 		if (tt == saved_tt) {
-			x = dupedkey; x->rj_p = t;
-			if (t->rj_l == tt) t->rj_l = x; else t->rj_r = x;
+			x = dupedkey;
+			x->rj_p = t;
+			if (t->rj_l == tt)
+				t->rj_l = x;
+			else
+				t->rj_r = x;
 		} else {
 			for (x = p = saved_tt; p && p->rj_dupedkey != tt;)
 				p = p->rj_dupedkey;
-			if (p) p->rj_dupedkey = tt->rj_dupedkey;
-			else printk("klips_debug:rj_delete: "
+			if (p)
+				p->rj_dupedkey = tt->rj_dupedkey;
+			else
+				printk("klips_debug:rj_delete: "
 				       "couldn't find node that we started with\n");
 		}
 		t = tt + 1;
-		if  (t->rj_flags & RJF_ACTIVE) {
+		if (t->rj_flags & RJF_ACTIVE) {
 #ifndef RJ_DEBUG
-			*++x = *t; p = t->rj_p;
+			*++x = *t;
+			p = t->rj_p;
 #else
-			b = t->rj_info; *++x = *t; t->rj_info = b; p = t->rj_p;
+			b = t->rj_info;
+			*++x = *t;
+			t->rj_info = b;
+			p = t->rj_p;
 #endif /* RJ_DEBUG */
-			if (p->rj_l == t) p->rj_l = x; else p->rj_r = x;
-			x->rj_l->rj_p = x; x->rj_r->rj_p = x;
+			if (p->rj_l == t)
+				p->rj_l = x;
+			else
+				p->rj_r = x;
+			x->rj_l->rj_p = x;
+			x->rj_r->rj_p = x;
 		}
 		goto out;
 	}
-	if (t->rj_l == tt) x = t->rj_r; else x = t->rj_l;
+	if (t->rj_l == tt)
+		x = t->rj_r;
+	else
+		x = t->rj_l;
 	p = t->rj_p;
-	if (p->rj_r == t) p->rj_r = x; else p->rj_l = x;
+	if (p->rj_r == t)
+		p->rj_r = x;
+	else
+		p->rj_l = x;
 	x->rj_p = p;
 	/*
 	 * Demote routes attached to us.
@@ -724,7 +758,8 @@ on1:
 					MKFree(m);
 				} else
 					printk("klips_debug:rj_delete: "
-					    "Orphaned Mask 0p%p at 0p%p\n", m, x);
+					       "Orphaned Mask 0p%p at 0p%p\n",
+					       m, x);
 				m = mm;
 			}
 		}
@@ -737,11 +772,17 @@ on1:
 #ifndef RJ_DEBUG
 		*t = *x;
 #else
-		b = t->rj_info; *t = *x; t->rj_info = b;
+		b = t->rj_info;
+		*t = *x;
+		t->rj_info = b;
 #endif /* RJ_DEBUG */
-		t->rj_l->rj_p = t; t->rj_r->rj_p = t;
+		t->rj_l->rj_p = t;
+		t->rj_r->rj_p = t;
 		p = x->rj_p;
-		if (p->rj_l == x) p->rj_l = t; else p->rj_r = t;
+		if (p->rj_l == x)
+			p->rj_l = t;
+		else
+			p->rj_r = t;
 	}
 out:
 	tt->rj_flags &= ~RJF_ACTIVE;
@@ -750,12 +791,10 @@ out:
 	return 0; /* (tt) rgb */
 }
 
-int rj_initwalk(struct rj_walkstate *rjws,
-            struct radij_node_head *head,
-            int (*func)(struct radij_node *,void *),
-            void *extra)
+int rj_initwalk(struct rj_walkstate *rjws, struct radij_node_head *head,
+		int (*func)(struct radij_node *, void *), void *extra)
 {
-	if(!head || !rjws) {
+	if (!head || !rjws) {
 		return 1;
 	}
 
@@ -768,143 +807,145 @@ int rj_initwalk(struct rj_walkstate *rjws,
 	/* First time through node, go left */
 	while (rjws->rn->rj_b >= 0)
 		rjws->rn = rjws->rn->rj_l;
-        rjws->f  = func;
-        rjws->w  = extra;
+	rjws->f = func;
+	rjws->w = extra;
 
-        return 0;
+	return 0;
 }
 
-void
-rj_finiwalk(struct rj_walkstate *rjws)
+void rj_finiwalk(struct rj_walkstate *rjws)
 {
-        return;
+	return;
 }
 
 int rj_walktreeonce(struct rj_walkstate *rjs)
 {
-        /* Process leaves */
-        rjs->rn = rjs->base;
-        if(rjs->rn) {
-                rjs->base = (rjs->rn)->rj_dupedkey;
-                if(debug_radij) {
-                        printk("klips_debug:rj_walktreeonce: "
-                               "while: base=0p%p rn=0p%p rj_b=%d rj_flags=%x",
-                               rjs->base,
-                               (rjs->rn),
-                               (rjs->rn)->rj_b,
-                               (rjs->rn)->rj_flags);
-                        (rjs->rn)->rj_b >= 0 ?
-                                printk(" node off=%x\n",
-                                       (rjs->rn)->rj_off) :
-                                printk(" leaf key = %08x->%08x\n",
-                                       (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)->rj_key)->sen_ip_src.s_addr),
-                                       (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)->rj_key)->sen_ip_dst.s_addr))
-                                ;
-                }
+	/* Process leaves */
+	rjs->rn = rjs->base;
+	if (rjs->rn) {
+		rjs->base = (rjs->rn)->rj_dupedkey;
+		if (debug_radij) {
+			printk("klips_debug:rj_walktreeonce: "
+			       "while: base=0p%p rn=0p%p rj_b=%d rj_flags=%x",
+			       rjs->base, (rjs->rn), (rjs->rn)->rj_b,
+			       (rjs->rn)->rj_flags);
+			(rjs->rn)->rj_b >= 0 ?
+				printk(" node off=%x\n", (rjs->rn)->rj_off) :
+				printk(" leaf key = %08x->%08x\n",
+				       (u_int)ntohl(
+					       ((struct sockaddr_encap *)(rjs->rn)
+							->rj_key)
+						       ->sen_ip_src.s_addr),
+				       (u_int)ntohl(
+					       ((struct sockaddr_encap *)(rjs->rn)
+							->rj_key)
+						       ->sen_ip_dst.s_addr));
+		}
 
-                rjs->current_node = rjs->rn;
-                return WALK_PROCNODE;
-        }
+		rjs->current_node = rjs->rn;
+		return WALK_PROCNODE;
+	}
 
-        rjs->rn = rjs->next;
-        if (rjs->rn == NULL || (rjs->rn)->rj_flags & RJF_ROOT)
-                return (WALK_DONE);
+	rjs->rn = rjs->next;
+	if (rjs->rn == NULL || (rjs->rn)->rj_flags & RJF_ROOT)
+		return (WALK_DONE);
 
-        return WALK_DOTOP;
+	return WALK_DOTOP;
 }
 
 void rj_walktreeonce_top(struct rj_walkstate *rjs)
 {
-        if(debug_radij) {
-                printk("klips_debug:rj_walktreeonce_top: "
-                       "for: rn=0p%p rj_b=%d rj_flags=%x",
-                       (rjs->rn),
-                       (rjs->rn)->rj_b,
-                       (rjs->rn)->rj_flags);
-                (rjs->rn)->rj_b >= 0 ?
-                        printk(" node off=%x\n",
-                               (rjs->rn)->rj_off) :
-                        printk(" leaf key = %08x->%08x\n",
-                               (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)->rj_key)->sen_ip_src.s_addr),
-                               (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)->rj_key)->sen_ip_dst.s_addr))
-                        ;
-        }
+	if (debug_radij) {
+		printk("klips_debug:rj_walktreeonce_top: "
+		       "for: rn=0p%p rj_b=%d rj_flags=%x",
+		       (rjs->rn), (rjs->rn)->rj_b, (rjs->rn)->rj_flags);
+		(rjs->rn)->rj_b >= 0 ?
+			printk(" node off=%x\n", (rjs->rn)->rj_off) :
+			printk(" leaf key = %08x->%08x\n",
+			       (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)
+						     ->rj_key)
+						    ->sen_ip_src.s_addr),
+			       (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)
+						     ->rj_key)
+						    ->sen_ip_dst.s_addr));
+	}
 
-        rjs->base = rjs->rn;
-        /* If at right child go back up, otherwise, go right */
-        while ((rjs->rn)->rj_p->rj_r == (rjs->rn) && ((rjs->rn)->rj_flags & RJF_ROOT) == 0) {
-                rjs->rn = (rjs->rn)->rj_p;
-        }
+	rjs->base = rjs->rn;
+	/* If at right child go back up, otherwise, go right */
+	while ((rjs->rn)->rj_p->rj_r == (rjs->rn) &&
+	       ((rjs->rn)->rj_flags & RJF_ROOT) == 0) {
+		rjs->rn = (rjs->rn)->rj_p;
+	}
 
-        /* Find the next *leaf* since next node might vanish, too */
-        for ((rjs->rn) = (rjs->rn)->rj_p->rj_r; (rjs->rn)->rj_b >= 0;) {
-                rjs->rn = rjs->rn->rj_l;
-        }
-        rjs->next = rjs->rn;
+	/* Find the next *leaf* since next node might vanish, too */
+	for ((rjs->rn) = (rjs->rn)->rj_p->rj_r; (rjs->rn)->rj_b >= 0;) {
+		rjs->rn = rjs->rn->rj_l;
+	}
+	rjs->next = rjs->rn;
 
-        if(debug_radij) {
-                printk("klips_debug:rj_walktreeonce_top: "
-                       "processing leaves, rn=0p%p rj_b=%d rj_flags=%x",
-                       (rjs->rn),
-                       (rjs->rn)->rj_b,
-                       (rjs->rn)->rj_flags);
-                (rjs->rn)->rj_b >= 0 ?
-                        printk(" node off=%x\n",
-                               (rjs->rn)->rj_off) :
-                        printk(" leaf key = %08x->%08x\n",
-                               (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)->rj_key)->sen_ip_src.s_addr),
-                               (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)->rj_key)->sen_ip_dst.s_addr))
-                        ;
-        }
+	if (debug_radij) {
+		printk("klips_debug:rj_walktreeonce_top: "
+		       "processing leaves, rn=0p%p rj_b=%d rj_flags=%x",
+		       (rjs->rn), (rjs->rn)->rj_b, (rjs->rn)->rj_flags);
+		(rjs->rn)->rj_b >= 0 ?
+			printk(" node off=%x\n", (rjs->rn)->rj_off) :
+			printk(" leaf key = %08x->%08x\n",
+			       (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)
+						     ->rj_key)
+						    ->sen_ip_src.s_addr),
+			       (u_int)ntohl(((struct sockaddr_encap *)(rjs->rn)
+						     ->rj_key)
+						    ->sen_ip_dst.s_addr));
+	}
 }
 
-int
-rj_walktree(h, f, w)
-	struct radij_node_head *h;
-	int (*f)(struct radij_node *,void *);
-	void *w;
+int rj_walktree(h, f, w)
+struct radij_node_head *h;
+int (*f)(struct radij_node *, void *);
+void *w;
 {
-        struct rj_walkstate rjws;
-        memset(&rjws, 0, sizeof(rjws));
+	struct rj_walkstate rjws;
+	memset(&rjws, 0, sizeof(rjws));
 
-        if(rj_initwalk(&rjws, h, f, w)) return -ENODATA;
+	if (rj_initwalk(&rjws, h, f, w))
+		return -ENODATA;
 
 	for (;;) {
-                unsigned int walkonce_control;
-                rj_walktreeonce_top(&rjws);
+		unsigned int walkonce_control;
+		rj_walktreeonce_top(&rjws);
 
-                while((walkonce_control = rj_walktreeonce(&rjws)) == WALK_PROCNODE) {
-                        if(rjws.current_node && f!=NULL) {
-                                int error;
-                                if (!(rjws.current_node->rj_flags & RJF_ROOT)
-                                    && (error = (*f)(rjws.current_node, w))) {
-                                        rj_finiwalk(&rjws);
-                                        return (-error);
-                                }
-                        }
-                }
-                if(walkonce_control == WALK_DONE) break;
+		while ((walkonce_control = rj_walktreeonce(&rjws)) ==
+		       WALK_PROCNODE) {
+			if (rjws.current_node && f != NULL) {
+				int error;
+				if (!(rjws.current_node->rj_flags & RJF_ROOT) &&
+				    (error = (*f)(rjws.current_node, w))) {
+					rj_finiwalk(&rjws);
+					return (-error);
+				}
+			}
+		}
+		if (walkonce_control == WALK_DONE)
+			break;
 
-                /* else walkonce_control == 1, loop again */
-                rjws.current_node = NULL;
+		/* else walkonce_control == 1, loop again */
+		rjws.current_node = NULL;
 	}
-        rj_finiwalk(&rjws);
-        return 0;
+	rj_finiwalk(&rjws);
+	return 0;
 }
 
-int
-rj_inithead(head, off)
-	void **head;
-	int off;
+int rj_inithead(head, off) void **head;
+int off;
 {
 	register struct radij_node_head *rnh;
 	register struct radij_node *t, *tt, *ttt;
 	if (*head)
 		return (1);
-	R_Malloc(rnh, struct radij_node_head *, sizeof (*rnh));
+	R_Malloc(rnh, struct radij_node_head *, sizeof(*rnh));
 	if (rnh == NULL)
 		return (0);
-	Bzero(rnh, sizeof (*rnh));
+	Bzero(rnh, sizeof(*rnh));
 	*head = rnh;
 	t = rj_newpair(rj_zeroes, off, rnh->rnh_nodes);
 	ttt = rnh->rnh_nodes + 2;
@@ -923,8 +964,7 @@ rj_inithead(head, off)
 	return (1);
 }
 
-void
-rj_init()
+void rj_init()
 {
 	char *cp, *cplim;
 
@@ -945,46 +985,50 @@ rj_init()
 		panic("rj_init 2");
 }
 
-void
-rj_preorder(struct radij_node *rn, int l)
+void rj_preorder(struct radij_node *rn, int l)
 {
 	int i;
 
-	if (rn == NULL){
+	if (rn == NULL) {
 		printk("klips_debug:rj_preorder: "
 		       "NULL pointer\n");
 		return;
 	}
 
-	if (rn->rj_b >= 0){
-		rj_preorder(rn->rj_l, l+1);
-		rj_preorder(rn->rj_r, l+1);
+	if (rn->rj_b >= 0) {
+		rj_preorder(rn->rj_l, l + 1);
+		rj_preorder(rn->rj_r, l + 1);
 		printk("klips_debug:");
-		for (i=0; i<l; i++)
+		for (i = 0; i < l; i++)
 			printk("*");
-		printk(" off = %d\n",
-		       rn->rj_off);
+		printk(" off = %d\n", rn->rj_off);
 	} else {
 		printk("klips_debug:");
-		for (i=0; i<l; i++)
+		for (i = 0; i < l; i++)
 			printk("@");
-		printk(" flags = %x",
-		       (u_int)rn->rj_flags);
+		printk(" flags = %x", (u_int)rn->rj_flags);
 		if (rn->rj_flags & RJF_ACTIVE) {
-			printk(" @key=0p%p",
-			       rn->rj_key);
+			printk(" @key=0p%p", rn->rj_key);
 			printk(" key = %08x->%08x",
-			       (u_int)ntohl(((struct sockaddr_encap *)rn->rj_key)->sen_ip_src.s_addr),
-			       (u_int)ntohl(((struct sockaddr_encap *)rn->rj_key)->sen_ip_dst.s_addr));
-			printk(" @mask=0p%p",
-			       rn->rj_mask);
+			       (u_int)ntohl(
+				       ((struct sockaddr_encap *)rn->rj_key)
+					       ->sen_ip_src.s_addr),
+			       (u_int)ntohl(
+				       ((struct sockaddr_encap *)rn->rj_key)
+					       ->sen_ip_dst.s_addr));
+			printk(" @mask=0p%p", rn->rj_mask);
 			if (rn->rj_mask)
 				printk(" mask = %08x->%08x",
-				       (u_int)ntohl(((struct sockaddr_encap *)rn->rj_mask)->sen_ip_src.s_addr),
-				       (u_int)ntohl(((struct sockaddr_encap *)rn->rj_mask)->sen_ip_dst.s_addr));
+				       (u_int)ntohl(
+					       ((struct sockaddr_encap *)
+							rn->rj_mask)
+						       ->sen_ip_src.s_addr),
+				       (u_int)ntohl(
+					       ((struct sockaddr_encap *)
+							rn->rj_mask)
+						       ->sen_ip_dst.s_addr));
 			if (rn->rj_dupedkey)
-				printk(" dupedkey = 0p%p",
-				       rn->rj_dupedkey);
+				printk(" dupedkey = 0p%p", rn->rj_dupedkey);
 		}
 		printk("\n");
 	}
@@ -993,38 +1037,33 @@ rj_preorder(struct radij_node *rn, int l)
 #ifdef RJ_DEBUG
 DEBUG_NO_STATIC void traverse(struct radij_node *p)
 {
-  rj_preorder(p, 0);
+	rj_preorder(p, 0);
 }
 #endif /* RJ_DEBUG */
 
-void
-rj_dumptrees(void)
+void rj_dumptrees(void)
 {
 	rj_preorder(rnh->rnh_treetop, 0);
 }
 
-void
-rj_free_mkfreelist(void)
+void rj_free_mkfreelist(void)
 {
 	struct radij_mask *mknp, *mknp2;
 
 	mknp = rj_mkfreelist;
-	while(mknp)
-	{
+	while (mknp) {
 		mknp2 = mknp;
 		mknp = mknp->rm_mklist;
 		kfree(mknp2);
 	}
 }
 
-int
-radijcleartree(void)
+int radijcleartree(void)
 {
 	return rj_walktree(rnh, ipsec_rj_walker_delete, NULL);
 }
 
-int
-radijcleanup(void)
+int radijcleanup(void)
 {
 	int error = 0;
 
@@ -1032,15 +1071,15 @@ radijcleanup(void)
 
 	rj_free_mkfreelist();
 
-  	if(mask_rjhead) {
+	if (mask_rjhead) {
 		kfree(mask_rjhead);
 	}
 
-	if(rj_zeroes) {
+	if (rj_zeroes) {
 		kfree(rj_zeroes);
 	}
 
-	if(rnh) {
+	if (rnh) {
 		kfree(rnh);
 	}
 

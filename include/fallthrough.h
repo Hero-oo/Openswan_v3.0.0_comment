@@ -19,9 +19,9 @@
 #ifndef _FALLTHROUGH_H
 #define _FALLTHROUGH_H
 #if defined(__GNUC__) && __GNUC__ >= 7
- #define FALL_THROUGH __attribute__ ((fallthrough))
+#define FALL_THROUGH __attribute__((fallthrough))
 #else
- #define FALL_THROUGH ((void)0)
+#define FALL_THROUGH ((void)0)
 #endif /* __GNUC__ >= 7 */
 
 #endif /* FALLTHROUGH */

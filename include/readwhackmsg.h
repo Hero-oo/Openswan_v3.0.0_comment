@@ -4,4 +4,3 @@
 extern int readwhackmsg(char *infile);
 
 #endif /* _READWHACKMSG_H */
-

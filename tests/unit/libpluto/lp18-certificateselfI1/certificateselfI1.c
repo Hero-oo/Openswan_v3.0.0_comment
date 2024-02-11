@@ -17,33 +17,30 @@
 
 static void init_local_interface(void)
 {
-    init_rw_interface();
+	init_rw_interface();
 }
 
 static void init_fake_secrets(void)
 {
-    prompt_pass_t pass;
-    memset(&pass, 0, sizeof(pass));
-    osw_init_ipsecdir("../samples/rwcert");
+	prompt_pass_t pass;
+	memset(&pass, 0, sizeof(pass));
+	osw_init_ipsecdir("../samples/rwcert");
 
-    osw_load_preshared_secrets(&pluto_secrets
-			       , TRUE
-			       , "../samples/rwcert.secrets"
-			       , &pass, NULL);
+	osw_load_preshared_secrets(&pluto_secrets, TRUE,
+				   "../samples/rwcert.secrets", &pass, NULL);
 }
 
 static struct connection *init_loaded(struct connection *c1)
 {
-    fprintf(stderr, "address family: %u\n", c1->end_addr_family);
-    assert(c1->end_addr_family != 0);
-    return c1;
+	fprintf(stderr, "address family: %u\n", c1->end_addr_family);
+	assert(c1->end_addr_family != 0);
+	return c1;
 }
 #define INIT_LOADED init_loaded
 
 #include "../lp02-parentI1/parentI1_main.c"
 
-
- /*
+/*
  * Local Variables:
  * c-style: pluto
  * c-basic-offset: 4

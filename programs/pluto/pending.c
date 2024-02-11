@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <arpa/nameser.h>	/* missing from <resolv.h> on old systems */
+#include <arpa/nameser.h> /* missing from <resolv.h> on old systems */
 #include <errno.h>
 
 #include <openswan.h>
@@ -41,7 +41,7 @@
 #ifdef XAUTH_USEPAM
 #include <security/pam_appl.h>
 #endif
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "pending.h"
 #include "log.h"
 #include "pluto/state.h"
@@ -56,136 +56,124 @@
  */
 
 struct pending {
-    int           whack_sock;
-    struct state *isakmp_sa;
-    struct connection *connection;
-    lset_t        policy;
-    unsigned long try;
-    so_serial_t   replacing;
-    time_t        pend_time;
-    struct xfrm_user_sec_ctx_ike * uctx;
+	int whack_sock;
+	struct state *isakmp_sa;
+	struct connection *connection;
+	lset_t policy;
+	unsigned long try;
+	so_serial_t replacing;
+	time_t pend_time;
+	struct xfrm_user_sec_ctx_ike *uctx;
 
-    struct pending *next;
+	struct pending *next;
 };
 
 /* queue a Quick Mode negotiation pending completion of a suitable Main Mode */
-int
-add_pending(int whack_sock
-, struct state *isakmp_sa
-, struct connection *c
-, lset_t policy
-, unsigned long try
-, so_serial_t replacing
-, struct xfrm_user_sec_ctx_ike * uctx UNUSED
-)
+int add_pending(int whack_sock, struct state *isakmp_sa, struct connection *c,
+		lset_t policy, unsigned long try, so_serial_t replacing,
+		struct xfrm_user_sec_ctx_ike *uctx UNUSED)
 {
-    struct pending *p, **pp;
+	struct pending *p, **pp;
 
-    /* look for duplicate pending phase #2, skip add operation */
-    pp = host_pair_first_pending(c);
+	/* look for duplicate pending phase #2, skip add operation */
+	pp = host_pair_first_pending(c);
 
-    for ( p = pp ? *pp : NULL ; p != NULL; p = p->next)
-    {
-	if (p->connection == c && p->isakmp_sa == isakmp_sa)
-	{
-	    DBG(DBG_CONTROL, DBG_log("Ignored already queued up pending Quick Mode with %s \"%s\""
-		, ip_str(&c->spd.that.host_addr), c->name));
-	    return -EEXIST;
+	for (p = pp ? *pp : NULL; p != NULL; p = p->next) {
+		if (p->connection == c && p->isakmp_sa == isakmp_sa) {
+			DBG(DBG_CONTROL,
+			    DBG_log("Ignored already queued up pending Quick Mode with %s \"%s\"",
+				    ip_str(&c->spd.that.host_addr), c->name));
+			return -EEXIST;
+		}
 	}
-    }
 
-    DBG(DBG_CONTROL, DBG_log("Queuing pending Quick Mode with %s \"%s\""
-	, ip_str(&c->spd.that.host_addr)
-	, c->name));
+	DBG(DBG_CONTROL, DBG_log("Queuing pending Quick Mode with %s \"%s\"",
+				 ip_str(&c->spd.that.host_addr), c->name));
 
-    p = alloc_thing(struct pending, "struct pending");
-    p->whack_sock = whack_sock;
-    p->isakmp_sa = isakmp_sa;
-    p->connection = c;
-    p->policy = policy;
-    p->try = try;
-    p->replacing = replacing;
-    p->pend_time = time(NULL);
+	p = alloc_thing(struct pending, "struct pending");
+	p->whack_sock = whack_sock;
+	p->isakmp_sa = isakmp_sa;
+	p->connection = c;
+	p->policy = policy;
+	p->try = try;
+	p->replacing = replacing;
+	p->pend_time = time(NULL);
 #ifdef HAVE_LABELED_IPSEC
-    p->uctx = NULL;
-    if(uctx!=NULL) {
-    p->uctx = clone_thing(*uctx, "pending security context");
-    DBG(DBG_CONTROL, DBG_log("pending phase 2 with security context %s, %d"
-	, p->uctx->sec_ctx_value, p->uctx->ctx_len));
-    }
+	p->uctx = NULL;
+	if (uctx != NULL) {
+		p->uctx = clone_thing(*uctx, "pending security context");
+		DBG(DBG_CONTROL,
+		    DBG_log("pending phase 2 with security context %s, %d",
+			    p->uctx->sec_ctx_value, p->uctx->ctx_len));
+	}
 #endif
 
-    host_pair_enqueue_pending(c, p, &p->next);
+	host_pair_enqueue_pending(c, p, &p->next);
 
-    return 0;
+	return 0;
 }
 
 /* Release all the whacks awaiting the completion of this state.
  * This is accomplished by closing all the whack socket file descriptors.
  * We go to a lot of trouble to tell each whack, but to not tell it twice.
  */
-void
-release_pending_whacks(struct state *st, err_t story)
+void release_pending_whacks(struct state *st, err_t story)
 {
-    struct pending *p, **pp;
-    struct stat stst;
+	struct pending *p, **pp;
+	struct stat stst;
 
-    if (st->st_whack_sock == NULL_FD || fstat(st->st_whack_sock, &stst) != 0)
-	zero(&stst);	/* resulting st_dev/st_ino ought to be distinct */
+	if (st->st_whack_sock == NULL_FD ||
+	    fstat(st->st_whack_sock, &stst) != 0)
+		zero(&stst); /* resulting st_dev/st_ino ought to be distinct */
 
-    release_whack(st);
+	release_whack(st);
 
-    pp = host_pair_first_pending(st->st_connection);
-    if(pp == NULL)
-        return;
+	pp = host_pair_first_pending(st->st_connection);
+	if (pp == NULL)
+		return;
 
-    for (p = *pp;
-	 p != NULL;
-	 p = p->next)
-    {
-	if (p->isakmp_sa == st && p->whack_sock != NULL_FD)
-	{
-	    struct stat pst;
+	for (p = *pp; p != NULL; p = p->next) {
+		if (p->isakmp_sa == st && p->whack_sock != NULL_FD) {
+			struct stat pst;
 
-	    if (fstat(p->whack_sock, &pst) == 0
-	    && (stst.st_dev != pst.st_dev || stst.st_ino != pst.st_ino))
-	    {
-		passert(whack_log_fd == NULL_FD);
-		whack_log_fd = p->whack_sock;
-		whack_log(RC_COMMENT
-		    , "%s for ISAKMP SA, but releasing whack for pending IPSEC SA"
-		    , story);
-		whack_log_fd = NULL_FD;
-	    }
-	    close(p->whack_sock);
-	    p->whack_sock = NULL_FD;
+			if (fstat(p->whack_sock, &pst) == 0 &&
+			    (stst.st_dev != pst.st_dev ||
+			     stst.st_ino != pst.st_ino)) {
+				passert(whack_log_fd == NULL_FD);
+				whack_log_fd = p->whack_sock;
+				whack_log(
+					RC_COMMENT,
+					"%s for ISAKMP SA, but releasing whack for pending IPSEC SA",
+					story);
+				whack_log_fd = NULL_FD;
+			}
+			close(p->whack_sock);
+			p->whack_sock = NULL_FD;
+		}
 	}
-    }
 }
 
-static void
-delete_pending(struct pending **pp)
+static void delete_pending(struct pending **pp)
 {
-    struct pending *p;
+	struct pending *p;
 
-    if (!pp)
-	    return;
-    p = *pp;
+	if (!pp)
+		return;
+	p = *pp;
 
-    *pp = p->next;
-    if (p->connection != NULL)
-	connection_discard(p->connection);
-    close_any(p->whack_sock);
+	*pp = p->next;
+	if (p->connection != NULL)
+		connection_discard(p->connection);
+	close_any(p->whack_sock);
 
-    DBG(DBG_DPD,
-	DBG_log("removing pending policy for \"%s\" {%p}",
-		p->connection ? p->connection->name : "none", p));
+	DBG(DBG_DPD, DBG_log("removing pending policy for \"%s\" {%p}",
+			     p->connection ? p->connection->name : "none", p));
 
 #ifdef HAVE_LABELED_IPSEC
-   pfreeany(p->uctx);
+	pfreeany(p->uctx);
 #endif
 
-    pfree(p);
+	pfree(p);
 }
 
 /*
@@ -197,65 +185,54 @@ delete_pending(struct pending **pp)
  *     anyway, which will get done "later" anyway, so make it is just fine
  *     as it is.
  */
-void
-unpend(struct state *st)
+void unpend(struct state *st)
 {
-    struct pending **pp
-	, *p;
+	struct pending **pp, *p;
 
-    DBG(DBG_DPD,
-	DBG_log("unpending state #%lu", st->st_serialno));
+	DBG(DBG_DPD, DBG_log("unpending state #%lu", st->st_serialno));
 
-    for (pp = host_pair_first_pending(st->st_connection); pp && (p = *pp); )
-    {
-	if (p->isakmp_sa == st)
-	{
-	    DBG(DBG_CONTROL
-		, DBG_log("unqueuing pending Quick Mode with %s \"%s\" %s"
-			  , ip_str(&p->connection->spd.that.host_addr)
-			  , p->connection->name
-			  , enum_name(&pluto_cryptoimportance_names,st->st_import)));
+	for (pp = host_pair_first_pending(st->st_connection);
+	     pp && (p = *pp);) {
+		if (p->isakmp_sa == st) {
+			DBG(DBG_CONTROL,
+			    DBG_log("unqueuing pending Quick Mode with %s \"%s\" %s",
+				    ip_str(&p->connection->spd.that.host_addr),
+				    p->connection->name,
+				    enum_name(&pluto_cryptoimportance_names,
+					      st->st_import)));
 
-	    p->pend_time = time(NULL);
-	    (void) quick_outI1(p->whack_sock, st, p->connection, p->policy
-			       , p->try, p->replacing
-			       , p->uctx
-			      );
-	    p->whack_sock = NULL_FD;	/* ownership transferred */
-	    p->connection = NULL;	/* ownership transferred */
-	    delete_pending(pp);
+			p->pend_time = time(NULL);
+			(void)quick_outI1(p->whack_sock, st, p->connection,
+					  p->policy, p->try, p->replacing,
+					  p->uctx);
+			p->whack_sock = NULL_FD; /* ownership transferred */
+			p->connection = NULL; /* ownership transferred */
+			delete_pending(pp);
+		} else {
+			pp = &p->next;
+		}
 	}
-	else
-	{
-	    pp = &p->next;
-	}
-    }
 }
 
-struct connection *first_pending(struct state *st
-				 , lset_t *policy
-				 , int *p_whack_sock)
+struct connection *first_pending(struct state *st, lset_t *policy,
+				 int *p_whack_sock)
 {
-    struct pending **pp
-	, *p;
+	struct pending **pp, *p;
 
-    DBG(DBG_DPD,
-	DBG_log("getting first pending from state #%lu", st->st_serialno));
+	DBG(DBG_DPD,
+	    DBG_log("getting first pending from state #%lu", st->st_serialno));
 
-    for (pp = host_pair_first_pending(st->st_connection); pp && (p = *pp); )
-    {
-	if (p->isakmp_sa == st)
-	{
-	    *p_whack_sock = p->whack_sock;
-	    *policy = p->policy;
-	    return p->connection;
+	for (pp = host_pair_first_pending(st->st_connection);
+	     pp && (p = *pp);) {
+		if (p->isakmp_sa == st) {
+			*p_whack_sock = p->whack_sock;
+			*policy = p->policy;
+			return p->connection;
+		} else {
+			pp = &p->next;
+		}
 	}
-	else
-	{
-	    pp = &p->next;
-	}
-    }
-    return NULL;
+	return NULL;
 }
 
 /*
@@ -265,138 +242,127 @@ struct connection *first_pending(struct state *st
  */
 bool pending_check_timeout(struct connection *c)
 {
-    struct pending **pp, *p;
-    time_t n = time(NULL);
+	struct pending **pp, *p;
+	time_t n = time(NULL);
 
-    for (pp = host_pair_first_pending(c); pp && (p = *pp); )
-    {
-	DBG(DBG_DPD,
-	    DBG_log("checking connection \"%s\" for stuck phase 2s (%lu+ 3*%lu) <= %lu"
-		    , c->name
-		    , (unsigned long)p->pend_time
-		    , (unsigned long)c->dpd_timeout
-		    , (unsigned long)n));
+	for (pp = host_pair_first_pending(c); pp && (p = *pp);) {
+		DBG(DBG_DPD,
+		    DBG_log("checking connection \"%s\" for stuck phase 2s (%lu+ 3*%lu) <= %lu",
+			    c->name, (unsigned long)p->pend_time,
+			    (unsigned long)c->dpd_timeout, (unsigned long)n));
 
-	if(c->dpd_timeout > 0) {
-	    if((p->pend_time + c->dpd_timeout*3) <= n) {
-		DBG(DBG_DPD, DBG_log("connection \"%s\" stuck, restarting", c->name));
-		return TRUE;
-	    }
+		if (c->dpd_timeout > 0) {
+			if ((p->pend_time + c->dpd_timeout * 3) <= n) {
+				DBG(DBG_DPD,
+				    DBG_log("connection \"%s\" stuck, restarting",
+					    c->name));
+				return TRUE;
+			}
+		}
+		pp = &p->next;
 	}
-	pp = &p->next;
-    }
-    return FALSE;
+	return FALSE;
 }
 
 /* a Main Mode negotiation has been replaced; update any pending
  * returns 0 on success, -ENOENT if nothing was found to update */
-int
-update_pending(struct state *os, struct state *ns)
+int update_pending(struct state *os, struct state *ns)
 {
-    struct pending *p, **pp;
+	struct pending *p, **pp;
 
-    pp = host_pair_first_pending(os->st_connection);
-    if(pp == NULL)
-        return -ENOENT;
-    p = *pp;
+	pp = host_pair_first_pending(os->st_connection);
+	if (pp == NULL)
+		return -ENOENT;
+	p = *pp;
 
-    for (p = *pp;
-	 p != NULL;
-	 p = p->next) {
-	if (p->isakmp_sa == os) {
-	    p->isakmp_sa = ns;
-            /* there could be more that match, so keep going */
+	for (p = *pp; p != NULL; p = p->next) {
+		if (p->isakmp_sa == os) {
+			p->isakmp_sa = ns;
+			/* there could be more that match, so keep going */
+		}
 	}
-    }
 
-    return -ENOENT;
+	return -ENOENT;
 }
 
 /* a Main Mode negotiation has failed; discard any pending */
-void
-flush_pending_by_state(struct state *st)
+void flush_pending_by_state(struct state *st)
 {
-    struct pending **pp
-	, *p;
+	struct pending **pp, *p;
 
-    pp = host_pair_first_pending(st->st_connection);
-    if(pp == NULL) return;
+	pp = host_pair_first_pending(st->st_connection);
+	if (pp == NULL)
+		return;
 
-    while((p = *pp) != NULL) {
-	if (p->isakmp_sa == st) {
-	    /* we don't have to worry about deref to free'ed
+	while ((p = *pp) != NULL) {
+		if (p->isakmp_sa == st) {
+			/* we don't have to worry about deref to free'ed
 	     * *pp, because delete_pending updates pp to
 	     * point to the next element before it frees *pp
 	     */
-	    delete_pending(pp);
+			delete_pending(pp);
+		} else
+			pp = &p->next;
 	}
-	else
-	    pp = &p->next;
-    }
 }
 
 /* a connection has been deleted; discard any related pending */
-void
-flush_pending_by_connection(struct connection *c)
+void flush_pending_by_connection(struct connection *c)
 {
-    struct pending **pp
-	, *p;
+	struct pending **pp, *p;
 
-    pp = host_pair_first_pending(c);
-    if(pp == NULL) return;
+	pp = host_pair_first_pending(c);
+	if (pp == NULL)
+		return;
 
-    while((p = *pp) != NULL) {
-	if (p->connection == c)
-	    {
-		p->connection = NULL;	/* prevent delete_pending from releasing */
-		delete_pending(pp);
-	    }
-	else
-	    {
-		pp = &p->next;
-	    }
-    }
+	while ((p = *pp) != NULL) {
+		if (p->connection == c) {
+			p->connection =
+				NULL; /* prevent delete_pending from releasing */
+			delete_pending(pp);
+		} else {
+			pp = &p->next;
+		}
+	}
 }
 
-void
-show_pending_phase2(const struct connection *c, const struct state *st)
+void show_pending_phase2(const struct connection *c, const struct state *st)
 {
-    struct pending **pp
-	, *p;
+	struct pending **pp, *p;
 
-    pp = host_pair_first_pending(c);
-    if(pp == NULL) return;
+	pp = host_pair_first_pending(c);
+	if (pp == NULL)
+		return;
 
-    for (p = *pp; p != NULL; p = p->next)
-    {
-	if (p->isakmp_sa == st)
-	{
-	    /* connection-name state-number [replacing state-number] */
-	    char cip[CONN_INST_BUF];
+	for (p = *pp; p != NULL; p = p->next) {
+		if (p->isakmp_sa == st) {
+			/* connection-name state-number [replacing state-number] */
+			char cip[CONN_INST_BUF];
 
-	    fmt_conn_instance(p->connection, cip);
-	    whack_log(RC_COMMENT, "#%lu: pending Phase 2 for \"%s\"%s replacing #%lu"
-		, p->isakmp_sa->st_serialno
-		, p->connection->name
-		, cip
-		, p->replacing);
+			fmt_conn_instance(p->connection, cip);
+			whack_log(
+				RC_COMMENT,
+				"#%lu: pending Phase 2 for \"%s\"%s replacing #%lu",
+				p->isakmp_sa->st_serialno, p->connection->name,
+				cip, p->replacing);
+		}
 	}
-    }
 }
 
 bool in_pending_use(struct connection *c)
 {
-    /* see if it is being used by a pending */
-    struct pending **pp, *p;
+	/* see if it is being used by a pending */
+	struct pending **pp, *p;
 
-    pp = host_pair_first_pending(c);
-    if(pp == NULL) return FALSE;
+	pp = host_pair_first_pending(c);
+	if (pp == NULL)
+		return FALSE;
 
-    for (p = *pp; p != NULL; p = p->next)
-	if (p->connection == c)
-		return TRUE;	/* in use, so we're done */
+	for (p = *pp; p != NULL; p = p->next)
+		if (p->connection == c)
+			return TRUE; /* in use, so we're done */
 
-    return FALSE;
+	return FALSE;
 }
 
 /*

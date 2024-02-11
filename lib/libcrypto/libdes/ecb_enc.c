@@ -59,26 +59,28 @@
 #include "des/des_locl.h"
 #include "des/spr.h"
 
-char *libdes_version="libdes v 3.24 - 20-Apr-1996 - eay";
-char *DES_version="DES part of SSLeay 0.8.2b 08-Jan-1998";
+char *libdes_version = "libdes v 3.24 - 20-Apr-1996 - eay";
+char *DES_version = "DES part of SSLeay 0.8.2b 08-Jan-1998";
 
-void des_ecb_encrypt(input, output, ks, enc)
-des_cblock (*input);
-des_cblock (*output);
+void des_ecb_encrypt(input, output, ks, enc) des_cblock(*input);
+des_cblock(*output);
 des_key_schedule ks;
 int enc;
-	{
+{
 	register DES_LONG l;
-	register unsigned char *in,*out;
+	register unsigned char *in, *out;
 	DES_LONG ll[2];
 
-	in=(unsigned char *)input;
-	out=(unsigned char *)output;
-	c2l(in,l); ll[0]=l;
-	c2l(in,l); ll[1]=l;
-	des_encrypt(ll,ks,enc);
-	l=ll[0]; l2c(l,out);
-	l=ll[1]; l2c(l,out);
-	l=ll[0]=ll[1]=0;
-	}
-
+	in = (unsigned char *)input;
+	out = (unsigned char *)output;
+	c2l(in, l);
+	ll[0] = l;
+	c2l(in, l);
+	ll[1] = l;
+	des_encrypt(ll, ks, enc);
+	l = ll[0];
+	l2c(l, out);
+	l = ll[1];
+	l2c(l, out);
+	l = ll[0] = ll[1] = 0;
+}

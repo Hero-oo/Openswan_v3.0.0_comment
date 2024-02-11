@@ -24,9 +24,8 @@ static int samenbits(const ip_address *a, const ip_address *b, int n);
  * Caution, the order of the tests is subtle:  doing type test before
  * size test can yield cases where a<b, b<c, but a>c.
  */
-int				/* like memcmp */
-addrcmp(a, b)
-const ip_address *a;
+int /* like memcmp */
+	addrcmp(a, b) const ip_address *a;
 const ip_address *b;
 {
 	int at = addrtypeof(a);
@@ -35,23 +34,23 @@ const ip_address *b;
 	unsigned char *bp;
 	size_t as = addrbytesptr(a, &ap);
 	size_t bs = addrbytesptr(b, &bp);
-	size_t n = (as < bs) ? as : bs;		/* min(as, bs) */
+	size_t n = (as < bs) ? as : bs; /* min(as, bs) */
 	int c = memcmp(ap, bp, n);
 
 	if (!at && !bt)
-	  return 0;
+		return 0;
 
-        if (at == 0)            /* do not compare further */
-          return -1;
+	if (at == 0) /* do not compare further */
+		return -1;
 
-        if (bt == 0)            /* do not compare further */
-          return 1;
+	if (bt == 0) /* do not compare further */
+		return 1;
 
-	if (at != bt)		/* bytes same but not same type:  break tie */
+	if (at != bt) /* bytes same but not same type:  break tie */
 		return (at < bt) ? -1 : 1;
-	if (c != 0)		/* bytes differ */
+	if (c != 0) /* bytes differ */
 		return (c < 0) ? -1 : 1;
-	if (as != bs)		/* comparison incomplete:  lexical order */
+	if (as != bs) /* comparison incomplete:  lexical order */
 		return (as < bs) ? -1 : 1;
 	return 0;
 }
@@ -59,9 +58,7 @@ const ip_address *b;
 /*
  - sameaddr - are two addresses the same?
  */
-bool
-sameaddr(a, b)
-const ip_address *a;
+bool sameaddr(a, b) const ip_address *a;
 const ip_address *b;
 {
 	return (addrcmp(a, b) == 0) ? 1 : 0;
@@ -70,12 +67,10 @@ const ip_address *b;
 /*
  - samesubnet - are two subnets the same?
  */
-bool
-samesubnet(a, b)
-const ip_subnet *a;
+bool samesubnet(a, b) const ip_subnet *a;
 const ip_subnet *b;
 {
-	if (!sameaddr(&a->addr, &b->addr))	/* also does type check */
+	if (!sameaddr(&a->addr, &b->addr)) /* also does type check */
 		return 0;
 	if (a->maskbits != b->maskbits)
 		return 0;
@@ -85,22 +80,18 @@ const ip_subnet *b;
 /*
  - subnetishost - is a subnet in fact a single host?
  */
-bool
-subnetishost(a)
-const ip_subnet *a;
+bool subnetishost(a) const ip_subnet *a;
 {
-	return (a->maskbits == addrlenof(&a->addr)*8) ? 1 : 0;
+	return (a->maskbits == addrlenof(&a->addr) * 8) ? 1 : 0;
 }
 
 /*
  - samesaid - are two SA IDs the same?
  */
-bool
-samesaid(a, b)
-const ip_said *a;
+bool samesaid(a, b) const ip_said *a;
 const ip_said *b;
 {
-	if (a->spi != b->spi)	/* test first, most likely to be different */
+	if (a->spi != b->spi) /* test first, most likely to be different */
 		return 0;
 	if (!sameaddr(&a->dst, &b->dst))
 		return 0;
@@ -112,9 +103,7 @@ const ip_said *b;
 /*
  - sameaddrtype - do two addresses have the same type?
  */
-bool
-sameaddrtype(a, b)
-const ip_address *a;
+bool sameaddrtype(a, b) const ip_address *a;
 const ip_address *b;
 {
 	return (addrtypeof(a) == addrtypeof(b)) ? 1 : 0;
@@ -123,9 +112,7 @@ const ip_address *b;
 /*
  - samesubnettype - do two subnets have the same type?
  */
-bool
-samesubnettype(a, b)
-const ip_subnet *a;
+bool samesubnettype(a, b) const ip_subnet *a;
 const ip_subnet *b;
 {
 	return (subnettypeof(a) == subnettypeof(b)) ? 1 : 0;
@@ -134,9 +121,7 @@ const ip_subnet *b;
 /*
  - addrinsubnet - is this address in this subnet?
  */
-bool
-addrinsubnet(a, s)
-const ip_address *a;
+bool addrinsubnet(a, s) const ip_address *a;
 const ip_subnet *s;
 {
 	if (addrtypeof(a) != subnettypeof(s))
@@ -149,14 +134,12 @@ const ip_subnet *s;
 /*
  - subnetinsubnet - is one subnet within another?
  */
-bool
-subnetinsubnet(a, b)
-const ip_subnet *a;
+bool subnetinsubnet(a, b) const ip_subnet *a;
 const ip_subnet *b;
 {
 	if (subnettypeof(a) != subnettypeof(b))
 		return 0;
-	if (a->maskbits < b->maskbits)	/* a is bigger than b */
+	if (a->maskbits < b->maskbits) /* a is bigger than b */
 		return 0;
 	if (!samenbits(&a->addr, &b->addr, b->maskbits))
 		return 0;
@@ -166,9 +149,7 @@ const ip_subnet *b;
 /*
  - samenbits - do two addresses have the same first n bits?
  */
-static bool
-samenbits(a, b, nbits)
-const ip_address *a;
+static bool samenbits(a, b, nbits) const ip_address *a;
 const ip_address *b;
 int nbits;
 {
@@ -178,19 +159,19 @@ int nbits;
 	int m;
 
 	if (addrtypeof(a) != addrtypeof(b))
-		return 0;	/* arbitrary */
+		return 0; /* arbitrary */
 	n = addrbytesptr(a, &ap);
 	if (n == 0)
-		return 0;	/* arbitrary */
-	(void) addrbytesptr(b, &bp);
-	if (nbits > n*8)
-		return 0;	/* "can't happen" */
+		return 0; /* arbitrary */
+	(void)addrbytesptr(b, &bp);
+	if (nbits > n * 8)
+		return 0; /* "can't happen" */
 
 	for (; nbits >= 8 && *ap == *bp; nbits -= 8, ap++, bp++)
 		continue;
 	if (nbits >= 8)
 		return 0;
-	if (nbits > 0) {	/* partial byte */
+	if (nbits > 0) { /* partial byte */
 		m = ~(0xff >> nbits);
 		if ((*ap & m) != (*bp & m))
 			return 0;

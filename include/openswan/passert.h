@@ -29,45 +29,62 @@ typedef void (*openswan_passert_fail_t)(const char *pred_str,
 
 extern openswan_passert_fail_t openswan_passert_fail;
 
-extern void pexpect_log(const char *pred_str
-			, const char *file_str, unsigned long line_no);
+extern void pexpect_log(const char *pred_str, const char *file_str,
+			unsigned long line_no);
 
-# define impossible() do { \
-    if(openswan_passert_fail) {					\
-      (*openswan_passert_fail)("impossible", __FILE__, __LINE__); \
-    }} while(0)
+#define impossible()                                                     \
+	do {                                                             \
+		if (openswan_passert_fail) {                             \
+			(*openswan_passert_fail)("impossible", __FILE__, \
+						 __LINE__);              \
+		}                                                        \
+	} while (0)
 
-extern void openswan_switch_fail(int n
-    , const char *file_str, unsigned long line_no) NEVER_RETURNS;
+extern void openswan_switch_fail(int n, const char *file_str,
+				 unsigned long line_no) NEVER_RETURNS;
 
-# define bad_case(n) openswan_switch_fail((int) n, __FILE__, __LINE__)
+#define bad_case(n) openswan_switch_fail((int)n, __FILE__, __LINE__)
 
-# define passert(pred) do { \
-	if (!(pred)) \
-	  if(openswan_passert_fail) { \
-	    (*openswan_passert_fail)(#pred, __FILE__, __LINE__);	\
-	  } \
-  } while(0)
+#define passert(pred)                                                     \
+	do {                                                              \
+		if (!(pred))                                              \
+			if (openswan_passert_fail) {                      \
+				(*openswan_passert_fail)(#pred, __FILE__, \
+							 __LINE__);       \
+			}                                                 \
+	} while (0)
 
-# define pexpect(pred) do { \
-	if (!(pred)) \
-	    pexpect_log(#pred, __FILE__, __LINE__); \
-  } while(0)
+#define pexpect(pred)                                           \
+	do {                                                    \
+		if (!(pred))                                    \
+			pexpect_log(#pred, __FILE__, __LINE__); \
+	} while (0)
 
 /* assert that an err_t is NULL; evaluate exactly once */
-# define happy(x) { \
-	err_t ugh = x; \
-	if (ugh != NULL) \
-	  if(openswan_passert_fail) { (*openswan_passert_fail)(ugh, __FILE__, __LINE__); }  \
-    }
+#define happy(x)                                                        \
+	{                                                               \
+		err_t ugh = x;                                          \
+		if (ugh != NULL)                                        \
+			if (openswan_passert_fail) {                    \
+				(*openswan_passert_fail)(ugh, __FILE__, \
+							 __LINE__);     \
+			}                                               \
+	}
 
 #else /*!DEBUG*/
 
-# define impossible() osw_abort()
-# define bad_case(n) osw_abort()
-# define passert(pred)  { }	/* do nothing */
-# define pexpect(pred)  { }	/* do nothing */
-# define happy(x)  { (void) x; }	/* evaluate non-judgementally */
+#define impossible() osw_abort()
+#define bad_case(n) osw_abort()
+#define passert(pred) \
+	{             \
+	} /* do nothing */
+#define pexpect(pred) \
+	{             \
+	} /* do nothing */
+#define happy(x)         \
+	{                \
+		(void)x; \
+	} /* evaluate non-judgementally */
 
 #endif /*!DEBUG*/
 

@@ -24,7 +24,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <resolv.h>
-#include <sys/time.h>		/* for gettimeofday */
+#include <sys/time.h> /* for gettimeofday */
 
 #include <openswan.h>
 #include <openswan/ipsec_policy.h>
@@ -41,24 +41,23 @@
 #ifdef XAUTH_USEPAM
 #include <security/pam_appl.h>
 #endif
-#include "pluto/connections.h"	/* needs id.h */
+#include "pluto/connections.h" /* needs id.h */
 #include "keys.h"
 #include "packet.h"
-#include "demux.h"	/* needs packet.h */
-#include "adns.h"	/* needs <resolv.h> */
-#include "dnskey.h"	/* needs keys.h and adns.h */
-#include "kernel.h"	/* needs connections.h */
+#include "demux.h" /* needs packet.h */
+#include "adns.h" /* needs <resolv.h> */
+#include "dnskey.h" /* needs keys.h and adns.h */
+#include "kernel.h" /* needs connections.h */
 #include "log.h"
 #include "cookie.h"
 #include "pluto/server.h"
 #include "pluto/spdb.h"
 #include "timer.h"
 #include "rnd.h"
-#include "ipsec_doi.h"	/* needs demux.h and state.h */
+#include "ipsec_doi.h" /* needs demux.h and state.h */
 #include "whack.h"
 
 #include "pending.h" /* for flush_pending_by_connection */
-
 
 #include "dpd.h"
 #include "x509more.h"
@@ -124,28 +123,28 @@
  *
  */
 
-stf_status
-dpd_init(struct state *st)
+stf_status dpd_init(struct state *st)
 {
-    /**
+	/**
      * Used to store the 1st state
      */
 #ifdef HAVE_LABELED_IPSEC
-	if(st->st_connection->loopback) {
-            openswan_log("dpd is not required for ipsec connections over loopback");
-            return STF_OK;
+	if (st->st_connection->loopback) {
+		openswan_log(
+			"dpd is not required for ipsec connections over loopback");
+		return STF_OK;
 	}
 #endif
-    struct state *p1st;
+	struct state *p1st;
 
-    /* find the related Phase 1 state */
-    p1st = find_state_ikev1(st->st_icookie, st->st_rcookie,
-		      &st->st_connection->spd.that.host_addr, 0);
+	/* find the related Phase 1 state */
+	p1st = find_state_ikev1(st->st_icookie, st->st_rcookie,
+				&st->st_connection->spd.that.host_addr, 0);
 
-    if (p1st == NULL) {
-        loglog(RC_LOG_SERIOUS, "could not find phase 1 state for DPD");
+	if (p1st == NULL) {
+		loglog(RC_LOG_SERIOUS, "could not find phase 1 state for DPD");
 
-	/*
+		/*
 	 * if the phase 1 state has gone away, it really should have
 	 * deleted all of its children.
 	 * Why would this happen? because a quick mode SA can take
@@ -155,32 +154,35 @@ dpd_init(struct state *st)
 	 * the DPD action would be a good idea, but we really should
 	 * do that outside this function.
 	 */
-	return STF_FAIL;
-    }
-
-    /* if it was enabled, and we haven't turned it on already */
-    if (p1st->hidden_variables.st_dpd) {
-	time_t n = now();
-	openswan_log("Dead Peer Detection (RFC 3706): enabled");
-
-	if(st->st_dpd_event == NULL
-	   || (st->st_connection->dpd_delay + n) < st->st_dpd_event->ev_time) {
-	    delete_dpd_event(st);
-	    event_schedule(EVENT_DPD, st->st_connection->dpd_delay, st);
+		return STF_FAIL;
 	}
 
-    } else {
-      openswan_log("Dead Peer Detection (RFC 3706): not enabled because peer did not advertise it");
-    }
+	/* if it was enabled, and we haven't turned it on already */
+	if (p1st->hidden_variables.st_dpd) {
+		time_t n = now();
+		openswan_log("Dead Peer Detection (RFC 3706): enabled");
 
-    if(p1st != st) {
-	/* st was not a phase 1 SA, so kill the DPD_EVENT on the phase 1 */
-	if(p1st->st_dpd_event != NULL
-	   && p1st->st_dpd_event->ev_type == EVENT_DPD) {
-	    delete_dpd_event(p1st);
+		if (st->st_dpd_event == NULL ||
+		    (st->st_connection->dpd_delay + n) <
+			    st->st_dpd_event->ev_time) {
+			delete_dpd_event(st);
+			event_schedule(EVENT_DPD, st->st_connection->dpd_delay,
+				       st);
+		}
+
+	} else {
+		openswan_log(
+			"Dead Peer Detection (RFC 3706): not enabled because peer did not advertise it");
 	}
-    }
-    return STF_OK;
+
+	if (p1st != st) {
+		/* st was not a phase 1 SA, so kill the DPD_EVENT on the phase 1 */
+		if (p1st->st_dpd_event != NULL &&
+		    p1st->st_dpd_event->ev_type == EVENT_DPD) {
+			delete_dpd_event(p1st);
+		}
+	}
+	return STF_OK;
 }
 
 bool was_eroute_idle(struct state *st, time_t since_when);
@@ -189,18 +191,16 @@ bool was_eroute_idle(struct state *st, time_t since_when);
  * Only schedule a new timeout if there isn't one currently,
  * or if it would be sooner than the current timeout.
  */
-static void
-dpd_sched_timeout(struct state *p1st, time_t tm, time_t timeout)
+static void dpd_sched_timeout(struct state *p1st, time_t tm, time_t timeout)
 {
-    passert(timeout > 0);
-    if (p1st->st_dpd_event == NULL
-	|| p1st->st_dpd_event->ev_time > tm + timeout)
-    {
-	DBG(DBG_DPD, DBG_log("DPD: scheduling timeout to %lu"
-			     , (unsigned long)timeout));
-        delete_dpd_event(p1st);
-        event_schedule(EVENT_DPD_TIMEOUT, timeout, p1st);
-    }
+	passert(timeout > 0);
+	if (p1st->st_dpd_event == NULL ||
+	    p1st->st_dpd_event->ev_time > tm + timeout) {
+		DBG(DBG_DPD, DBG_log("DPD: scheduling timeout to %lu",
+				     (unsigned long)timeout));
+		delete_dpd_event(p1st);
+		event_schedule(EVENT_DPD_TIMEOUT, timeout, p1st);
+	}
 }
 
 /**
@@ -209,33 +209,30 @@ dpd_sched_timeout(struct state *p1st, time_t tm, time_t timeout)
  * @param p2st A state struct that is already in phase2
  * @return void
  */
-static void
-dpd_outI(struct state *p1st, struct state *st, bool eroute_care
-	 ,time_t delay, time_t timeout)
+static void dpd_outI(struct state *p1st, struct state *st, bool eroute_care,
+		     time_t delay, time_t timeout)
 {
-    time_t tm;
-    time_t last;
-    u_int32_t seqno;
-    bool   eroute_idle;
-    time_t nextdelay;
+	time_t tm;
+	time_t last;
+	u_int32_t seqno;
+	bool eroute_idle;
+	time_t nextdelay;
 
-    DBG(DBG_DPD,
-	DBG_log("DPD: processing for state #%lu (\"%s\")"
-		, st->st_serialno
-		, st->st_connection->name));
+	DBG(DBG_DPD, DBG_log("DPD: processing for state #%lu (\"%s\")",
+			     st->st_serialno, st->st_connection->name));
 
-    /* If no DPD, then get out of here */
-    if (!st->hidden_variables.st_dpd)
-        return;
+	/* If no DPD, then get out of here */
+	if (!st->hidden_variables.st_dpd)
+		return;
 
-    /* If there is no state, there can be no DPD */
-    if (!IS_ISAKMP_SA_ESTABLISHED(p1st->st_state))
-        return;
+	/* If there is no state, there can be no DPD */
+	if (!IS_ISAKMP_SA_ESTABLISHED(p1st->st_state))
+		return;
 
-    /* find out when now is */
-    tm = now();
+	/* find out when now is */
+	tm = now();
 
-    /*
+	/*
      * pick least recent activity value, since with multiple phase 2s,
      * it may well be that one phase 2 is very active, while the other
      * for some reason, gets stomped upon by some network screw up.
@@ -246,139 +243,131 @@ dpd_outI(struct state *p1st, struct state *st, bool eroute_care
      *  to when there are multiple SAs and one is much less active.
      *
      */
-    last = (p1st->st_last_dpd < st->st_last_dpd
-	    ? st->st_last_dpd : p1st->st_last_dpd );
+	last = (p1st->st_last_dpd < st->st_last_dpd ? st->st_last_dpd :
+						      p1st->st_last_dpd);
 
-    nextdelay = last + delay - tm;
+	nextdelay = last + delay - tm;
 
-    /* has there been enough activity of late? */
-    if(nextdelay > 0) {
-	/* Yes, just reschedule "phase 2" */
-	DBG(DBG_DPD, DBG_log("DPD: not yet time for dpd event: %lu < %lu"
-			     , (unsigned long)tm
-			     , (unsigned long)(last + delay)));
-	event_schedule(EVENT_DPD, nextdelay, st);
-	return;
-    }
+	/* has there been enough activity of late? */
+	if (nextdelay > 0) {
+		/* Yes, just reschedule "phase 2" */
+		DBG(DBG_DPD,
+		    DBG_log("DPD: not yet time for dpd event: %lu < %lu",
+			    (unsigned long)tm, (unsigned long)(last + delay)));
+		event_schedule(EVENT_DPD, nextdelay, st);
+		return;
+	}
 
-    /* now plan next check time */
-    if(nextdelay < 1) {
-	nextdelay = delay;
-    }
+	/* now plan next check time */
+	if (nextdelay < 1) {
+		nextdelay = delay;
+	}
 
-    /*
+	/*
      * check the phase 2, if we are supposed to,
      * and return if it is active recently
      */
-    if(eroute_care && !st->hidden_variables.st_nat_traversal) {
+	if (eroute_care && !st->hidden_variables.st_nat_traversal) {
+		eroute_idle = was_eroute_idle(st, delay);
+		if (!eroute_idle) {
+			DBG(DBG_DPD,
+			    DBG_log("DPD: out event not sent, phase 2 active"));
 
-	eroute_idle = was_eroute_idle(st, delay);
-	if(!eroute_idle) {
-	    DBG(DBG_DPD,
-		DBG_log("DPD: out event not sent, phase 2 active"));
+			/* update phase 2 time stamp only */
+			st->st_last_dpd = tm;
 
-	    /* update phase 2 time stamp only */
-	    st->st_last_dpd = tm;
-
-	    /*
+			/*
 	     * Since there was activity, kill any EVENT_DPD_TIMEOUT that might
 	     * be waiting. This can happen when a R_U_THERE_ACK is lost, and
 	     * subsequently traffic started flowing over the SA again, and no
 	     * more DPD packets are sent to cancel the outstanding DPD timer.
 	     */
-	    if(p1st->st_dpd_event != NULL
-	       && p1st->st_dpd_event->ev_type == EVENT_DPD_TIMEOUT) {
-		delete_dpd_event(p1st);
-	    }
+			if (p1st->st_dpd_event != NULL &&
+			    p1st->st_dpd_event->ev_type == EVENT_DPD_TIMEOUT) {
+				delete_dpd_event(p1st);
+			}
 
-	    event_schedule(EVENT_DPD, nextdelay, st);
-	    return;
+			event_schedule(EVENT_DPD, nextdelay, st);
+			return;
+		}
 	}
-    }
 
-    if(st != p1st) {
-	/*
+	if (st != p1st) {
+		/*
 	 * reschedule next event, since we can not do it from the activity
 	 * routine.
 	 */
-	event_schedule(EVENT_DPD, nextdelay, st);
-    }
+		event_schedule(EVENT_DPD, nextdelay, st);
+	}
 
-    if (!p1st->st_dpd_seqno)
-    {
-        /* Get a non-zero random value that has room to grow */
-        get_rnd_bytes((u_char *)&p1st->st_dpd_seqno
-		      , sizeof(p1st->st_dpd_seqno));
-        p1st->st_dpd_seqno &= 0x7fff;
-        p1st->st_dpd_seqno++;
-    }
-    seqno = htonl(p1st->st_dpd_seqno);
+	if (!p1st->st_dpd_seqno) {
+		/* Get a non-zero random value that has room to grow */
+		get_rnd_bytes((u_char *)&p1st->st_dpd_seqno,
+			      sizeof(p1st->st_dpd_seqno));
+		p1st->st_dpd_seqno &= 0x7fff;
+		p1st->st_dpd_seqno++;
+	}
+	seqno = htonl(p1st->st_dpd_seqno);
 
-    /* make sure that the timeout occurs. We do this before the send,
+	/* make sure that the timeout occurs. We do this before the send,
      * because the send may fail due to network issues, etc, and
      * the timeout has to occur anyway
      */
-    dpd_sched_timeout(p1st, tm, timeout);
+	dpd_sched_timeout(p1st, tm, timeout);
 
-    DBG(DBG_DPD, DBG_log("DPD: sending R_U_THERE %u to %s:%d (state #%lu)"
-			 , p1st->st_dpd_seqno
-			 , ip_str(&p1st->st_remoteaddr)
-			 , p1st->st_remoteport
-			 , p1st->st_serialno));
+	DBG(DBG_DPD, DBG_log("DPD: sending R_U_THERE %u to %s:%d (state #%lu)",
+			     p1st->st_dpd_seqno, ip_str(&p1st->st_remoteaddr),
+			     p1st->st_remoteport, p1st->st_serialno));
 
-    if (send_isakmp_notification(p1st, R_U_THERE
-				 , &seqno, sizeof(seqno)) != STF_IGNORE)
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: could not send R_U_THERE");
-        return;
-    }
+	if (send_isakmp_notification(p1st, R_U_THERE, &seqno, sizeof(seqno)) !=
+	    STF_IGNORE) {
+		loglog(RC_LOG_SERIOUS, "DPD: could not send R_U_THERE");
+		return;
+	}
 
-    st->st_last_dpd = tm;
-    p1st->st_last_dpd = tm;
-    p1st->st_dpd_expectseqno = p1st->st_dpd_seqno++;
-
+	st->st_last_dpd = tm;
+	p1st->st_last_dpd = tm;
+	p1st->st_dpd_expectseqno = p1st->st_dpd_seqno++;
 }
 
-void
-p1_dpd_outI1(struct state *p1st)
+void p1_dpd_outI1(struct state *p1st)
 {
-    time_t delay = p1st->st_connection->dpd_delay;
-    time_t timeout = p1st->st_connection->dpd_timeout;
+	time_t delay = p1st->st_connection->dpd_delay;
+	time_t timeout = p1st->st_connection->dpd_timeout;
 
-    dpd_outI(p1st, p1st, FALSE, delay, timeout);
+	dpd_outI(p1st, p1st, FALSE, delay, timeout);
 }
 
-void
-p2_dpd_outI1(struct state *p2st)
+void p2_dpd_outI1(struct state *p2st)
 {
-    struct state *st;
-    time_t delay = p2st->st_connection->dpd_delay;
-    time_t timeout = p2st->st_connection->dpd_timeout;
+	struct state *st;
+	time_t delay = p2st->st_connection->dpd_delay;
+	time_t timeout = p2st->st_connection->dpd_timeout;
 
-    /* find the related Phase 1 state */
-    st = find_phase1_state(p2st->st_connection, ISAKMP_SA_ESTABLISHED_STATES);
+	/* find the related Phase 1 state */
+	st = find_phase1_state(p2st->st_connection,
+			       ISAKMP_SA_ESTABLISHED_STATES);
 
-    if (st == NULL)
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: could not find newest phase 1 state");
-        return;
-    }
+	if (st == NULL) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: could not find newest phase 1 state");
+		return;
+	}
 
-    dpd_outI(st, p2st, TRUE, delay, timeout);
+	dpd_outI(st, p2st, TRUE, delay, timeout);
 }
 
-void
-dpd_event(struct state *st)
+void dpd_event(struct state *st)
 {
-    if(st==NULL) return;
+	if (st == NULL)
+		return;
 
-    if(IS_PHASE1(st->st_state) || IS_PHASE15(st->st_state )) {
-	p1_dpd_outI1(st);
-    } else {
-	p2_dpd_outI1(st);
-    }
+	if (IS_PHASE1(st->st_state) || IS_PHASE15(st->st_state)) {
+		p1_dpd_outI1(st);
+	} else {
+		p2_dpd_outI1(st);
+	}
 }
-
 
 /**
  * DPD in Initiator, out Responder
@@ -388,54 +377,54 @@ dpd_event(struct state *st)
  * @param pbs A PB Stream
  * @return stf_status
  */
-stf_status
-dpd_inI_outR(struct state *p1st
-	     , struct isakmp_notification *const n
-	     , pb_stream *pbs)
+stf_status dpd_inI_outR(struct state *p1st, struct isakmp_notification *const n,
+			pb_stream *pbs)
 {
-    time_t tm = now();
-    u_int32_t seqno;
+	time_t tm = now();
+	u_int32_t seqno;
 
-    if (!IS_ISAKMP_SA_ESTABLISHED(p1st->st_state))
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: received R_U_THERE for unestablished ISKAMP SA");
-        return STF_IGNORE;
-    }
-    if (n->isan_spisize != COOKIE_SIZE * 2 || pbs_left(pbs) < COOKIE_SIZE * 2)
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: R_U_THERE has invalid SPI length (%d)", n->isan_spisize);
-        return STF_FAIL + PAYLOAD_MALFORMED;
-    }
+	if (!IS_ISAKMP_SA_ESTABLISHED(p1st->st_state)) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: received R_U_THERE for unestablished ISKAMP SA");
+		return STF_IGNORE;
+	}
+	if (n->isan_spisize != COOKIE_SIZE * 2 ||
+	    pbs_left(pbs) < COOKIE_SIZE * 2) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: R_U_THERE has invalid SPI length (%d)",
+		       n->isan_spisize);
+		return STF_FAIL + PAYLOAD_MALFORMED;
+	}
 
-    if (memcmp(pbs->cur, p1st->st_icookie, COOKIE_SIZE) != 0)
-    {
-        /* RFC states we *SHOULD* check cookies, not MUST.  So invalid
+	if (memcmp(pbs->cur, p1st->st_icookie, COOKIE_SIZE) != 0) {
+		/* RFC states we *SHOULD* check cookies, not MUST.  So invalid
            cookies are technically valid, as per Geoffrey Huang */
-	DBG(DBG_DPD,
-	    DBG_log("DPD: R_U_THERE has invalid icookie (tolerated)"));
-    }
-    pbs->cur += COOKIE_SIZE;
+		DBG(DBG_DPD,
+		    DBG_log("DPD: R_U_THERE has invalid icookie (tolerated)"));
+	}
+	pbs->cur += COOKIE_SIZE;
 
-    if (memcmp(pbs->cur, p1st->st_rcookie, COOKIE_SIZE) != 0)
-    {
-	DBG(DBG_DPD,
-	    DBG_log("DPD: R_U_THERE has invalid rcookie (tolerated)"));
-    }
-    pbs->cur += COOKIE_SIZE;
+	if (memcmp(pbs->cur, p1st->st_rcookie, COOKIE_SIZE) != 0) {
+		DBG(DBG_DPD,
+		    DBG_log("DPD: R_U_THERE has invalid rcookie (tolerated)"));
+	}
+	pbs->cur += COOKIE_SIZE;
 
-    if (pbs_left(pbs) != sizeof(seqno))
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: R_U_THERE has invalid data length (%d)", (int) pbs_left(pbs));
-        return STF_FAIL + PAYLOAD_MALFORMED;
-    }
+	if (pbs_left(pbs) != sizeof(seqno)) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: R_U_THERE has invalid data length (%d)",
+		       (int)pbs_left(pbs));
+		return STF_FAIL + PAYLOAD_MALFORMED;
+	}
 
-    seqno = ntohl(*(u_int32_t *)pbs->cur);
-    if (p1st->st_dpd_peerseqno && seqno <= p1st->st_dpd_peerseqno) {
-        loglog(RC_LOG_SERIOUS, "DPD: received old or duplicate R_U_THERE");
+	seqno = ntohl(*(u_int32_t *)pbs->cur);
+	if (p1st->st_dpd_peerseqno && seqno <= p1st->st_dpd_peerseqno) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: received old or duplicate R_U_THERE");
 		if (p1st->st_dpd_rdupcount >= DPD_RETRANS_MAX) {
 			loglog(RC_LOG_SERIOUS,
-		       "DPD: received %d or more duplicate R_U_THERE's - will no longer answer",
-				DPD_RETRANS_MAX);
+			       "DPD: received %d or more duplicate R_U_THERE's - will no longer answer",
+			       DPD_RETRANS_MAX);
 			return STF_IGNORE;
 		} else {
 			/*
@@ -445,42 +434,40 @@ dpd_inI_outR(struct state *p1st
 			 * RFC 3706 Section 7 "Security Considerations"
 			 */
 			loglog(RC_LOG_SERIOUS,
-		       "DPD: received less than %d duplicate R_U_THERE's - will reluctantly answer",
-				DPD_RETRANS_MAX);
+			       "DPD: received less than %d duplicate R_U_THERE's - will reluctantly answer",
+			       DPD_RETRANS_MAX);
 			p1st->st_dpd_rdupcount++;
 		}
 	} else {
 		p1st->st_dpd_rdupcount = 0;
-    }
+	}
 
-    DBG(DBG_DPD,
-	DBG_log("DPD: received R_U_THERE seq:%u time:%lu (state=#%lu name=\"%s\")"
-	    , seqno
-	    , (unsigned long)tm
-	    , p1st->st_serialno, p1st->st_connection->name));
+	DBG(DBG_DPD,
+	    DBG_log("DPD: received R_U_THERE seq:%u time:%lu (state=#%lu name=\"%s\")",
+		    seqno, (unsigned long)tm, p1st->st_serialno,
+		    p1st->st_connection->name));
 
-    p1st->st_dpd_peerseqno = seqno;
+	p1st->st_dpd_peerseqno = seqno;
 
-    if (send_isakmp_notification(p1st, R_U_THERE_ACK
-				 , pbs->cur, pbs_left(pbs)) != STF_IGNORE)
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: could not send R_U_THERE_ACK");
-        return STF_IGNORE;
-    }
+	if (send_isakmp_notification(p1st, R_U_THERE_ACK, pbs->cur,
+				     pbs_left(pbs)) != STF_IGNORE) {
+		loglog(RC_LOG_SERIOUS, "DPD: could not send R_U_THERE_ACK");
+		return STF_IGNORE;
+	}
 
-    /* update the time stamp */
-    p1st->st_last_dpd = tm;
+	/* update the time stamp */
+	p1st->st_last_dpd = tm;
 
-    /*
+	/*
      * since there was activity, kill any EVENT_DPD_TIMEOUT that might
      * be waiting.
      */
-    if(p1st->st_dpd_event != NULL
-       && p1st->st_dpd_event->ev_type == EVENT_DPD_TIMEOUT) {
-	delete_dpd_event(p1st);
-    }
+	if (p1st->st_dpd_event != NULL &&
+	    p1st->st_dpd_event->ev_type == EVENT_DPD_TIMEOUT) {
+		delete_dpd_event(p1st);
+	}
 
-    return STF_IGNORE;
+	return STF_IGNORE;
 }
 
 /**
@@ -491,76 +478,75 @@ dpd_inI_outR(struct state *p1st
  * @param pbs A PB Stream
  * @return stf_status
  */
-stf_status
-dpd_inR(struct state *p1st
-	, struct isakmp_notification *const n
-	, pb_stream *pbs)
+stf_status dpd_inR(struct state *p1st, struct isakmp_notification *const n,
+		   pb_stream *pbs)
 {
-    time_t tm = now();
-    u_int32_t seqno;
+	time_t tm = now();
+	u_int32_t seqno;
 
-    if (!IS_ISAKMP_SA_ESTABLISHED(p1st->st_state))
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: recevied R_U_THERE_ACK for unestablished ISKAMP SA");
-        return STF_FAIL;
-    }
+	if (!IS_ISAKMP_SA_ESTABLISHED(p1st->st_state)) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: recevied R_U_THERE_ACK for unestablished ISKAMP SA");
+		return STF_FAIL;
+	}
 
-   if (n->isan_spisize != COOKIE_SIZE * 2 || pbs_left(pbs) < COOKIE_SIZE * 2)
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: R_U_THERE_ACK has invalid SPI length (%d)", n->isan_spisize);
-        return STF_FAIL + PAYLOAD_MALFORMED;
-    }
+	if (n->isan_spisize != COOKIE_SIZE * 2 ||
+	    pbs_left(pbs) < COOKIE_SIZE * 2) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: R_U_THERE_ACK has invalid SPI length (%d)",
+		       n->isan_spisize);
+		return STF_FAIL + PAYLOAD_MALFORMED;
+	}
 
-    if (memcmp(pbs->cur, p1st->st_icookie, COOKIE_SIZE) != 0)
-    {
-        /* RFC states we *SHOULD* check cookies, not MUST.  So invalid
+	if (memcmp(pbs->cur, p1st->st_icookie, COOKIE_SIZE) != 0) {
+		/* RFC states we *SHOULD* check cookies, not MUST.  So invalid
            cookies are technically valid, as per Geoffrey Huang */
-	DBG(DBG_DPD,
-	    DBG_log("DPD: R_U_THERE_ACK has invalid icookie"));
-    }
-    pbs->cur += COOKIE_SIZE;
+		DBG(DBG_DPD, DBG_log("DPD: R_U_THERE_ACK has invalid icookie"));
+	}
+	pbs->cur += COOKIE_SIZE;
 
-    if (memcmp(pbs->cur, p1st->st_rcookie, COOKIE_SIZE) != 0)
-    {
-        /* RFC states we *SHOULD* check cookies, not MUST.  So invalid
+	if (memcmp(pbs->cur, p1st->st_rcookie, COOKIE_SIZE) != 0) {
+		/* RFC states we *SHOULD* check cookies, not MUST.  So invalid
            cookies are technically valid, as per Geoffrey Huang */
+		DBG(DBG_DPD, DBG_log("DPD: R_U_THERE_ACK has invalid rcookie"));
+	}
+	pbs->cur += COOKIE_SIZE;
+
+	if (pbs_left(pbs) != sizeof(seqno)) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: R_U_THERE_ACK has invalid data length (%d)",
+		       (int)pbs_left(pbs));
+		return STF_FAIL + PAYLOAD_MALFORMED;
+	}
+
+	seqno = ntohl(*(u_int32_t *)pbs->cur);
 	DBG(DBG_DPD,
-	    DBG_log("DPD: R_U_THERE_ACK has invalid rcookie"));
-    }
-    pbs->cur += COOKIE_SIZE;
+	    DBG_log("DPD: R_U_THERE_ACK, seqno received: %u expected: %u (state=#%lu)",
+		    seqno, p1st->st_dpd_expectseqno, p1st->st_serialno));
 
-    if (pbs_left(pbs) != sizeof(seqno))
-    {
-        loglog(RC_LOG_SERIOUS, "DPD: R_U_THERE_ACK has invalid data length (%d)", (int) pbs_left(pbs));
-        return STF_FAIL + PAYLOAD_MALFORMED;
-    }
+	if (!p1st->st_dpd_expectseqno && seqno != p1st->st_dpd_expectseqno) {
+		loglog(RC_LOG_SERIOUS,
+		       "DPD: unexpected R_U_THERE_ACK packet with sequence number %u",
+		       seqno);
+		p1st->st_dpd_expectseqno = 0;
+		/* do not update time stamp, so we'll send a new one sooner */
+	} else {
+		/* update the time stamp */
+		p1st->st_last_dpd = tm;
+	}
 
-    seqno = ntohl(*(u_int32_t *)pbs->cur);
-    DBG(DBG_DPD,
-	DBG_log("DPD: R_U_THERE_ACK, seqno received: %u expected: %u (state=#%lu)",
-		seqno, p1st->st_dpd_expectseqno, p1st->st_serialno));
-
-    if (!p1st->st_dpd_expectseqno && seqno != p1st->st_dpd_expectseqno) {
-        loglog(RC_LOG_SERIOUS, "DPD: unexpected R_U_THERE_ACK packet with sequence number %u", seqno);
 	p1st->st_dpd_expectseqno = 0;
-	/* do not update time stamp, so we'll send a new one sooner */
-    } else {
-	/* update the time stamp */
-	p1st->st_last_dpd = tm;
-    }
 
-    p1st->st_dpd_expectseqno = 0;
-
-    /*
+	/*
      * since there was activity, kill any EVENT_DPD_TIMEOUT that might
      * be waiting.
      */
-    if(p1st->st_dpd_event != NULL
-       && p1st->st_dpd_event->ev_type == EVENT_DPD_TIMEOUT) {
-	delete_dpd_event(p1st);
-    }
+	if (p1st->st_dpd_event != NULL &&
+	    p1st->st_dpd_event->ev_type == EVENT_DPD_TIMEOUT) {
+		delete_dpd_event(p1st);
+	}
 
-    return STF_IGNORE;
+	return STF_IGNORE;
 }
 
 /**
@@ -573,86 +559,89 @@ dpd_inR(struct state *p1st
  * @param st A state structure that is fully negotiated
  * @return void
  */
-void
-dpd_timeout(struct state *st)
+void dpd_timeout(struct state *st)
 {
-    struct connection *c = st->st_connection;
-    int action = c->dpd_action;
+	struct connection *c = st->st_connection;
+	int action = c->dpd_action;
 
-    /** delete the state, which is probably in phase 2 */
-    set_cur_connection(c);
+	/** delete the state, which is probably in phase 2 */
+	set_cur_connection(c);
 
-    openswan_log("DPD: No response from peer - declaring peer dead");
+	openswan_log("DPD: No response from peer - declaring peer dead");
 
-    switch(action) {
-    case DPD_ACTION_HOLD:
-	/** dpdaction=hold - Wipe the SA's but %trap the eroute so we don't
+	switch (action) {
+	case DPD_ACTION_HOLD:
+		/** dpdaction=hold - Wipe the SA's but %trap the eroute so we don't
 	    leak traffic.  Also, being in %trap means new packets will
 	    force an initiation of the conn again.  */
-	openswan_log("DPD: Putting connection into %%trap");
-	if (c->kind == CK_INSTANCE) {
-	    DBG(DBG_DPD, DBG_log("DPD: warning dpdaction=hold on instance futile - will be deleted"));
-	}
-	delete_states_by_connection(c, TRUE);
-	break;
+		openswan_log("DPD: Putting connection into %%trap");
+		if (c->kind == CK_INSTANCE) {
+			DBG(DBG_DPD,
+			    DBG_log("DPD: warning dpdaction=hold on instance futile - will be deleted"));
+		}
+		delete_states_by_connection(c, TRUE);
+		break;
 
-    case DPD_ACTION_CLEAR:
-        /** dpdaction=clear - Wipe the SA & eroute - everything */
+	case DPD_ACTION_CLEAR:
+		/** dpdaction=clear - Wipe the SA & eroute - everything */
 
-        openswan_log("DPD: Clearing Connection");
-	/*
+		openswan_log("DPD: Clearing Connection");
+		/*
 	 * For CK_INSTANCE, delete_states_by_connection() will clear
 	 * Note that delete_states_by_connection changes c->kind but we need
 	 * to remember what it was to know if we still need to unroute after delete
 	 */
-	if (c->kind == CK_INSTANCE) {
-	    delete_states_by_connection(c, TRUE);
-	} else {
-	    flush_pending_by_connection(c); /* remove any partial negotiations that are failing */
-	    delete_states_by_connection(c, TRUE);
-	    DBG(DBG_DPD, DBG_log("DPD: unrouting connection (%s)",enum_name(&connection_kind_names,c->kind)));
-	    unroute_connection(c);       /* --unroute */
-	}
-	break;
+		if (c->kind == CK_INSTANCE) {
+			delete_states_by_connection(c, TRUE);
+		} else {
+			flush_pending_by_connection(
+				c); /* remove any partial negotiations that are failing */
+			delete_states_by_connection(c, TRUE);
+			DBG(DBG_DPD, DBG_log("DPD: unrouting connection (%s)",
+					     enum_name(&connection_kind_names,
+						       c->kind)));
+			unroute_connection(c); /* --unroute */
+		}
+		break;
 
-    case DPD_ACTION_RESTART:
-	/** dpdaction=restart - immediate renegotiate the connection. */
-        openswan_log("DPD: Restarting Connection");
+	case DPD_ACTION_RESTART:
+		/** dpdaction=restart - immediate renegotiate the connection. */
+		openswan_log("DPD: Restarting Connection");
 
-	/*
+		/*
 	 * unlike the other kinds, we do not delete any states,
 	 * but rather, we arrange to replace all SAs involved.
 	 */
-	rekey_p2states_by_connection(c);
+		rekey_p2states_by_connection(c);
 
-	if (c->kind == CK_INSTANCE) {
-		/* If this is a template (eg: right=%any) we won't be able to
+		if (c->kind == CK_INSTANCE) {
+			/* If this is a template (eg: right=%any) we won't be able to
 		 * reinitiate, the peer has probably changed IP addresses,
 		 * or isn't available anymore.  So remove the routes too */
-	        unroute_connection(c);        /* --unroute */
-	}
+			unroute_connection(c); /* --unroute */
+		}
 
-	/* we schedule the replace of the SA so that we do it
+		/* we schedule the replace of the SA so that we do it
 	 * in a rational place and do it at a negative future time,
 	 * so it will occur before any of the phase 2 replacements.
 	 */
-	delete_event(st);
-	delete_dpd_event(st);
-	event_schedule(EVENT_SA_REPLACE, 0, st);
-	break;
+		delete_event(st);
+		delete_dpd_event(st);
+		event_schedule(EVENT_SA_REPLACE, 0, st);
+		break;
 
-    case DPD_ACTION_RESTART_BY_PEER:
-	/* dpdaction=restart_by_peer - immediately renegotiate connections to the same peer. */
-	openswan_log("DPD: Restarting all connections that share this peer");
-	restart_connections_by_peer(c);
-	break;
+	case DPD_ACTION_RESTART_BY_PEER:
+		/* dpdaction=restart_by_peer - immediately renegotiate connections to the same peer. */
+		openswan_log(
+			"DPD: Restarting all connections that share this peer");
+		restart_connections_by_peer(c);
+		break;
 
-    default:
-	bad_case(action);
-    }
-    reset_cur_connection();
+	default:
+		bad_case(action);
+	}
+	reset_cur_connection();
 }
-
 
 /*
  * Local Variables:

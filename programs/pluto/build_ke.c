@@ -54,84 +54,82 @@
 #include "oswcrypto.h"
 
 #ifdef HAVE_LIBNSS
-# include <nss.h>
-#include  <nspr.h>
-# include <pk11pub.h>
-# include <keyhi.h>
-# include "oswconf.h"
+#include <nss.h>
+#include <nspr.h>
+#include <pk11pub.h>
+#include <keyhi.h>
+#include "oswconf.h"
 #endif
 
-stf_status build_ke(struct pluto_crypto_req_cont *cn
-		    , struct state *st
-		    , const struct oakley_group_desc *group
-		    , enum crypto_importance importance)
+stf_status build_ke(struct pluto_crypto_req_cont *cn, struct state *st,
+		    const struct oakley_group_desc *group,
+		    enum crypto_importance importance)
 {
-    struct pluto_crypto_req rd;
-    struct pluto_crypto_req *r = &rd;
-    err_t e;
-    bool toomuch = FALSE;
+	struct pluto_crypto_req rd;
+	struct pluto_crypto_req *r = &rd;
+	err_t e;
+	bool toomuch = FALSE;
 
-    pcr_init(r, pcr_build_kenonce, importance);
-    r->pcr_d.kn.oakley_group   = group->group;
+	pcr_init(r, pcr_build_kenonce, importance);
+	r->pcr_d.kn.oakley_group = group->group;
 
-    cn->pcrc_serialno = st->st_serialno;
-    e= send_crypto_helper_request(r, cn, &toomuch);
+	cn->pcrc_serialno = st->st_serialno;
+	e = send_crypto_helper_request(r, cn, &toomuch);
 
-    if(e != NULL) {
-	loglog(RC_LOG_SERIOUS, "can not start crypto helper: %s", e);
-	if(toomuch) {
-	    return STF_TOOMUCHCRYPTO;
+	if (e != NULL) {
+		loglog(RC_LOG_SERIOUS, "can not start crypto helper: %s", e);
+		if (toomuch) {
+			return STF_TOOMUCHCRYPTO;
+		} else {
+			return STF_FAIL;
+		}
+	} else if (!toomuch) {
+		st->st_calculating = TRUE;
+		delete_event(st);
+		event_schedule(EVENT_CRYPTO_FAILED, EVENT_CRYPTO_FAILED_DELAY,
+			       st);
+		return STF_SUSPEND;
 	} else {
-	    return STF_FAIL;
-	}
-    } else if(!toomuch) {
-	st->st_calculating = TRUE;
-	delete_event(st);
-	event_schedule(EVENT_CRYPTO_FAILED, EVENT_CRYPTO_FAILED_DELAY, st);
-	return STF_SUSPEND;
-    } else {
-	/* we must have run the continuation directly, so
+		/* we must have run the continuation directly, so
 	 * complete_v1_state_transition already got called.
 	 */
-	return STF_INLINE;
-    }
+		return STF_INLINE;
+	}
 }
 
-
-stf_status build_nonce(struct pluto_crypto_req_cont *cn
-		       , struct state *st
-		       , enum crypto_importance importance)
+stf_status build_nonce(struct pluto_crypto_req_cont *cn, struct state *st,
+		       enum crypto_importance importance)
 {
-    struct pluto_crypto_req rd;
-    struct pluto_crypto_req *r = &rd;
-    err_t e;
-    bool toomuch = FALSE;
+	struct pluto_crypto_req rd;
+	struct pluto_crypto_req *r = &rd;
+	err_t e;
+	bool toomuch = FALSE;
 
-  pcr_init(r, pcr_build_nonce, importance);
+	pcr_init(r, pcr_build_nonce, importance);
 
-  cn->pcrc_serialno = st->st_serialno;
-  e = send_crypto_helper_request(r, cn, &toomuch);
+	cn->pcrc_serialno = st->st_serialno;
+	e = send_crypto_helper_request(r, cn, &toomuch);
 
-  if(e != NULL) {
-      loglog(RC_LOG_SERIOUS, "can not start crypto helper: %s", e);
-      if(toomuch) {
-	  return STF_TOOMUCHCRYPTO;
-      } else {
-	  return STF_FAIL;
-      }
-  } else if(!toomuch) {
-      st->st_calculating = TRUE;
-      delete_event(st);
-      event_schedule(EVENT_CRYPTO_FAILED, EVENT_CRYPTO_FAILED_DELAY, st);
-      return STF_SUSPEND;
-  } else {
-      /* we must have run the continuation directly, so
+	if (e != NULL) {
+		loglog(RC_LOG_SERIOUS, "can not start crypto helper: %s", e);
+		if (toomuch) {
+			return STF_TOOMUCHCRYPTO;
+		} else {
+			return STF_FAIL;
+		}
+	} else if (!toomuch) {
+		st->st_calculating = TRUE;
+		delete_event(st);
+		event_schedule(EVENT_CRYPTO_FAILED, EVENT_CRYPTO_FAILED_DELAY,
+			       st);
+		return STF_SUSPEND;
+	} else {
+		/* we must have run the continuation directly, so
        * complete_v1_state_transition already got called.
        */
-      return STF_INLINE;
-  }
+		return STF_INLINE;
+	}
 }
-
 
 /*
  * Local Variables:

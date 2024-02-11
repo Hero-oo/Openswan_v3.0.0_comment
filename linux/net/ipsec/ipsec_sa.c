@@ -20,7 +20,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 #include <linux/kernel.h> /* printk() */
@@ -29,13 +29,13 @@
 
 #include <linux/slab.h> /* kmalloc() */
 #include <linux/vmalloc.h> /* vmalloc() */
-#include <linux/errno.h>  /* error codes */
-#include <linux/types.h>  /* size_t */
+#include <linux/errno.h> /* error codes */
+#include <linux/types.h> /* size_t */
 #include <linux/interrupt.h> /* mark_bh */
 
-#include <linux/netdevice.h>   /* struct device, and other headers */
+#include <linux/netdevice.h> /* struct device, and other headers */
 #include <linux/etherdevice.h> /* eth_type_trans */
-#include <linux/ip.h>          /* struct iphdr */
+#include <linux/ip.h> /* struct iphdr */
 #include <linux/skbuff.h>
 #include <openswan.h>
 #include <linux/spinlock.h> /* *lock* */
@@ -67,11 +67,14 @@
 #include "openswan/ipsec_alg.h"
 
 #ifdef CONFIG_KLIPS_OCF
-# include "ipsec_ocf.h"
+#include "ipsec_ocf.h"
 #endif
 
-
-#define SENDERR(_x) do { error = -(_x); goto errlab; } while (0)
+#define SENDERR(_x)            \
+	do {                   \
+		error = -(_x); \
+		goto errlab;   \
+	} while (0)
 
 struct ipsec_sa *ipsec_sadb_hash[SADB_HASHMOD];
 DEFINE_SPINLOCK(tdb_lock);
@@ -85,28 +88,33 @@ struct ipsec_sadb ipsec_sadb;
 /* the sub table must be narrower (or equal) in bits than the variable type
    in the main table to count the number of unused entries in it. */
 typedef struct {
-	int testSizeOf_refSubTable :
-		((sizeof(IPsecRefTableUnusedCount) * 8) < IPSEC_SA_REF_SUBTABLE_IDX_WIDTH ? -1 : 1);
+	int testSizeOf_refSubTable : ((sizeof(IPsecRefTableUnusedCount) *
+				       8) < IPSEC_SA_REF_SUBTABLE_IDX_WIDTH ?
+					      -1 :
+					      1);
 } dummy;
-
 
 /* The field where the saref will be hosted in the skb must be wide enough to
    accomodate the information it needs to store. */
 typedef struct {
-	int testSizeOf_refField :
-		(IPSEC_SA_REF_HOST_FIELD_WIDTH < IPSEC_SA_REF_TABLE_IDX_WIDTH ? -1 : 1 );
+	int testSizeOf_refField
+		: (IPSEC_SA_REF_HOST_FIELD_WIDTH <
+				   IPSEC_SA_REF_TABLE_IDX_WIDTH ?
+			   -1 :
+			   1);
 } dummy2;
 
-
-#define IPS_HASH(said) (((said)->spi + (said)->dst.u.v4.sin_addr.s_addr + (said)->proto) % SADB_HASHMOD)
+#define IPS_HASH(said)                                                      \
+	(((said)->spi + (said)->dst.u.v4.sin_addr.s_addr + (said)->proto) % \
+	 SADB_HASHMOD)
 
 static int ipsec_saref_verify_slot(IPsecSAref_t ref);
 static int ipsec_SArefSubTable_alloc(unsigned table);
 static int ipsec_saref_freelist_init(void);
-static IPsecSAref_t ipsec_SAref_alloc(int*erorr); /* pass in error var by pointer */
+static IPsecSAref_t
+ipsec_SAref_alloc(int *erorr); /* pass in error var by pointer */
 
-static int
-ipsec_SAref_recycle(void)
+static int ipsec_SAref_recycle(void)
 {
 	int table, i;
 	int error = 0;
@@ -116,48 +124,62 @@ ipsec_SAref_recycle(void)
 	ipsec_sadb.refFreeListHead = IPSEC_SAREF_NULL;
 	ipsec_sadb.refFreeListTail = IPSEC_SAREF_NULL;
 
-	KLIPS_PRINT(debug_xform,
-		    "klips_debug:ipsec_SAref_recycle: "
-		    "recycling, continuing from SAref=%d (0p%p), table=%d, entry=%d.\n",
-		    ipsec_sadb.refFreeListCont,
-		    (ipsec_sadb.refTable[IPsecSAref2table(ipsec_sadb.refFreeListCont)] != NULL) ? IPsecSAref2SA(ipsec_sadb.refFreeListCont) : NULL,
-		    IPsecSAref2table(ipsec_sadb.refFreeListCont),
-		    IPsecSAref2entry(ipsec_sadb.refFreeListCont));
+	KLIPS_PRINT(
+		debug_xform,
+		"klips_debug:ipsec_SAref_recycle: "
+		"recycling, continuing from SAref=%d (0p%p), table=%d, entry=%d.\n",
+		ipsec_sadb.refFreeListCont,
+		(ipsec_sadb.refTable[IPsecSAref2table(
+			 ipsec_sadb.refFreeListCont)] != NULL) ?
+			IPsecSAref2SA(ipsec_sadb.refFreeListCont) :
+			NULL,
+		IPsecSAref2table(ipsec_sadb.refFreeListCont),
+		IPsecSAref2entry(ipsec_sadb.refFreeListCont));
 
 	/* add one additional table entry */
 	addone = 0;
 
-	for(i = 0; i < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES; i++) {
-		if(ipsec_sadb.refFreeListCont == IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES * IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES) {
-			KLIPS_PRINT(debug_xform,
+	for (i = 0; i < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES; i++) {
+		if (ipsec_sadb.refFreeListCont ==
+		    IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES *
+			    IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES) {
+			KLIPS_PRINT(
+				debug_xform,
 				"klips_debug:ipsec_SAref_recycle: "
 				"end of table reached, continuing at start..\n");
 			ipsec_sadb.refFreeListCont = IPSEC_SAREF_FIRST;
 		}
 
 		table = IPsecSAref2table(ipsec_sadb.refFreeListCont);
-		if(ipsec_sadb.refTable[table] == NULL) {
-			if(addone == 0) {
+		if (ipsec_sadb.refTable[table] == NULL) {
+			if (addone == 0) {
 				addone = 1;
 				error = ipsec_SArefSubTable_alloc(table);
-				if(error) {
+				if (error) {
 					return error;
-				}
-			else
-				break;
+				} else
+					break;
 			}
 		}
-		for(entry = IPsecSAref2entry(ipsec_sadb.refFreeListCont);
-		    entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES;
-		    entry++) {
-			if(ipsec_sadb.refTable[table]->entry[entry] == NULL) {
-				ipsec_sadb.refFreeList[++ipsec_sadb.refFreeListTail] = IPsecSArefBuild(table, entry);
-				if(ipsec_sadb.refFreeListTail == (IPSEC_SA_REF_FREELIST_NUM_ENTRIES - 1)) {
-					ipsec_sadb.refFreeListHead = IPSEC_SAREF_FIRST;
-					ipsec_sadb.refFreeListCont = ipsec_sadb.refFreeList[ipsec_sadb.refFreeListTail] + 1;
-					KLIPS_PRINT(debug_xform,
-						    "klips_debug:ipsec_SAref_recycle: "
-						    "SArefFreeList refilled.\n");
+		for (entry = IPsecSAref2entry(ipsec_sadb.refFreeListCont);
+		     entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES; entry++) {
+			if (ipsec_sadb.refTable[table]->entry[entry] == NULL) {
+				ipsec_sadb.refFreeList
+					[++ipsec_sadb.refFreeListTail] =
+					IPsecSArefBuild(table, entry);
+				if (ipsec_sadb.refFreeListTail ==
+				    (IPSEC_SA_REF_FREELIST_NUM_ENTRIES - 1)) {
+					ipsec_sadb.refFreeListHead =
+						IPSEC_SAREF_FIRST;
+					ipsec_sadb.refFreeListCont =
+						ipsec_sadb.refFreeList
+							[ipsec_sadb
+								 .refFreeListTail] +
+						1;
+					KLIPS_PRINT(
+						debug_xform,
+						"klips_debug:ipsec_SAref_recycle: "
+						"SArefFreeList refilled.\n");
 					return 0;
 				}
 			}
@@ -165,16 +187,16 @@ ipsec_SAref_recycle(void)
 		}
 	}
 
-	if(ipsec_sadb.refFreeListTail == IPSEC_SAREF_NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "klips_debug:ipsec_SAref_recycle: "
-			    "out of room in the SArefTable.\n");
+	if (ipsec_sadb.refFreeListTail == IPSEC_SAREF_NULL) {
+		KLIPS_PRINT(debug_xform, "klips_debug:ipsec_SAref_recycle: "
+					 "out of room in the SArefTable.\n");
 
-		return(-ENOSPC);
+		return (-ENOSPC);
 	}
 
 	ipsec_sadb.refFreeListHead = IPSEC_SAREF_FIRST;
-	ipsec_sadb.refFreeListCont = ipsec_sadb.refFreeList[ipsec_sadb.refFreeListTail] + 1;
+	ipsec_sadb.refFreeListCont =
+		ipsec_sadb.refFreeList[ipsec_sadb.refFreeListTail] + 1;
 	KLIPS_PRINT(debug_xform,
 		    "klips_debug:ipsec_SAref_recycle: "
 		    "SArefFreeList partly refilled to %d of %d.\n",
@@ -183,26 +205,24 @@ ipsec_SAref_recycle(void)
 	return 0;
 }
 
-static int
-ipsec_SArefSubTable_alloc(unsigned table)
+static int ipsec_SArefSubTable_alloc(unsigned table)
 {
 	unsigned entry;
-	struct IPsecSArefSubTable* SArefsub;
+	struct IPsecSArefSubTable *SArefsub;
 
 	KLIPS_PRINT(debug_xform,
 		    "klips_debug:ipsec_SArefSubTable_alloc: "
 		    "allocating %lu bytes for table %u of %u.\n",
-		    (unsigned long) IPSEC_SA_REF_SUBTABLE_SIZE,
-		    table, IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES);
+		    (unsigned long)IPSEC_SA_REF_SUBTABLE_SIZE, table,
+		    IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES);
 
 	/* allocate another sub-table */
 	SArefsub = kmalloc(IPSEC_SA_REF_SUBTABLE_SIZE, GFP_ATOMIC);
-	if(SArefsub == NULL) {
+	if (SArefsub == NULL) {
 		KLIPS_PRINT(debug_xform,
 			    "klips_debug:ipsec_SArefSubTable_alloc: "
 			    "error allocating memory for table %u of %u!\n",
-			    table,
-			    IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES);
+			    table, IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES);
 		return -ENOMEM;
 	}
 
@@ -214,28 +234,25 @@ ipsec_SArefSubTable_alloc(unsigned table)
 		    "klips_debug:ipsec_SArefSubTable_alloc: "
 		    "initialising %u elements (2 ^ %u) of table %u.\n",
 		    IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES,
-		    IPSEC_SA_REF_SUBTABLE_IDX_WIDTH,
-		    table);
-	for(entry = 0; entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES; entry++) {
+		    IPSEC_SA_REF_SUBTABLE_IDX_WIDTH, table);
+	for (entry = 0; entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES; entry++) {
 		SArefsub->entry[entry] = NULL;
 	}
 
 	return 0;
 }
 
-static int
-ipsec_saref_verify_slot(IPsecSAref_t ref)
+static int ipsec_saref_verify_slot(IPsecSAref_t ref)
 {
-	int ref_table=IPsecSAref2table(ref);
+	int ref_table = IPsecSAref2table(ref);
 
-	if(ipsec_sadb.refTable[ref_table] == NULL) {
+	if (ipsec_sadb.refTable[ref_table] == NULL) {
 		return ipsec_SArefSubTable_alloc(ref_table);
 	}
 	return 0;
 }
 
-int
-ipsec_saref_freelist_init(void)
+int ipsec_saref_freelist_init(void)
 {
 	int i;
 
@@ -244,7 +261,7 @@ ipsec_saref_freelist_init(void)
 		    "initialising %u elements of FreeList.\n",
 		    IPSEC_SA_REF_FREELIST_NUM_ENTRIES);
 
-	for(i = 0; i < IPSEC_SA_REF_FREELIST_NUM_ENTRIES; i++) {
+	for (i = 0; i < IPSEC_SA_REF_FREELIST_NUM_ENTRIES; i++) {
 		ipsec_sadb.refFreeList[i] = IPSEC_SAREF_NULL;
 	}
 	ipsec_sadb.refFreeListHead = IPSEC_SAREF_NULL;
@@ -254,17 +271,15 @@ ipsec_saref_freelist_init(void)
 	return 0;
 }
 
-int
-ipsec_sadb_init(void)
+int ipsec_sadb_init(void)
 {
 	int error = 0;
 	unsigned i;
 
-	for(i = 0; i < SADB_HASHMOD; i++) {
+	for (i = 0; i < SADB_HASHMOD; i++) {
 		ipsec_sadb_hash[i] = NULL;
 	}
 	/* parts above are for the old style SADB hash table */
-
 
 	/* initialise SA reference table */
 
@@ -276,14 +291,15 @@ ipsec_sadb_init(void)
 		    IPSEC_SA_REF_MAINTABLE_IDX_WIDTH);
 	{
 		unsigned table;
-		for(table = 0; table < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES; table++) {
+		for (table = 0; table < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES;
+		     table++) {
 			ipsec_sadb.refTable[table] = NULL;
 		}
 	}
 
 	/* allocate the first sub-table */
 	error = ipsec_SArefSubTable_alloc(0);
-	if(error) {
+	if (error) {
 		return error;
 	}
 
@@ -292,34 +308,33 @@ ipsec_sadb_init(void)
 }
 
 static IPsecSAref_t
-ipsec_SAref_alloc(int*error) /* pass in error var by pointer */
+ipsec_SAref_alloc(int *error) /* pass in error var by pointer */
 {
 	IPsecSAref_t SAref;
 
-	KLIPS_PRINT(debug_xform,
-		    "ipsec_SAref_alloc: "
-		    "SAref requested... head=%d, cont=%d, tail=%d, listsize=%d.\n",
-		    ipsec_sadb.refFreeListHead,
-		    ipsec_sadb.refFreeListCont,
-		    ipsec_sadb.refFreeListTail,
-		    IPSEC_SA_REF_FREELIST_NUM_ENTRIES);
+	KLIPS_PRINT(
+		debug_xform,
+		"ipsec_SAref_alloc: "
+		"SAref requested... head=%d, cont=%d, tail=%d, listsize=%d.\n",
+		ipsec_sadb.refFreeListHead, ipsec_sadb.refFreeListCont,
+		ipsec_sadb.refFreeListTail, IPSEC_SA_REF_FREELIST_NUM_ENTRIES);
 
-	if(ipsec_sadb.refFreeListHead == IPSEC_SAREF_NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_SAref_alloc: "
-			    "FreeList empty, recycling...\n");
+	if (ipsec_sadb.refFreeListHead == IPSEC_SAREF_NULL) {
+		KLIPS_PRINT(debug_xform, "ipsec_SAref_alloc: "
+					 "FreeList empty, recycling...\n");
 		*error = ipsec_SAref_recycle();
-		if(*error) {
+		if (*error) {
 			return IPSEC_SAREF_NULL;
 		}
 	}
 
 	SAref = ipsec_sadb.refFreeList[ipsec_sadb.refFreeListHead];
-	if(SAref == IPSEC_SAREF_NULL) {
-		KLIPS_ERROR(debug_xform,
-			    "ipsec_SAref_alloc: "
-			    "unexpected error, refFreeListHead = %d points to invalid entry.\n",
-			    ipsec_sadb.refFreeListHead);
+	if (SAref == IPSEC_SAREF_NULL) {
+		KLIPS_ERROR(
+			debug_xform,
+			"ipsec_SAref_alloc: "
+			"unexpected error, refFreeListHead = %d points to invalid entry.\n",
+			ipsec_sadb.refFreeListHead);
 		*error = -ESPIPE;
 		return IPSEC_SAREF_NULL;
 	}
@@ -327,17 +342,17 @@ ipsec_SAref_alloc(int*error) /* pass in error var by pointer */
 	KLIPS_PRINT(debug_xform,
 		    "ipsec_SAref_alloc: "
 		    "allocating SAref=%d, table=%u, entry=%u of %u.\n",
-		    SAref,
-		    IPsecSAref2table(SAref),
-		    IPsecSAref2entry(SAref),
-		    IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES * IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES);
+		    SAref, IPsecSAref2table(SAref), IPsecSAref2entry(SAref),
+		    IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES *
+			    IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES);
 
 	ipsec_sadb.refFreeList[ipsec_sadb.refFreeListHead] = IPSEC_SAREF_NULL;
 	ipsec_sadb.refFreeListHead++;
-	if(ipsec_sadb.refFreeListHead > ipsec_sadb.refFreeListTail) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_SAref_alloc: "
-			    "last FreeList entry allocated, resetting list head to empty.\n");
+	if (ipsec_sadb.refFreeListHead > ipsec_sadb.refFreeListTail) {
+		KLIPS_PRINT(
+			debug_xform,
+			"ipsec_SAref_alloc: "
+			"last FreeList entry allocated, resetting list head to empty.\n");
 		ipsec_sadb.refFreeListHead = IPSEC_SAREF_NULL;
 	}
 
@@ -415,15 +430,13 @@ ipsec_sa_print(struct ipsec_sa *ips)
 }
 #endif
 
-struct ipsec_sa*
-ipsec_sa_alloc(int*error) /* pass in error var by pointer */
+struct ipsec_sa *ipsec_sa_alloc(int *error) /* pass in error var by pointer */
 {
-	struct ipsec_sa* ips;
+	struct ipsec_sa *ips;
 
-	if((ips = kmalloc(sizeof(*ips), GFP_ATOMIC) ) == NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_sa_alloc: "
-			    "memory allocation error\n");
+	if ((ips = kmalloc(sizeof(*ips), GFP_ATOMIC)) == NULL) {
+		KLIPS_PRINT(debug_xform, "ipsec_sa_alloc: "
+					 "memory allocation error\n");
 		*error = -ENOMEM;
 		return NULL;
 	}
@@ -438,49 +451,47 @@ ipsec_sa_alloc(int*error) /* pass in error var by pointer */
 	ipsec_sa_get(ips, IPSEC_REFALLOC);
 
 	*error = 0;
-	return(ips);
+	return (ips);
 }
 
-void
-ipsec_sa_untern(struct ipsec_sa *ips)
+void ipsec_sa_untern(struct ipsec_sa *ips)
 {
 	IPsecSAref_t ref = ips->ips_ref;
 	int error;
 
 	/* verify that we are removing correct item! */
 	error = ipsec_saref_verify_slot(ref);
-	if(error) {
+	if (error) {
 		return;
 	}
 
-	if(IPsecSAref2SA(ref) == ips) {
+	if (IPsecSAref2SA(ref) == ips) {
 		IPsecSAref2SA(ref) = NULL;
 		ipsec_sa_put(ips, IPSEC_REFINTERN);
 	} else {
 		KLIPS_PRINT(debug_xform,
 			    "ipsec_sa_untern: "
-			    "ref=%u -> %p but untern'ing %p\n", ref,
-			    IPsecSAref2SA(ref), ips);
+			    "ref=%u -> %p but untern'ing %p\n",
+			    ref, IPsecSAref2SA(ref), ips);
 	}
-
 }
 
-int
-ipsec_sa_intern(struct ipsec_sa *ips)
+int ipsec_sa_intern(struct ipsec_sa *ips)
 {
 	int error = 0;
 	IPsecSAref_t ref = ips->ips_ref;
 
-	if(ref == IPSEC_SAREF_NULL) {
-		ref = ipsec_SAref_alloc(&error); /* pass in error return by pointer */
+	if (ref == IPSEC_SAREF_NULL) {
+		ref = ipsec_SAref_alloc(
+			&error); /* pass in error return by pointer */
 		KLIPS_PRINT(debug_xform,
 			    "ipsec_sa_intern: "
-			    "allocated ref=%u for sa %p\n", ref, ips);
+			    "allocated ref=%u for sa %p\n",
+			    ref, ips);
 
-		if(ref == IPSEC_SAREF_NULL) {
-			KLIPS_PRINT(debug_xform,
-				    "ipsec_sa_intern: "
-				    "SAref allocation error\n");
+		if (ref == IPSEC_SAREF_NULL) {
+			KLIPS_PRINT(debug_xform, "ipsec_sa_intern: "
+						 "SAref allocation error\n");
 			return error;
 		}
 
@@ -488,7 +499,7 @@ ipsec_sa_intern(struct ipsec_sa *ips)
 	}
 
 	error = ipsec_saref_verify_slot(ref);
-	if(error) {
+	if (error) {
 		return error;
 	}
 
@@ -500,7 +511,7 @@ ipsec_sa_intern(struct ipsec_sa *ips)
 	 */
 	{
 		struct ipsec_sa *nsa = IPsecSAref2SA(ref);
-		if(nsa) {
+		if (nsa) {
 			ipsec_sa_put(nsa, IPSEC_REFINTERN);
 		}
 	}
@@ -515,37 +526,34 @@ ipsec_sa_intern(struct ipsec_sa *ips)
 	return 0;
 }
 
-
-struct ipsec_sa *
-ipsec_sa_getbyid(ip_said *said, int type)
+struct ipsec_sa *ipsec_sa_getbyid(ip_said *said, int type)
 {
 	int hashval;
 	struct ipsec_sa *ips;
-        char sa[SATOT_BUF];
+	char sa[SATOT_BUF];
 	size_t sa_len;
 
-	if(said == NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_sa_getbyid: "
-			    "null pointer passed in!\n");
+	if (said == NULL) {
+		KLIPS_PRINT(debug_xform, "ipsec_sa_getbyid: "
+					 "null pointer passed in!\n");
 		return NULL;
 	}
 
 	hashval = IPS_HASH(said);
 
 	sa_len = KLIPS_SATOT(debug_xform, said, 0, sa, sizeof(sa));
-	KLIPS_PRINT(debug_xform,
-		    "ipsec_sa_getbyid: "
-		    "linked entry in ipsec_sa table for hash=%d of SA:%s requested.\n",
-		    hashval,
-		    sa_len ? sa : " (error)");
+	KLIPS_PRINT(
+		debug_xform,
+		"ipsec_sa_getbyid: "
+		"linked entry in ipsec_sa table for hash=%d of SA:%s requested.\n",
+		hashval, sa_len ? sa : " (error)");
 
-	if((ips = ipsec_sadb_hash[hashval]) == NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_sa_getbyid: "
-			    "no entries in ipsec_sa table for hash=%d of SA:%s.\n",
-			    hashval,
-			    sa_len ? sa : " (error)");
+	if ((ips = ipsec_sadb_hash[hashval]) == NULL) {
+		KLIPS_PRINT(
+			debug_xform,
+			"ipsec_sa_getbyid: "
+			"no entries in ipsec_sa table for hash=%d of SA:%s.\n",
+			hashval, sa_len ? sa : " (error)");
 		return NULL;
 	}
 
@@ -561,52 +569,46 @@ ipsec_sa_getbyid(ip_said *said, int type)
 	KLIPS_PRINT(debug_xform,
 		    "ipsec_sa_getbyid: "
 		    "no entry in linked list for hash=%d of SA:%s.\n",
-		    hashval,
-		    sa_len ? sa : " (error)");
+		    hashval, sa_len ? sa : " (error)");
 	return NULL;
 }
 
-struct ipsec_sa *
-ipsec_sa_getbyref(IPsecSAref_t ref, int type)
+struct ipsec_sa *ipsec_sa_getbyref(IPsecSAref_t ref, int type)
 {
 	struct ipsec_sa *ips;
-	struct IPsecSArefSubTable *st = ipsec_sadb.refTable[IPsecSAref2table(ref)];
+	struct IPsecSArefSubTable *st =
+		ipsec_sadb.refTable[IPsecSAref2table(ref)];
 
-	if(st == NULL) {
+	if (st == NULL) {
 		return NULL;
 	}
 
 	ips = st->entry[IPsecSAref2entry(ref)];
-	if(ips) {
+	if (ips) {
 		ipsec_sa_get(ips, type);
 	}
 	return ips;
 }
 
-
-void
-__ipsec_sa_put(struct ipsec_sa *ips, const char *func, int line, int type)
+void __ipsec_sa_put(struct ipsec_sa *ips, const char *func, int line, int type)
 {
-	if(ips == NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_sa_put: "
-			    "null pointer passed in!\n");
+	if (ips == NULL) {
+		KLIPS_PRINT(debug_xform, "ipsec_sa_put: "
+					 "null pointer passed in!\n");
 		return;
 	}
 
-	if(debug_xform) {
+	if (debug_xform) {
 		char sa[SATOT_BUF];
 		size_t sa_len;
 		sa_len = satot(&ips->ips_said, 0, sa, sizeof(sa));
 
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_sa_put: "
-			    "ipsec_sa %p SA:%s, ref:%d reference count (%d--) decremented by %s:%d.\n",
-			    ips,
-			    sa_len ? sa : " (error)",
-			    ips->ips_ref,
-			    atomic_read(&ips->ips_refcount),
-			    func, line);
+		KLIPS_PRINT(
+			debug_xform,
+			"ipsec_sa_put: "
+			"ipsec_sa %p SA:%s, ref:%d reference count (%d--) decremented by %s:%d.\n",
+			ips, sa_len ? sa : " (error)", ips->ips_ref,
+			atomic_read(&ips->ips_refcount), func, line);
 	}
 
 #ifdef IPSEC_SA_RECOUNT_DEBUG
@@ -614,7 +616,8 @@ __ipsec_sa_put(struct ipsec_sa *ips, const char *func, int line, int type)
 		unsigned long flags;
 		local_irq_save(flags);
 		if (ips->ips_track[type] == 0)
-			printk("ipsec_sa_put: UNDERFLOW for %d @ %s %d\n",type,func,line);
+			printk("ipsec_sa_put: UNDERFLOW for %d @ %s %d\n", type,
+			       func, line);
 		else
 			ips->ips_track[type]--;
 		local_irq_restore(flags);
@@ -622,10 +625,8 @@ __ipsec_sa_put(struct ipsec_sa *ips, const char *func, int line, int type)
 		printk("BAD BAD BAD @ %s %d\n", func, line);
 #endif
 
-	if(atomic_dec_and_test(&ips->ips_refcount)) {
-		KLIPS_PRINT(debug_xform,
-			    "ipsec_sa_put: freeing %p\n",
-			    ips);
+	if (atomic_dec_and_test(&ips->ips_refcount)) {
+		KLIPS_PRINT(debug_xform, "ipsec_sa_put: freeing %p\n", ips);
 		/* it was zero */
 		ipsec_sa_wipe(ips);
 	}
@@ -633,25 +634,23 @@ __ipsec_sa_put(struct ipsec_sa *ips, const char *func, int line, int type)
 	return;
 }
 
-struct ipsec_sa *
-__ipsec_sa_get(struct ipsec_sa *ips, const char *func, int line, int type)
+struct ipsec_sa *__ipsec_sa_get(struct ipsec_sa *ips, const char *func,
+				int line, int type)
 {
-        if (ips == NULL)
-                return NULL;
+	if (ips == NULL)
+		return NULL;
 
-	if(debug_xform) {
+	if (debug_xform) {
 		char sa[SATOT_BUF];
 		size_t sa_len;
-	  sa_len = satot(&ips->ips_said, 0, sa, sizeof(sa));
+		sa_len = satot(&ips->ips_said, 0, sa, sizeof(sa));
 
-	  KLIPS_PRINT(debug_xform,
-		      "ipsec_sa_get: "
-		      "ipsec_sa %p SA:%s, ref:%d reference count (%d++) incremented by %s:%d.\n",
-		      ips,
-		      sa_len ? sa : " (error)",
-		      ips->ips_ref,
-		      atomic_read(&ips->ips_refcount),
-		      func, line);
+		KLIPS_PRINT(
+			debug_xform,
+			"ipsec_sa_get: "
+			"ipsec_sa %p SA:%s, ref:%d reference count (%d++) incremented by %s:%d.\n",
+			ips, sa_len ? sa : " (error)", ips->ips_ref,
+			atomic_read(&ips->ips_refcount), func, line);
 	}
 
 	atomic_inc(&ips->ips_refcount);
@@ -661,7 +660,8 @@ __ipsec_sa_get(struct ipsec_sa *ips, const char *func, int line, int type)
 		unsigned long flags;
 		local_irq_save(flags);
 		if (ips->ips_track[type] == 255)
-			printk("ipsec_sa_get: OVERFLOW for %d @ %s %d\n",type,func,line);
+			printk("ipsec_sa_get: OVERFLOW for %d @ %s %d\n", type,
+			       func, line);
 		else
 			ips->ips_track[type]++;
 		local_irq_restore(flags);
@@ -684,22 +684,20 @@ __ipsec_sa_get(struct ipsec_sa *ips, const char *func, int line, int type)
 	}
 #endif
 
-        return ips;
+	return ips;
 }
 
 /*
   The ipsec_sa table better *NOT* be locked before it is handed in, or SMP locks will happen
 */
-int
-ipsec_sa_add(struct ipsec_sa *ips)
+int ipsec_sa_add(struct ipsec_sa *ips)
 {
 	int error = 0;
 	unsigned int hashval;
 
-	if(ips == NULL) {
-		KLIPS_PRINT(debug_xform,
-			    "klips_error:ipsec_sa_add: "
-			    "null pointer passed in!\n");
+	if (ips == NULL) {
+		KLIPS_PRINT(debug_xform, "klips_error:ipsec_sa_add: "
+					 "null pointer passed in!\n");
 		return -ENODATA;
 	}
 	hashval = IPS_HASH(&ips->ips_said);
@@ -721,12 +719,11 @@ ipsec_sa_add(struct ipsec_sa *ips)
 void ipsec_sa_rm(struct ipsec_sa *ips)
 {
 	unsigned int hashval;
-        char sa[SATOT_BUF];
+	char sa[SATOT_BUF];
 	size_t sa_len;
 
-
-	if(ips == NULL) return;
-
+	if (ips == NULL)
+		return;
 
 	hashval = IPS_HASH(&ips->ips_said);
 
@@ -734,11 +731,9 @@ void ipsec_sa_rm(struct ipsec_sa *ips)
 	KLIPS_PRINT(debug_xform,
 		    "klips_debug:ipsec_sa_del: "
 		    "unhashing SA:%s (ref=%u), hashval=%d.\n",
-		    sa_len ? sa : " (error)",
-		    ips->ips_ref,
-		    hashval);
+		    sa_len ? sa : " (error)", ips->ips_ref, hashval);
 
-	if(ipsec_sadb_hash[hashval] == NULL) {
+	if (ipsec_sadb_hash[hashval] == NULL) {
 		return;
 	}
 
@@ -753,22 +748,21 @@ void ipsec_sa_rm(struct ipsec_sa *ips)
 	} else {
 		struct ipsec_sa *ipstp;
 
-		for (ipstp = ipsec_sadb_hash[hashval];
-		     ipstp;
+		for (ipstp = ipsec_sadb_hash[hashval]; ipstp;
 		     ipstp = ipstp->ips_hnext) {
 			if (ipstp->ips_hnext == ips) {
 				ipstp->ips_hnext = ips->ips_hnext;
 				ips->ips_hnext = NULL;
 				ipsec_sa_put(ips, IPSEC_REFSAADD);
-				KLIPS_PRINT(debug_xform,
-					    "klips_debug:ipsec_sa_del: "
-					    "successfully unhashed link in ipsec_sa chain.\n");
+				KLIPS_PRINT(
+					debug_xform,
+					"klips_debug:ipsec_sa_del: "
+					"successfully unhashed link in ipsec_sa chain.\n");
 				return;
 			}
 		}
 	}
 }
-
 
 #if 0
 /*
@@ -857,8 +851,7 @@ ipsec_sa_del(struct ipsec_sa *ips)
 }
 #endif
 
-int
-ipsec_sadb_cleanup(__u8 proto)
+int ipsec_sadb_cleanup(__u8 proto)
 {
 	unsigned i;
 	int error = 0;
@@ -866,7 +859,6 @@ ipsec_sadb_cleanup(__u8 proto)
 	/* struct ipsec_sa *ipsnext, **ipsprev; */
 	/* char sa[SATOT_BUF]; */
 	/* size_t sa_len; */
-
 
 	KLIPS_PRINT(debug_xform,
 		    "klips_debug:ipsec_sadb_cleanup: "
@@ -878,35 +870,34 @@ ipsec_sadb_cleanup(__u8 proto)
 	for (i = 0; i < SADB_HASHMOD; i++) {
 		ips = ipsec_sadb_hash[i];
 
-		while(ips) {
-			ipsec_sadb_hash[i]=ips->ips_hnext;
-			ips->ips_hnext=NULL;
+		while (ips) {
+			ipsec_sadb_hash[i] = ips->ips_hnext;
+			ips->ips_hnext = NULL;
 			ipsec_sa_put(ips, IPSEC_REFSAADD);
 
 			ips = ipsec_sadb_hash[i];
 		}
 	}
 
-/* errlab: */
+	/* errlab: */
 
 	spin_unlock_bh(&tdb_lock);
-
 
 #if IPSEC_SA_REF_CODE
 	/* clean up SA reference table */
 
 	/* go through the ref table and clean out all the SAs */
-	KLIPS_PRINT(debug_xform,
-		    "klips_debug:ipsec_sadb_cleanup: "
-		    "removing SAref entries and tables.");
+	KLIPS_PRINT(debug_xform, "klips_debug:ipsec_sadb_cleanup: "
+				 "removing SAref entries and tables.");
 	{
 		unsigned table, entry;
-		for(table = 0; table < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES; table++) {
+		for (table = 0; table < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES;
+		     table++) {
 			KLIPS_PRINT(debug_xform,
 				    "klips_debug:ipsec_sadb_cleanup: "
 				    "cleaning SAref table=%u.\n",
 				    table);
-			if(ipsec_sadb.refTable[table] == NULL) {
+			if (ipsec_sadb.refTable[table] == NULL) {
 				printk("\n");
 				KLIPS_PRINT(debug_xform,
 					    "klips_debug:ipsec_sadb_cleanup: "
@@ -914,57 +905,69 @@ ipsec_sadb_cleanup(__u8 proto)
 					    table);
 				break;
 			}
-			for(entry = 0; entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES; entry++) {
-				if(ipsec_sadb.refTable[table]->entry[entry] != NULL) {
-					struct ipsec_sa *sa1 = ipsec_sadb.refTable[table]->entry[entry];
+			for (entry = 0;
+			     entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES;
+			     entry++) {
+				if (ipsec_sadb.refTable[table]->entry[entry] !=
+				    NULL) {
+					struct ipsec_sa *sa1 =
+						ipsec_sadb.refTable[table]
+							->entry[entry];
 					ipsec_sa_put(sa1, IPSEC_REFOTHER);
-					ipsec_sadb.refTable[table]->entry[entry] = NULL;
+					ipsec_sadb.refTable[table]
+						->entry[entry] = NULL;
 				}
 			}
 		}
 	}
 #endif /* IPSEC_SA_REF_CODE */
 
-	return(error);
+	return (error);
 }
 
-int
-ipsec_sadb_free(void)
+int ipsec_sadb_free(void)
 {
 	int error = 0;
 
-	KLIPS_PRINT(debug_xform,
-		    "klips_debug:ipsec_sadb_free: "
-		    "freeing SArefTable memory.\n");
+	KLIPS_PRINT(debug_xform, "klips_debug:ipsec_sadb_free: "
+				 "freeing SArefTable memory.\n");
 
 	/* clean up SA reference table */
 
 	/* go through the ref table and clean out all the SAs if any are
 	   left and free table memory */
-	KLIPS_PRINT(debug_xform,
-		    "klips_debug:ipsec_sadb_free: "
-		    "removing SAref entries and tables.\n");
+	KLIPS_PRINT(debug_xform, "klips_debug:ipsec_sadb_free: "
+				 "removing SAref entries and tables.\n");
 	{
 		unsigned table, entry;
-		for(table = 0; table < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES; table++) {
+		for (table = 0; table < IPSEC_SA_REF_MAINTABLE_NUM_ENTRIES;
+		     table++) {
 			KLIPS_PRINT(debug_xform,
 				    "klips_debug:ipsec_sadb_free: "
 				    "removing SAref table=%u.\n",
 				    table);
-			if(ipsec_sadb.refTable[table] == NULL) {
+			if (ipsec_sadb.refTable[table] == NULL) {
 				KLIPS_PRINT(debug_xform,
 					    "klips_debug:ipsec_sadb_free: "
 					    "removed %u used refTables.\n",
 					    table);
 				break;
 			}
-			for(entry = 0; entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES; entry++) {
-				if(ipsec_sadb.refTable[table]->entry[entry] != NULL) {
-					struct ipsec_sa *sa1 = ipsec_sadb.refTable[table]->entry[entry];
+			for (entry = 0;
+			     entry < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES;
+			     entry++) {
+				if (ipsec_sadb.refTable[table]->entry[entry] !=
+				    NULL) {
+					struct ipsec_sa *sa1 =
+						ipsec_sadb.refTable[table]
+							->entry[entry];
 
-					BUG_ON(atomic_read(&sa1->ips_refcount) == 1);
+					BUG_ON(atomic_read(
+						       &sa1->ips_refcount) ==
+					       1);
 					ipsec_sa_put(sa1, IPSEC_REFSAADD);
-					ipsec_sadb.refTable[table]->entry[entry] = NULL;
+					ipsec_sadb.refTable[table]
+						->entry[entry] = NULL;
 				}
 			}
 			kfree(ipsec_sadb.refTable[table]);
@@ -972,50 +975,48 @@ ipsec_sadb_free(void)
 		}
 	}
 
-	return(error);
+	return (error);
 }
 
-int
-ipsec_sa_wipe(struct ipsec_sa *ips)
+int ipsec_sa_wipe(struct ipsec_sa *ips)
 {
-	if(ips == NULL) {
+	if (ips == NULL) {
 		return -ENODATA;
 	}
 
 #if IPSEC_SA_REF_CODE
 	/* remove me from the SArefTable */
-	if(debug_xform)
-	{
+	if (debug_xform) {
 		char sa[SATOT_BUF];
 		size_t sa_len;
 		struct IPsecSArefSubTable *subtable = NULL;
 
-		if(IPsecSAref2table(IPsecSA2SAref(ips))<IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES
-		   && ipsec_sadb.refTable != NULL) {
-			subtable = ipsec_sadb.refTable[IPsecSAref2table(IPsecSA2SAref(ips))];
+		if (IPsecSAref2table(IPsecSA2SAref(ips)) <
+			    IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES &&
+		    ipsec_sadb.refTable != NULL) {
+			subtable = ipsec_sadb.refTable[IPsecSAref2table(
+				IPsecSA2SAref(ips))];
 		}
 
 		sa_len = satot(&ips->ips_said, 0, sa, sizeof(sa));
-		KLIPS_PRINT(debug_xform,
-			    "klips_debug:ipsec_sa_wipe: "
-			    "removing SA=%s(0p%p), SAref=%d, table=%d(0p%p), entry=%d from the refTable.\n",
-			    sa_len ? sa : " (error)",
-			    ips,
-			    ips->ips_ref,
-			    IPsecSAref2table(IPsecSA2SAref(ips)),
-			    subtable,
-			    subtable ? IPsecSAref2entry(IPsecSA2SAref(ips)) : 0);
+		KLIPS_PRINT(
+			debug_xform,
+			"klips_debug:ipsec_sa_wipe: "
+			"removing SA=%s(0p%p), SAref=%d, table=%d(0p%p), entry=%d from the refTable.\n",
+			sa_len ? sa : " (error)", ips, ips->ips_ref,
+			IPsecSAref2table(IPsecSA2SAref(ips)), subtable,
+			subtable ? IPsecSAref2entry(IPsecSA2SAref(ips)) : 0);
 	}
 
-	if(ips->ips_ref != IPSEC_SAREF_NULL) {
+	if (ips->ips_ref != IPSEC_SAREF_NULL) {
 		struct IPsecSArefSubTable *subtable = NULL;
-		int ref_table=IPsecSAref2table(IPsecSA2SAref(ips));
-		int ref_entry=IPsecSAref2entry(IPsecSA2SAref(ips));
+		int ref_table = IPsecSAref2table(IPsecSA2SAref(ips));
+		int ref_entry = IPsecSAref2entry(IPsecSA2SAref(ips));
 
-		if(ref_table < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES) {
+		if (ref_table < IPSEC_SA_REF_SUBTABLE_NUM_ENTRIES) {
 			subtable = ipsec_sadb.refTable[ref_table];
-			if(subtable!=NULL && subtable->entry[ref_entry] == ips) {
-
+			if (subtable != NULL &&
+			    subtable->entry[ref_entry] == ips) {
 				subtable->entry[ref_entry] = NULL;
 			}
 		}
@@ -1024,55 +1025,54 @@ ipsec_sa_wipe(struct ipsec_sa *ips)
 #endif /* IPSEC_SA_REF_CODE */
 
 	/* paranoid clean up */
-	if(ips->ips_addr_s != NULL) {
+	if (ips->ips_addr_s != NULL) {
 		memset((caddr_t)(ips->ips_addr_s), 0, ips->ips_addr_s_size);
 		kfree(ips->ips_addr_s);
 	}
 	ips->ips_addr_s = NULL;
 
-	if(ips->ips_addr_d != NULL) {
+	if (ips->ips_addr_d != NULL) {
 		memset((caddr_t)(ips->ips_addr_d), 0, ips->ips_addr_d_size);
 		kfree(ips->ips_addr_d);
 	}
 	ips->ips_addr_d = NULL;
 
-	if(ips->ips_addr_p != NULL) {
+	if (ips->ips_addr_p != NULL) {
 		memset((caddr_t)(ips->ips_addr_p), 0, ips->ips_addr_p_size);
 		kfree(ips->ips_addr_p);
 	}
 	ips->ips_addr_p = NULL;
 
 #ifdef NAT_TRAVERSAL
-	if(ips->ips_natt_oa) {
+	if (ips->ips_natt_oa) {
 		memset((caddr_t)(ips->ips_natt_oa), 0, ips->ips_natt_oa_size);
 		kfree(ips->ips_natt_oa);
 	}
 	ips->ips_natt_oa = NULL;
 #endif
 
-	if(ips->ips_key_a != NULL) {
+	if (ips->ips_key_a != NULL) {
 		memset((caddr_t)(ips->ips_key_a), 0, ips->ips_key_a_size);
 		kfree(ips->ips_key_a);
 	}
 	ips->ips_key_a = NULL;
 
-	if(ips->ips_key_e != NULL) {
+	if (ips->ips_key_e != NULL) {
 #ifdef CONFIG_KLIPS_ALG
-		if (ips->ips_alg_enc &&
-		    ips->ips_alg_enc->ixt_e_destroy_key)
-		{
+		if (ips->ips_alg_enc && ips->ips_alg_enc->ixt_e_destroy_key) {
 			ips->ips_alg_enc->ixt_e_destroy_key(ips->ips_alg_enc,
 							    ips->ips_key_e);
 		} else
 #endif
 		{
-			memset((caddr_t)(ips->ips_key_e), 0, ips->ips_key_e_size);
+			memset((caddr_t)(ips->ips_key_e), 0,
+			       ips->ips_key_e_size);
 			kfree(ips->ips_key_e);
 		}
 	}
 	ips->ips_key_e = NULL;
 
-	if(ips->ips_iv != NULL) {
+	if (ips->ips_iv != NULL) {
 		memset((caddr_t)(ips->ips_iv), 0, ips->ips_iv_size);
 		kfree(ips->ips_iv);
 	}
@@ -1083,24 +1083,24 @@ ipsec_sa_wipe(struct ipsec_sa *ips)
 		ipsec_ocf_sa_free(ips);
 #endif
 
-	if(ips->ips_ident_s.data != NULL) {
-		memset((caddr_t)(ips->ips_ident_s.data),
-                       0,
-		       ips->ips_ident_s.len * IPSEC_PFKEYv2_ALIGN - sizeof(struct sadb_ident));
+	if (ips->ips_ident_s.data != NULL) {
+		memset((caddr_t)(ips->ips_ident_s.data), 0,
+		       ips->ips_ident_s.len * IPSEC_PFKEYv2_ALIGN -
+			       sizeof(struct sadb_ident));
 		kfree(ips->ips_ident_s.data);
-        }
+	}
 	ips->ips_ident_s.data = NULL;
 
-	if(ips->ips_ident_d.data != NULL) {
-		memset((caddr_t)(ips->ips_ident_d.data),
-                       0,
-		       ips->ips_ident_d.len * IPSEC_PFKEYv2_ALIGN - sizeof(struct sadb_ident));
+	if (ips->ips_ident_d.data != NULL) {
+		memset((caddr_t)(ips->ips_ident_d.data), 0,
+		       ips->ips_ident_d.len * IPSEC_PFKEYv2_ALIGN -
+			       sizeof(struct sadb_ident));
 		kfree(ips->ips_ident_d.data);
-        }
+	}
 	ips->ips_ident_d.data = NULL;
 
 #ifdef CONFIG_KLIPS_ALG
-	if (ips->ips_alg_enc||ips->ips_alg_auth) {
+	if (ips->ips_alg_enc || ips->ips_alg_auth) {
 		ipsec_alg_sa_wipe(ips);
 	}
 	ips->ips_alg_enc = NULL;
@@ -1137,7 +1137,7 @@ ipsec_sa_wipe(struct ipsec_sa *ips)
 		}
 	}
 #endif
-	if(ips->ips_out != NULL) {
+	if (ips->ips_out != NULL) {
 		ipsec_dev_put(ips->ips_out);
 		ips->ips_out = NULL;
 	}
@@ -1153,28 +1153,27 @@ extern int sysctl_ipsec_debug_verbose;
 
 int ipsec_sa_init(struct ipsec_sa *ipsp)
 {
-        int error = 0;
-        char sa[SATOT_BUF];
+	int error = 0;
+	char sa[SATOT_BUF];
 	size_t sa_len;
 #ifdef CONFIG_KLIPS_DEBUG
 	char ipaddr_txt[ADDRTOA_BUF];
 	char ipaddr2_txt[ADDRTOA_BUF];
 #endif
-#if defined (CONFIG_KLIPS_AUTH_HMAC_MD5) || defined (CONFIG_KLIPS_AUTH_HMAC_SHA1)
+#if defined(CONFIG_KLIPS_AUTH_HMAC_MD5) || defined(CONFIG_KLIPS_AUTH_HMAC_SHA1)
 	unsigned char kb[AHMD596_BLKLEN];
 	int i;
 #endif
 
-	if(ipsp == NULL) {
-		KLIPS_PRINT(debug_pfkey,
-			    "ipsec_sa_init: "
-			    "ipsp is NULL, fatal\n");
+	if (ipsp == NULL) {
+		KLIPS_PRINT(debug_pfkey, "ipsec_sa_init: "
+					 "ipsp is NULL, fatal\n");
 		SENDERR(EINVAL);
 	}
 
 	sa_len = KLIPS_SATOT(debug_pfkey, &ipsp->ips_said, 0, sa, sizeof(sa));
 
-        KLIPS_PRINT(debug_pfkey,
+	KLIPS_PRINT(debug_pfkey,
 		    "ipsec_sa_init: "
 		    "(pfkey defined) called for SA:%s\n",
 		    sa_len ? sa : " (error)");
@@ -1184,21 +1183,21 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 		    "calling init routine of %s%s%s\n",
 		    IPS_XFORM_NAME(ipsp));
 
-	switch(ipsp->ips_said.proto) {
+	switch (ipsp->ips_said.proto) {
 #ifdef CONFIG_KLIPS_IPIP
 	case IPPROTO_IPIP: {
 		ipsp->ips_xformfuncs = ipip_xform_funcs;
 #ifdef CONFIG_KLIPS_DEBUG
-		sin_addrtot(ipsp->ips_addr_s, 0, ipaddr_txt, sizeof(ipaddr_txt));
-		sin_addrtot(ipsp->ips_addr_d, 0, ipaddr2_txt, sizeof(ipaddr2_txt));
+		sin_addrtot(ipsp->ips_addr_s, 0, ipaddr_txt,
+			    sizeof(ipaddr_txt));
+		sin_addrtot(ipsp->ips_addr_d, 0, ipaddr2_txt,
+			    sizeof(ipaddr2_txt));
 		KLIPS_PRINT(debug_pfkey,
 			    "ipsec_sa_init: "
 			    "(pfkey defined) IPIP ipsec_sa set for %s->%s.\n",
-			    ipaddr_txt,
-			    ipaddr2_txt);
+			    ipaddr_txt, ipaddr2_txt);
 #endif
-	}
-	break;
+	} break;
 #endif /* !CONFIG_KLIPS_IPIP */
 
 #ifdef CONFIG_KLIPS_AH
@@ -1208,34 +1207,37 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 
 #ifdef CONFIG_KLIPS_OCF
 		if (ipsec_ocf_sa_init(ipsp, ipsp->ips_authalg, 0))
-		    break;
+			break;
 #endif
 
-		switch(ipsp->ips_authalg) {
-# ifdef CONFIG_KLIPS_AUTH_HMAC_MD5
+		switch (ipsp->ips_authalg) {
+#ifdef CONFIG_KLIPS_AUTH_HMAC_MD5
 		case AH_MD5: {
 			unsigned char *akp;
 			unsigned int aks;
 			MD5_CTX *ictx;
 			MD5_CTX *octx;
 
-			if(ipsp->ips_key_bits_a != (AHMD596_KLEN * 8)) {
-				KLIPS_PRINT(debug_pfkey,
-					    "ipsec_sa_init: "
-					    "incorrect key size: %d bits -- must be %d bits\n"/*octets (bytes)\n"*/,
-					    ipsp->ips_key_bits_a, AHMD596_KLEN * 8);
+			if (ipsp->ips_key_bits_a != (AHMD596_KLEN * 8)) {
+				KLIPS_PRINT(
+					debug_pfkey,
+					"ipsec_sa_init: "
+					"incorrect key size: %d bits -- must be %d bits\n" /*octets (bytes)\n"*/
+					,
+					ipsp->ips_key_bits_a, AHMD596_KLEN * 8);
 				SENDERR(EINVAL);
 			}
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "hmac md5-96 key is 0x%08x %08x %08x %08x\n",
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+0)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+1)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+2)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+3)));
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
+#if KLIPS_DIVULGE_HMAC_KEY
+			KLIPS_PRINT(
+				debug_pfkey && sysctl_ipsec_debug_verbose,
+				"ipsec_sa_init: "
+				"hmac md5-96 key is 0x%08x %08x %08x %08x\n",
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 0)),
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 1)),
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 2)),
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 3)));
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
 
 			ipsp->ips_auth_bits = AHMD596_ALEN * 8;
 
@@ -1244,11 +1246,12 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 			aks = ipsp->ips_key_a_size;
 
 			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-			           "ipsec_sa_init: "
-			           "allocating %lu bytes for md5_ctx.\n",
-			           (unsigned long) sizeof(struct md5_ctx));
-			if((ipsp->ips_key_a = (caddr_t)
-			    kmalloc(sizeof(struct md5_ctx), GFP_ATOMIC)) == NULL) {
+				    "ipsec_sa_init: "
+				    "allocating %lu bytes for md5_ctx.\n",
+				    (unsigned long)sizeof(struct md5_ctx));
+			if ((ipsp->ips_key_a =
+				     (caddr_t)kmalloc(sizeof(struct md5_ctx),
+						      GFP_ATOMIC)) == NULL) {
 				ipsp->ips_key_a = akp;
 				SENDERR(ENOMEM);
 			}
@@ -1261,7 +1264,7 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 				kb[i] = HMAC_IPAD;
 			}
 
-			ictx = &(((struct md5_ctx*)(ipsp->ips_key_a))->ictx);
+			ictx = &(((struct md5_ctx *)(ipsp->ips_key_a))->ictx);
 			osMD5Init(ictx);
 			osMD5Update(ictx, kb, AHMD596_BLKLEN);
 
@@ -1269,54 +1272,54 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 				kb[i] ^= (HMAC_IPAD ^ HMAC_OPAD);
 			}
 
-			octx = &(((struct md5_ctx*)(ipsp->ips_key_a))->octx);
+			octx = &(((struct md5_ctx *)(ipsp->ips_key_a))->octx);
 			osMD5Init(octx);
 			osMD5Update(octx, kb, AHMD596_BLKLEN);
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "MD5 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
-				    ((__u32*)ictx)[0],
-				    ((__u32*)ictx)[1],
-				    ((__u32*)ictx)[2],
-				    ((__u32*)ictx)[3],
-				    ((__u32*)octx)[0],
-				    ((__u32*)octx)[1],
-				    ((__u32*)octx)[2],
-				    ((__u32*)octx)[3] );
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
+#if KLIPS_DIVULGE_HMAC_KEY
+			KLIPS_PRINT(
+				debug_pfkey && sysctl_ipsec_debug_verbose,
+				"ipsec_sa_init: "
+				"MD5 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
+				((__u32 *)ictx)[0], ((__u32 *)ictx)[1],
+				((__u32 *)ictx)[2], ((__u32 *)ictx)[3],
+				((__u32 *)octx)[0], ((__u32 *)octx)[1],
+				((__u32 *)octx)[2], ((__u32 *)octx)[3]);
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
 
 			/* zero key buffer -- paranoid */
 			memset(akp, 0, aks);
 			kfree(akp);
-		}
-		break;
-# endif /* CONFIG_KLIPS_AUTH_HMAC_MD5 */
-# ifdef CONFIG_KLIPS_AUTH_HMAC_SHA1
+		} break;
+#endif /* CONFIG_KLIPS_AUTH_HMAC_MD5 */
+#ifdef CONFIG_KLIPS_AUTH_HMAC_SHA1
 		case AH_SHA: {
 			unsigned char *akp;
 			unsigned int aks;
 			SHA1_CTX *ictx;
 			SHA1_CTX *octx;
 
-			if(ipsp->ips_key_bits_a != (AHSHA196_KLEN * 8)) {
-				KLIPS_PRINT(debug_pfkey,
-					    "ipsec_sa_init: "
-					    "incorrect key size: %d bits -- must be %d bits\n"/*octets (bytes)\n"*/,
-					    ipsp->ips_key_bits_a, AHSHA196_KLEN * 8);
+			if (ipsp->ips_key_bits_a != (AHSHA196_KLEN * 8)) {
+				KLIPS_PRINT(
+					debug_pfkey,
+					"ipsec_sa_init: "
+					"incorrect key size: %d bits -- must be %d bits\n" /*octets (bytes)\n"*/
+					,
+					ipsp->ips_key_bits_a,
+					AHSHA196_KLEN * 8);
 				SENDERR(EINVAL);
 			}
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "hmac sha1-96 key is 0x%08x %08x %08x %08x\n",
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+0)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+1)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+2)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+3)));
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
+#if KLIPS_DIVULGE_HMAC_KEY
+			KLIPS_PRINT(
+				debug_pfkey && sysctl_ipsec_debug_verbose,
+				"ipsec_sa_init: "
+				"hmac sha1-96 key is 0x%08x %08x %08x %08x\n",
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 0)),
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 1)),
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 2)),
+				ntohl(*(((__u32 *)ipsp->ips_key_a) + 3)));
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
 
 			ipsp->ips_auth_bits = AHSHA196_ALEN * 8;
 
@@ -1325,11 +1328,12 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 			aks = ipsp->ips_key_a_size;
 
 			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-			            "ipsec_sa_init: "
-			            "allocating %lu bytes for sha1_ctx.\n",
-			            (unsigned long) sizeof(struct sha1_ctx));
-			if((ipsp->ips_key_a = (caddr_t)
-			    kmalloc(sizeof(struct sha1_ctx), GFP_ATOMIC)) == NULL) {
+				    "ipsec_sa_init: "
+				    "allocating %lu bytes for sha1_ctx.\n",
+				    (unsigned long)sizeof(struct sha1_ctx));
+			if ((ipsp->ips_key_a =
+				     (caddr_t)kmalloc(sizeof(struct sha1_ctx),
+						      GFP_ATOMIC)) == NULL) {
 				ipsp->ips_key_a = akp;
 				SENDERR(ENOMEM);
 			}
@@ -1342,7 +1346,7 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 				kb[i] = HMAC_IPAD;
 			}
 
-			ictx = &(((struct sha1_ctx*)(ipsp->ips_key_a))->ictx);
+			ictx = &(((struct sha1_ctx *)(ipsp->ips_key_a))->ictx);
 			SHA1Init(ictx);
 			SHA1Update(ictx, kb, AHSHA196_BLKLEN);
 
@@ -1350,251 +1354,303 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 				kb[i] ^= (HMAC_IPAD ^ HMAC_OPAD);
 			}
 
-			octx = &(((struct sha1_ctx*)(ipsp->ips_key_a))->octx);
+			octx = &(((struct sha1_ctx *)(ipsp->ips_key_a))->octx);
 			SHA1Init(octx);
 			SHA1Update(octx, kb, AHSHA196_BLKLEN);
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "SHA1 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
-				    ((__u32*)ictx)[0],
-				    ((__u32*)ictx)[1],
-				    ((__u32*)ictx)[2],
-				    ((__u32*)ictx)[3],
-				    ((__u32*)octx)[0],
-				    ((__u32*)octx)[1],
-				    ((__u32*)octx)[2],
-				    ((__u32*)octx)[3] );
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
+#if KLIPS_DIVULGE_HMAC_KEY
+			KLIPS_PRINT(
+				debug_pfkey && sysctl_ipsec_debug_verbose,
+				"ipsec_sa_init: "
+				"SHA1 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
+				((__u32 *)ictx)[0], ((__u32 *)ictx)[1],
+				((__u32 *)ictx)[2], ((__u32 *)ictx)[3],
+				((__u32 *)octx)[0], ((__u32 *)octx)[1],
+				((__u32 *)octx)[2], ((__u32 *)octx)[3]);
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
 			/* zero key buffer -- paranoid */
 			memset(akp, 0, aks);
 			kfree(akp);
-		}
-		break;
-# endif /* CONFIG_KLIPS_AUTH_HMAC_SHA1 */
+		} break;
+#endif /* CONFIG_KLIPS_AUTH_HMAC_SHA1 */
 		default:
-			KLIPS_PRINT(debug_pfkey,
-				    "ipsec_sa_init: "
-				    "authalg=%d support not available in the kernel",
-				    ipsp->ips_authalg);
+			KLIPS_PRINT(
+				debug_pfkey,
+				"ipsec_sa_init: "
+				"authalg=%d support not available in the kernel",
+				ipsp->ips_authalg);
 			SENDERR(EINVAL);
 		}
-	break;
+		break;
 #endif /* CONFIG_KLIPS_AH */
 
 #ifdef CONFIG_KLIPS_ESP
 	case IPPROTO_ESP:
 		ipsp->ips_xformfuncs = esp_xform_funcs;
-	{
+		{
 #ifdef CONFIG_KLIPS_OCF
-		if (ipsec_ocf_sa_init(ipsp, ipsp->ips_authalg, ipsp->ips_encalg))
-		    break;
+			if (ipsec_ocf_sa_init(ipsp, ipsp->ips_authalg,
+					      ipsp->ips_encalg))
+				break;
 #endif
 
 #ifdef CONFIG_KLIPS_ALG
-		error = ipsec_alg_enc_key_create(ipsp);
-		if (error < 0)
-			SENDERR(-error);
+			error = ipsec_alg_enc_key_create(ipsp);
+			if (error < 0)
+				SENDERR(-error);
 
-		error = ipsec_alg_auth_key_create(ipsp);
-		if ((error < 0) && (error != -EPROTO))
-			SENDERR(-error);
+			error = ipsec_alg_auth_key_create(ipsp);
+			if ((error < 0) && (error != -EPROTO))
+				SENDERR(-error);
 
-		if (error == -EPROTO) {
-			/* perform manual key generation,
+			if (error == -EPROTO) {
+				/* perform manual key generation,
 			   ignore this particular error */
-			error = 0;
+				error = 0;
 #endif /* CONFIG_KLIPS_ALG */
 
-		switch(ipsp->ips_authalg) {
-#if defined (CONFIG_KLIPS_AUTH_HMAC_MD5) || defined (CONFIG_KLIPS_AUTH_HMAC_SHA1)
-		unsigned char *akp;
-		unsigned int aks;
+				switch (ipsp->ips_authalg) {
+#if defined(CONFIG_KLIPS_AUTH_HMAC_MD5) || defined(CONFIG_KLIPS_AUTH_HMAC_SHA1)
+					unsigned char *akp;
+					unsigned int aks;
 #endif
-# ifdef CONFIG_KLIPS_AUTH_HMAC_MD5
-		case AH_MD5: {
-			MD5_CTX *ictx;
-			MD5_CTX *octx;
+#ifdef CONFIG_KLIPS_AUTH_HMAC_MD5
+				case AH_MD5: {
+					MD5_CTX *ictx;
+					MD5_CTX *octx;
 
-			if(ipsp->ips_key_bits_a != (AHMD596_KLEN * 8)) {
-				KLIPS_PRINT(debug_pfkey,
-					    "ipsec_sa_init: "
-					    "incorrect authorisation key size: %d bits -- must be %d bits\n"/*octets (bytes)\n"*/,
-					    ipsp->ips_key_bits_a,
-					    AHMD596_KLEN * 8);
-				SENDERR(EINVAL);
-			}
+					if (ipsp->ips_key_bits_a !=
+					    (AHMD596_KLEN * 8)) {
+						KLIPS_PRINT(
+							debug_pfkey,
+							"ipsec_sa_init: "
+							"incorrect authorisation key size: %d bits -- must be %d bits\n" /*octets (bytes)\n"*/
+							,
+							ipsp->ips_key_bits_a,
+							AHMD596_KLEN * 8);
+						SENDERR(EINVAL);
+					}
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "hmac md5-96 key is 0x%08x %08x %08x %08x\n",
-				    ntohl(*(((__u32 *)(ipsp->ips_key_a))+0)),
-				    ntohl(*(((__u32 *)(ipsp->ips_key_a))+1)),
-				    ntohl(*(((__u32 *)(ipsp->ips_key_a))+2)),
-				    ntohl(*(((__u32 *)(ipsp->ips_key_a))+3)));
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
-			ipsp->ips_auth_bits = AHMD596_ALEN * 8;
+#if KLIPS_DIVULGE_HMAC_KEY
+					KLIPS_PRINT(
+						debug_pfkey &&
+							sysctl_ipsec_debug_verbose,
+						"ipsec_sa_init: "
+						"hmac md5-96 key is 0x%08x %08x %08x %08x\n",
+						ntohl(*(((__u32 *)(ipsp->ips_key_a)) +
+							0)),
+						ntohl(*(((__u32 *)(ipsp->ips_key_a)) +
+							1)),
+						ntohl(*(((__u32 *)(ipsp->ips_key_a)) +
+							2)),
+						ntohl(*(((__u32 *)(ipsp->ips_key_a)) +
+							3)));
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
+					ipsp->ips_auth_bits = AHMD596_ALEN * 8;
 
-			/* save the pointer to the key material */
-			akp = ipsp->ips_key_a;
-			aks = ipsp->ips_key_a_size;
+					/* save the pointer to the key material */
+					akp = ipsp->ips_key_a;
+					aks = ipsp->ips_key_a_size;
 
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-			            "ipsec_sa_init: "
-			            "allocating %lu bytes for md5_ctx.\n",
-			            (unsigned long) sizeof(struct md5_ctx));
-			if((ipsp->ips_key_a = (caddr_t)
-			    kmalloc(sizeof(struct md5_ctx), GFP_ATOMIC)) == NULL) {
-				ipsp->ips_key_a = akp;
-				SENDERR(ENOMEM);
-			}
-			ipsp->ips_key_a_size = sizeof(struct md5_ctx);
+					KLIPS_PRINT(
+						debug_pfkey &&
+							sysctl_ipsec_debug_verbose,
+						"ipsec_sa_init: "
+						"allocating %lu bytes for md5_ctx.\n",
+						(unsigned long)sizeof(
+							struct md5_ctx));
+					if ((ipsp->ips_key_a = (caddr_t)kmalloc(
+						     sizeof(struct md5_ctx),
+						     GFP_ATOMIC)) == NULL) {
+						ipsp->ips_key_a = akp;
+						SENDERR(ENOMEM);
+					}
+					ipsp->ips_key_a_size =
+						sizeof(struct md5_ctx);
 
-			for (i = 0; i < DIVUP(ipsp->ips_key_bits_a, 8); i++) {
-				kb[i] = akp[i] ^ HMAC_IPAD;
-			}
-			for (; i < AHMD596_BLKLEN; i++) {
-				kb[i] = HMAC_IPAD;
-			}
+					for (i = 0;
+					     i < DIVUP(ipsp->ips_key_bits_a, 8);
+					     i++) {
+						kb[i] = akp[i] ^ HMAC_IPAD;
+					}
+					for (; i < AHMD596_BLKLEN; i++) {
+						kb[i] = HMAC_IPAD;
+					}
 
-			ictx = &(((struct md5_ctx*)(ipsp->ips_key_a))->ictx);
-			osMD5Init(ictx);
-			osMD5Update(ictx, kb, AHMD596_BLKLEN);
+					ictx = &(((struct md5_ctx
+							   *)(ipsp->ips_key_a))
+							 ->ictx);
+					osMD5Init(ictx);
+					osMD5Update(ictx, kb, AHMD596_BLKLEN);
 
-			for (i = 0; i < AHMD596_BLKLEN; i++) {
-				kb[i] ^= (HMAC_IPAD ^ HMAC_OPAD);
-			}
+					for (i = 0; i < AHMD596_BLKLEN; i++) {
+						kb[i] ^=
+							(HMAC_IPAD ^ HMAC_OPAD);
+					}
 
-			octx = &(((struct md5_ctx*)(ipsp->ips_key_a))->octx);
-			osMD5Init(octx);
-			osMD5Update(octx, kb, AHMD596_BLKLEN);
+					octx = &(((struct md5_ctx
+							   *)(ipsp->ips_key_a))
+							 ->octx);
+					osMD5Init(octx);
+					osMD5Update(octx, kb, AHMD596_BLKLEN);
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "MD5 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
-				    ((__u32*)ictx)[0],
-				    ((__u32*)ictx)[1],
-				    ((__u32*)ictx)[2],
-				    ((__u32*)ictx)[3],
-				    ((__u32*)octx)[0],
-				    ((__u32*)octx)[1],
-				    ((__u32*)octx)[2],
-				    ((__u32*)octx)[3] );
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
-			/* paranoid */
-			memset(akp, 0, aks);
-			kfree(akp);
-			break;
-		}
-# endif /* CONFIG_KLIPS_AUTH_HMAC_MD5 */
-# ifdef CONFIG_KLIPS_AUTH_HMAC_SHA1
-		case AH_SHA: {
-			SHA1_CTX *ictx;
-			SHA1_CTX *octx;
+#if KLIPS_DIVULGE_HMAC_KEY
+					KLIPS_PRINT(
+						debug_pfkey &&
+							sysctl_ipsec_debug_verbose,
+						"ipsec_sa_init: "
+						"MD5 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
+						((__u32 *)ictx)[0],
+						((__u32 *)ictx)[1],
+						((__u32 *)ictx)[2],
+						((__u32 *)ictx)[3],
+						((__u32 *)octx)[0],
+						((__u32 *)octx)[1],
+						((__u32 *)octx)[2],
+						((__u32 *)octx)[3]);
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
+					/* paranoid */
+					memset(akp, 0, aks);
+					kfree(akp);
+					break;
+				}
+#endif /* CONFIG_KLIPS_AUTH_HMAC_MD5 */
+#ifdef CONFIG_KLIPS_AUTH_HMAC_SHA1
+				case AH_SHA: {
+					SHA1_CTX *ictx;
+					SHA1_CTX *octx;
 
-			if(ipsp->ips_key_bits_a != (AHSHA196_KLEN * 8)) {
-				KLIPS_PRINT(debug_pfkey,
-					    "ipsec_sa_init: "
-					    "incorrect authorisation key size: %d bits -- must be %d bits\n"/*octets (bytes)\n"*/,
-					    ipsp->ips_key_bits_a,
-					    AHSHA196_KLEN * 8);
-				SENDERR(EINVAL);
-			}
+					if (ipsp->ips_key_bits_a !=
+					    (AHSHA196_KLEN * 8)) {
+						KLIPS_PRINT(
+							debug_pfkey,
+							"ipsec_sa_init: "
+							"incorrect authorisation key size: %d bits -- must be %d bits\n" /*octets (bytes)\n"*/
+							,
+							ipsp->ips_key_bits_a,
+							AHSHA196_KLEN * 8);
+						SENDERR(EINVAL);
+					}
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "hmac sha1-96 key is 0x%08x %08x %08x %08x\n",
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+0)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+1)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+2)),
-				    ntohl(*(((__u32 *)ipsp->ips_key_a)+3)));
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
-			ipsp->ips_auth_bits = AHSHA196_ALEN * 8;
+#if KLIPS_DIVULGE_HMAC_KEY
+					KLIPS_PRINT(
+						debug_pfkey &&
+							sysctl_ipsec_debug_verbose,
+						"ipsec_sa_init: "
+						"hmac sha1-96 key is 0x%08x %08x %08x %08x\n",
+						ntohl(*(((__u32 *)ipsp
+								 ->ips_key_a) +
+							0)),
+						ntohl(*(((__u32 *)ipsp
+								 ->ips_key_a) +
+							1)),
+						ntohl(*(((__u32 *)ipsp
+								 ->ips_key_a) +
+							2)),
+						ntohl(*(((__u32 *)ipsp
+								 ->ips_key_a) +
+							3)));
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
+					ipsp->ips_auth_bits = AHSHA196_ALEN * 8;
 
-			/* save the pointer to the key material */
-			akp = ipsp->ips_key_a;
-			aks = ipsp->ips_key_a_size;
+					/* save the pointer to the key material */
+					akp = ipsp->ips_key_a;
+					aks = ipsp->ips_key_a_size;
 
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-			            "ipsec_sa_init: "
-			            "allocating %lu bytes for sha1_ctx.\n",
-			            (unsigned long) sizeof(struct sha1_ctx));
-			if((ipsp->ips_key_a = (caddr_t)
-			    kmalloc(sizeof(struct sha1_ctx), GFP_ATOMIC)) == NULL) {
-				ipsp->ips_key_a = akp;
-				SENDERR(ENOMEM);
-			}
-			ipsp->ips_key_a_size = sizeof(struct sha1_ctx);
+					KLIPS_PRINT(
+						debug_pfkey &&
+							sysctl_ipsec_debug_verbose,
+						"ipsec_sa_init: "
+						"allocating %lu bytes for sha1_ctx.\n",
+						(unsigned long)sizeof(
+							struct sha1_ctx));
+					if ((ipsp->ips_key_a = (caddr_t)kmalloc(
+						     sizeof(struct sha1_ctx),
+						     GFP_ATOMIC)) == NULL) {
+						ipsp->ips_key_a = akp;
+						SENDERR(ENOMEM);
+					}
+					ipsp->ips_key_a_size =
+						sizeof(struct sha1_ctx);
 
-			for (i = 0; i < DIVUP(ipsp->ips_key_bits_a, 8); i++) {
-				kb[i] = akp[i] ^ HMAC_IPAD;
-			}
-			for (; i < AHMD596_BLKLEN; i++) {
-				kb[i] = HMAC_IPAD;
-			}
+					for (i = 0;
+					     i < DIVUP(ipsp->ips_key_bits_a, 8);
+					     i++) {
+						kb[i] = akp[i] ^ HMAC_IPAD;
+					}
+					for (; i < AHMD596_BLKLEN; i++) {
+						kb[i] = HMAC_IPAD;
+					}
 
-			ictx = &(((struct sha1_ctx*)(ipsp->ips_key_a))->ictx);
-			SHA1Init(ictx);
-			SHA1Update(ictx, kb, AHSHA196_BLKLEN);
+					ictx = &(((struct sha1_ctx
+							   *)(ipsp->ips_key_a))
+							 ->ictx);
+					SHA1Init(ictx);
+					SHA1Update(ictx, kb, AHSHA196_BLKLEN);
 
-			for (i = 0; i < AHSHA196_BLKLEN; i++) {
-				kb[i] ^= (HMAC_IPAD ^ HMAC_OPAD);
-			}
+					for (i = 0; i < AHSHA196_BLKLEN; i++) {
+						kb[i] ^=
+							(HMAC_IPAD ^ HMAC_OPAD);
+					}
 
-			octx = &((struct sha1_ctx*)(ipsp->ips_key_a))->octx;
-			SHA1Init(octx);
-			SHA1Update(octx, kb, AHSHA196_BLKLEN);
+					octx = &((struct sha1_ctx
+							  *)(ipsp->ips_key_a))
+							->octx;
+					SHA1Init(octx);
+					SHA1Update(octx, kb, AHSHA196_BLKLEN);
 
-#  if KLIPS_DIVULGE_HMAC_KEY
-			KLIPS_PRINT(debug_pfkey && sysctl_ipsec_debug_verbose,
-				    "ipsec_sa_init: "
-				    "SHA1 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
-				    ((__u32*)ictx)[0],
-				    ((__u32*)ictx)[1],
-				    ((__u32*)ictx)[2],
-				    ((__u32*)ictx)[3],
-				    ((__u32*)octx)[0],
-				    ((__u32*)octx)[1],
-				    ((__u32*)octx)[2],
-				    ((__u32*)octx)[3] );
-#  endif /* KLIPS_DIVULGE_HMAC_KEY */
-			memset(akp, 0, aks);
-			kfree(akp);
-			break;
-		}
-# endif /* CONFIG_KLIPS_AUTH_HMAC_SHA1 */
-		case AH_NONE:
-			break;
-		default:
-			KLIPS_PRINT(debug_pfkey,
-				    "ipsec_sa_init: "
-				    "authalg=%d support not available in the kernel.\n",
-				    ipsp->ips_authalg);
-			SENDERR(EINVAL);
-		}
+#if KLIPS_DIVULGE_HMAC_KEY
+					KLIPS_PRINT(
+						debug_pfkey &&
+							sysctl_ipsec_debug_verbose,
+						"ipsec_sa_init: "
+						"SHA1 ictx=0x%08x %08x %08x %08x octx=0x%08x %08x %08x %08x\n",
+						((__u32 *)ictx)[0],
+						((__u32 *)ictx)[1],
+						((__u32 *)ictx)[2],
+						((__u32 *)ictx)[3],
+						((__u32 *)octx)[0],
+						((__u32 *)octx)[1],
+						((__u32 *)octx)[2],
+						((__u32 *)octx)[3]);
+#endif /* KLIPS_DIVULGE_HMAC_KEY */
+					memset(akp, 0, aks);
+					kfree(akp);
+					break;
+				}
+#endif /* CONFIG_KLIPS_AUTH_HMAC_SHA1 */
+				case AH_NONE:
+					break;
+				default:
+					KLIPS_PRINT(
+						debug_pfkey,
+						"ipsec_sa_init: "
+						"authalg=%d support not available in the kernel.\n",
+						ipsp->ips_authalg);
+					SENDERR(EINVAL);
+				}
 #ifdef CONFIG_KLIPS_ALG
-		/* closure of the -EPROTO condition above */
-		}
+				/* closure of the -EPROTO condition above */
+			}
 #endif
 
-		ipsp->ips_iv_size = ipsp->ips_alg_enc->ixt_common.ixt_support.ias_ivlen/8;
+			ipsp->ips_iv_size = ipsp->ips_alg_enc->ixt_common
+						    .ixt_support.ias_ivlen /
+					    8;
 
-		/* Create IV */
-		if (ipsp->ips_iv_size) {
-			if ((ipsp->ips_iv =
-			     (caddr_t)kmalloc(ipsp->ips_iv_size, GFP_ATOMIC)) == NULL) {
-				SENDERR(ENOMEM);
+			/* Create IV */
+			if (ipsp->ips_iv_size) {
+				if ((ipsp->ips_iv = (caddr_t)kmalloc(
+					     ipsp->ips_iv_size, GFP_ATOMIC)) ==
+				    NULL) {
+					SENDERR(ENOMEM);
+				}
+				prng_bytes(&ipsec_prng, (char *)ipsp->ips_iv,
+					   ipsp->ips_iv_size);
+				ipsp->ips_iv_bits = ipsp->ips_iv_size * 8;
 			}
-			prng_bytes(&ipsec_prng, (char *)ipsp->ips_iv,
-				   ipsp->ips_iv_size);
-			ipsp->ips_iv_bits = ipsp->ips_iv_size * 8;
 		}
-	}
-	break;
+		break;
 #endif /* !CONFIG_KLIPS_ESP */
 #ifdef CONFIG_KLIPS_IPCOMP
 	case IPPROTO_COMP:
@@ -1619,13 +1675,13 @@ int ipsec_sa_init(struct ipsec_sa *ipsp)
 #endif /* CONFIG_KLIPS_IPCOMP */
 	default:
 		printk(KERN_ERR "KLIPS sa initialization: "
-		       "proto=%d unknown.\n",
+				"proto=%d unknown.\n",
 		       ipsp->ips_said.proto);
 		SENDERR(EINVAL);
 	}
 
 errlab:
-	return(error);
+	return (error);
 }
 
 /*
@@ -1635,4 +1691,3 @@ errlab:
  * End:
  *
  */
-

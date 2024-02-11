@@ -15,12 +15,11 @@
 #ifndef _STARTER_PLUTO_H_
 #define _STARTER_PLUTO_H_
 
-#define PLUTO_RESTART_DELAY    5
+#define PLUTO_RESTART_DELAY 5
 
-void starter_pluto_sigchild (pid_t pid);
-pid_t starter_pluto_pid (void);
-int starter_stop_pluto (void);
-int starter_start_pluto (struct starter_config *cfg, int debug);
+void starter_pluto_sigchild(pid_t pid);
+pid_t starter_pluto_pid(void);
+int starter_stop_pluto(void);
+int starter_start_pluto(struct starter_config *cfg, int debug);
 
 #endif /* _STARTER_PLUTO_H_ */
-

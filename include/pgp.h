@@ -18,7 +18,7 @@
 /*
  * Length of PGP V3 fingerprint
  */
-#define PGP_FINGERPRINT_SIZE	MD5_DIGEST_SIZE
+#define PGP_FINGERPRINT_SIZE MD5_DIGEST_SIZE
 
 typedef char fingerprint_t[PGP_FINGERPRINT_SIZE];
 
@@ -27,16 +27,16 @@ typedef char fingerprint_t[PGP_FINGERPRINT_SIZE];
 typedef struct pgpcert pgpcert_t;
 
 struct pgpcert {
-  pgpcert_t	    *next;
-  time_t	    installed;
-  int		    count;
-  chunk_t	    certificate;
-  time_t	    created;
-  time_t	    until;
-  enum pubkey_alg   pubkeyAlg;
-  chunk_t	    modulus;
-  chunk_t	    publicExponent;
-  fingerprint_t	    fingerprint;
+	pgpcert_t *next;
+	time_t installed;
+	int count;
+	chunk_t certificate;
+	time_t created;
+	time_t until;
+	enum pubkey_alg pubkeyAlg;
+	chunk_t modulus;
+	chunk_t publicExponent;
+	fingerprint_t fingerprint;
 };
 
 struct rsa_privkey;
@@ -45,7 +45,7 @@ extern const pgpcert_t empty_pgpcert;
 extern bool parse_pgp(chunk_t blob, pgpcert_t *cert, struct rsa_privkey *key);
 extern void share_pgpcert(pgpcert_t *cert);
 extern void select_pgpcert_id(pgpcert_t *cert, struct id *end_id);
-extern pgpcert_t* add_pgpcert(pgpcert_t **chain, pgpcert_t *cert);
+extern pgpcert_t *add_pgpcert(pgpcert_t **chain, pgpcert_t *cert);
 extern void list_pgp_end_certs(bool utc);
 extern void release_pgpcert(pgpcert_t **chain, pgpcert_t *cert);
 extern void free_pgpcert(pgpcert_t *cert);

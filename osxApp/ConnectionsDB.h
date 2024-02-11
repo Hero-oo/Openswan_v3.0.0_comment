@@ -9,11 +9,11 @@
 #import <Cocoa/Cocoa.h>
 
 @interface ConnectionsDB : NSObject <NSCoding> {
-	NSMutableArray* connDB;
+	NSMutableArray *connDB;
 }
 
-@property (readwrite, retain) NSMutableArray* connDB;
+@property (readwrite, retain) NSMutableArray *connDB;
 
-+ (ConnectionsDB*)sharedInstance;
++ (ConnectionsDB *)sharedInstance;
 
 @end

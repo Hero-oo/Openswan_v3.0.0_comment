@@ -27,8 +27,8 @@
 #include "pluto/ike_alg.h"
 
 #ifdef HAVE_LIBNSS
-# include <pk11pub.h>
-# include "oswlog.h"
+#include <pk11pub.h>
+#include "oswlog.h"
 #endif
 
 static void sha256_hash_final(u_char *hash, sha256_context *ctx)
@@ -37,8 +37,8 @@ static void sha256_hash_final(u_char *hash, sha256_context *ctx)
 	unsigned int len;
 	SECStatus s;
 	s = PK11_DigestFinal(ctx->ctx_nss, hash, &len, SHA2_256_DIGEST_SIZE);
-	PR_ASSERT(len==SHA2_256_DIGEST_SIZE);
-	PR_ASSERT(s==SECSuccess);
+	PR_ASSERT(len == SHA2_256_DIGEST_SIZE);
+	PR_ASSERT(s == SECSuccess);
 	PK11_DestroyContext(ctx->ctx_nss, PR_TRUE);
 	DBG(DBG_CRYPT, DBG_log("NSS SHA 256 hash final : end"));
 #else
@@ -52,8 +52,8 @@ static void sha512_hash_final(u_char *hash, sha512_context *ctx)
 	unsigned int len;
 	SECStatus s;
 	s = PK11_DigestFinal(ctx->ctx_nss, hash, &len, SHA2_512_DIGEST_SIZE);
-	PR_ASSERT(len==SHA2_512_DIGEST_SIZE);
-	PR_ASSERT(s==SECSuccess);
+	PR_ASSERT(len == SHA2_512_DIGEST_SIZE);
+	PR_ASSERT(s == SECSuccess);
 	PK11_DestroyContext(ctx->ctx_nss, PR_TRUE);
 	DBG(DBG_CRYPT, DBG_log("NSS SHA 512 hash final : end"));
 #else
@@ -63,79 +63,87 @@ static void sha512_hash_final(u_char *hash, sha512_context *ctx)
 }
 
 struct ike_prf_desc hash_desc_sha2_256 = {
-	common:{officname:  "prfsha256",
+	common: {
+		officname: "prfsha256",
 		algo_type: IKEv2_TRANS_TYPE_PRF,
-		ikev1_algo_id:   OAKLEY_SHA2_256,
+		ikev1_algo_id: OAKLEY_SHA2_256,
 		algo_v2id: IKEv2_PRF_HMAC_SHA2_256,
-		algo_next: NULL, },
+		algo_next: NULL,
+	},
 	hash_ctx_size: sizeof(sha256_context),
 	hash_key_size: SHA2_256_DIGEST_SIZE,
 	hash_digest_len: SHA2_256_DIGEST_SIZE,
-	hash_integ_len: 0,	/*Not applicable*/
+	hash_integ_len: 0, /*Not applicable*/
 	hash_init: (void (*)(void *))sha256_init,
-	hash_update: (void (*)(void *, const u_char *, size_t ))sha256_write,
-	hash_final:(void (*)(u_char *, void *))sha256_hash_final,
+	hash_update: (void (*)(void *, const u_char *, size_t))sha256_write,
+	hash_final: (void (*)(u_char *, void *))sha256_hash_final,
 };
 
 struct ike_prf_desc hash_desc_sha2_512 = {
-	common:{officname:  "prfsha512",
+	common: {
+		officname: "prfsha512",
 		algo_type: IKEv2_TRANS_TYPE_PRF,
-		ikev1_algo_id:   OAKLEY_SHA2_512,
+		ikev1_algo_id: OAKLEY_SHA2_512,
 		algo_v2id: IKEv2_PRF_HMAC_SHA2_512,
-		algo_next: NULL, },
+		algo_next: NULL,
+	},
 	hash_ctx_size: sizeof(sha512_context),
 	hash_key_size: SHA2_512_DIGEST_SIZE,
 	hash_digest_len: SHA2_512_DIGEST_SIZE,
-	hash_integ_len: 0,	/*Not applicable*/
+	hash_integ_len: 0, /*Not applicable*/
 	hash_init: (void (*)(void *))sha512_init,
-	hash_update: (void (*)(void *, const u_char *, size_t ))sha512_write,
-	hash_final:(void (*)(u_char *, void *))sha512_hash_final,
+	hash_update: (void (*)(void *, const u_char *, size_t))sha512_write,
+	hash_final: (void (*)(u_char *, void *))sha512_hash_final,
 };
 
 struct ike_integ_desc integ_desc_sha2_256 = {
-        common:{officname:  "sha256",
+	common: {
+		officname: "sha256",
 		algo_type: IKEv2_TRANS_TYPE_INTEG,
-                ikev1_algo_id:   OAKLEY_SHA2_256,
-                algo_v2id: IKEv2_AUTH_HMAC_SHA2_256_128,
-                algo_next: NULL, },
-        hash_ctx_size: sizeof(sha256_context),
-        hash_key_size: SHA2_256_DIGEST_SIZE,
-        hash_digest_len: SHA2_256_DIGEST_SIZE,
-        hash_integ_len: SHA2_256_DIGEST_SIZE/2,
-        hash_init: (void (*)(void *))sha256_init,
-        hash_update: (void (*)(void *, const u_char *, size_t ))sha256_write,
-        hash_final:(void (*)(u_char *, void *))sha256_hash_final,
+		ikev1_algo_id: OAKLEY_SHA2_256,
+		algo_v2id: IKEv2_AUTH_HMAC_SHA2_256_128,
+		algo_next: NULL,
+	},
+	hash_ctx_size: sizeof(sha256_context),
+	hash_key_size: SHA2_256_DIGEST_SIZE,
+	hash_digest_len: SHA2_256_DIGEST_SIZE,
+	hash_integ_len: SHA2_256_DIGEST_SIZE / 2,
+	hash_init: (void (*)(void *))sha256_init,
+	hash_update: (void (*)(void *, const u_char *, size_t))sha256_write,
+	hash_final: (void (*)(u_char *, void *))sha256_hash_final,
 };
 
 struct ike_integ_desc integ_desc_sha2_512 = {
-	common:{officname: "sha512",
+	common: {
+		officname: "sha512",
 		algo_type: IKEv2_TRANS_TYPE_INTEG,
-		ikev1_algo_id:   OAKLEY_SHA2_512,
-                algo_v2id: IKEv2_AUTH_HMAC_SHA2_512_256,
-		algo_next: NULL, },
+		ikev1_algo_id: OAKLEY_SHA2_512,
+		algo_v2id: IKEv2_AUTH_HMAC_SHA2_512_256,
+		algo_next: NULL,
+	},
 	hash_ctx_size: sizeof(sha512_context),
 	hash_key_size: 0,
 	hash_digest_len: SHA2_512_DIGEST_SIZE,
-	hash_integ_len: 0,      /*Not applicable*/
+	hash_integ_len: 0, /*Not applicable*/
 	hash_init: (void (*)(void *))sha512_init,
-	hash_update: (void (*)(void *, const u_char *, size_t ))sha512_write,
-	hash_final:(void (*)(u_char *, void *))sha512_hash_final,
+	hash_update: (void (*)(void *, const u_char *, size_t))sha512_write,
+	hash_final: (void (*)(u_char *, void *))sha512_hash_final,
 };
 
 int ike_alg_sha2_init(void)
 {
 	int ret;
 	ret = ike_alg_register_integ(&integ_desc_sha2_512);
-	if (!ret){
-	    ret = ike_alg_register_prf(&hash_desc_sha2_512);
-        }
+	if (!ret) {
+		ret = ike_alg_register_prf(&hash_desc_sha2_512);
+	}
 
-	if (!ret){
-	    ret = ike_alg_register_integ(&integ_desc_sha2_256);
-        }
-	if (!ret){
-	    ret = ike_alg_register_prf(&hash_desc_sha2_256);
-        }
+	if (!ret) {
+		ret = ike_alg_register_integ(&integ_desc_sha2_256);
+	}
+	if (!ret) {
+		ret = ike_alg_register_prf(&hash_desc_sha2_256);
+	}
 
 	return ret;
 }

@@ -22,17 +22,16 @@ extern bool no_retransmits;
 extern bool log_to_stderr_desired;
 extern bool log_with_timestamp_desired;
 
-extern int ctl_fd;	/* file descriptor of control (whack) socket */
-extern struct sockaddr_un ctl_addr;	/* address of control (whack) socket */
+extern int ctl_fd; /* file descriptor of control (whack) socket */
+extern struct sockaddr_un ctl_addr; /* address of control (whack) socket */
 
-extern int info_fd;	/* file descriptor of control (info) socket */
-extern struct sockaddr_un info_addr;	/* address of control (info) socket */
+extern int info_fd; /* file descriptor of control (info) socket */
+extern struct sockaddr_un info_addr; /* address of control (info) socket */
 
 extern err_t init_ctl_socket(void);
 extern void delete_ctl_socket(void);
 
-extern bool listening;	/* should we pay attention to IKE messages? */
-
+extern bool listening; /* should we pay attention to IKE messages? */
 
 /* interface: a terminal point for IKE traffic, IPsec transport mode
  * and IPsec tunnels.
@@ -47,25 +46,26 @@ extern bool listening;	/* should we pay attention to IKE messages? */
  * interface if they have the same iface_port->iface_alias.
  */
 struct iface_dev {
-    LIST_ENTRY(iface_dev) id_entry;
-    int   id_count;
-    char *id_vname;	/* virtual (ipsec) device name */
-    char *id_rname;	/* real device name */
+	LIST_ENTRY(iface_dev)
+	id_entry;
+	int id_count;
+	char *id_vname; /* virtual (ipsec) device name */
+	char *id_rname; /* real device name */
 };
 
 struct iface_port {
-    struct iface_dev   *ip_dev;
-    char                addrname[ADDRTOT_BUF];
-    u_int16_t           port;    /* host byte order */
-    ip_address          ip_addr;   /* interface IP address */
-    const char         *socktypename;
-    int fd;	        /* file descriptor of socket for IKE UDP messages */
-    struct iface_port *next;
-    bool ike_float;
-    enum { IFN_ADD, IFN_KEEP, IFN_DELETE } change;
+	struct iface_dev *ip_dev;
+	char addrname[ADDRTOT_BUF];
+	u_int16_t port; /* host byte order */
+	ip_address ip_addr; /* interface IP address */
+	const char *socktypename;
+	int fd; /* file descriptor of socket for IKE UDP messages */
+	struct iface_port *next;
+	bool ike_float;
+	enum { IFN_ADD, IFN_KEEP, IFN_DELETE } change;
 };
 
-extern struct iface_port  *interfaces;	 /* public interfaces */
+extern struct iface_port *interfaces; /* public interfaces */
 
 extern bool use_interface(const char *rifn);
 extern void find_ifaces(void);
@@ -83,6 +83,5 @@ extern bool pluto_crypt_handle_dead_child(int pid, int status);
 extern bool adns_reapchild(pid_t pid, int status);
 
 extern const char *init_pluto_vendorid(void);
-
 
 #endif /* _SERVER_H */

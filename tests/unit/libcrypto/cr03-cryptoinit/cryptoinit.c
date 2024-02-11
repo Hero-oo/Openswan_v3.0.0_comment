@@ -21,31 +21,31 @@ const char *progname;
 
 void exit_tool(int stat)
 {
-    exit(stat);
+	exit(stat);
 }
 
 extern int ike_alg_aes_init(void);
 
 int main(int argc, char *argv[])
 {
-    int i;
-    err_t e = NULL;
-    const struct ike_encr_desc *aes;
-    char  inbuf[256];
-    char  outbuf[256];
-    char  keybuf[TESTKEYLEN] = TESTKEY;
-    char  ivbuf[AES_CBC_BLOCK_SIZE];
+	int i;
+	err_t e = NULL;
+	const struct ike_encr_desc *aes;
+	char inbuf[256];
+	char outbuf[256];
+	char keybuf[TESTKEYLEN] = TESTKEY;
+	char ivbuf[AES_CBC_BLOCK_SIZE];
 
-    progname = argv[0];
-    leak_detective=1;
-    tool_init_log();
+	progname = argv[0];
+	leak_detective = 1;
+	tool_init_log();
 
-    /* register it! */
-    init_crypto();
+	/* register it! */
+	init_crypto();
 
-    report_leaks();
-    tool_close_log();
-    exit(0);
+	report_leaks();
+	tool_close_log();
+	exit(0);
 }
 
 /*

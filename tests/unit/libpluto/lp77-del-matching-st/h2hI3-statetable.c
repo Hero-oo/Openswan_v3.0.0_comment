@@ -1769,13 +1769,14 @@ struct connection h2h_conn_0 = {
   .metric = 0,
   .connmtu = 0
 };
-void h2h_insert_states(void) {
-    /* force h2h_sa_1001 into the statetable */
-    h2h_sa_1001.st_hashchain_prev = NULL;
-    h2h_sa_1001.st_hashchain_next = NULL;
-    insert_state( &h2h_sa_1001 );
-    /* force h2h_sa_1002 into the statetable */
-    h2h_sa_1002.st_hashchain_prev = NULL;
-    h2h_sa_1002.st_hashchain_next = NULL;
-    insert_state( &h2h_sa_1002 );
+void h2h_insert_states(void)
+{
+	/* force h2h_sa_1001 into the statetable */
+	h2h_sa_1001.st_hashchain_prev = NULL;
+	h2h_sa_1001.st_hashchain_next = NULL;
+	insert_state(&h2h_sa_1001);
+	/* force h2h_sa_1002 into the statetable */
+	h2h_sa_1002.st_hashchain_prev = NULL;
+	h2h_sa_1002.st_hashchain_next = NULL;
+	insert_state(&h2h_sa_1002);
 }
