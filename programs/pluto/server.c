@@ -97,6 +97,10 @@
 
 static const int on = TRUE; /* by-reference parameter; constant, we hope */
 
+/** 是否设置不重传，受参数 --notransmits 控制
+ * 在配置错误、网络错误时，重传不能解决问题，反而会有资源浪费
+ * 一般情况下，允许重传
+ */
 bool no_retransmits = FALSE;
 
 /* list of interface devices */
@@ -548,16 +552,18 @@ void call_server(void)
 		passert(r == 0);
 	}
 
+	/* 死循环，永不退出 */
 	for (;;) {
+		/* select() 读写集合 */
 		osw_fd_set readfds;
 		osw_fd_set writefds;
 		int ndes;
 
 		/* wait for next interesting thing */
-
+		/* 监听主处理 */
 		for (;;) {
-			long next_time =
-				next_event(); /* time to any pending timer event */
+			/* 距离下一次事件触发的时间 */
+			long next_time = next_event();
 			int maxfd = ctl_fd;
 
 			/* free up any states not yet freed */
@@ -615,8 +621,8 @@ void call_server(void)
 				OSW_FD_SET(fd, &readfds);
 			}
 #endif
-
 			if (listening) {
+				/* 开启监听所有的接口 */
 				for (ifp = interfaces; ifp != NULL;
 				     ifp = ifp->next) {
 					if (maxfd < ifp->fd)
@@ -629,20 +635,20 @@ void call_server(void)
 
 			/* see if helpers need attention */
 			pluto_crypto_helper_sockets(&readfds);
-
 			if (no_retransmits || next_time < 0) {
+				/* 设置了不重传且已经过了事件触发的时间，则直接 select()，不设置超时 */
 				/* select without timer */
-
 				ndes = osw_select(maxfd + 1, &readfds,
 						  &writefds, NULL, NULL);
 			} else if (next_time == 0) {
 				/* timer without select: there is a timer event pending,
-		 * and it should fire now so don't bother to do the select.
-		 */
+		 		 * and it should fire now so don't bother to do the select.
+		 		 */
+				/* 正好触发事件处理 */
 				ndes = 0; /* signify timer expiration */
 			} else {
 				/* select with timer */
-
+				/* 开启 select() 监听，超时时间为下一次事件触发的时间 */
 				struct timeval tm;
 
 				tm.tv_sec = next_time;
@@ -652,11 +658,12 @@ void call_server(void)
 			}
 
 			if (ndes != -1)
-				break; /* success */
+				break; /* select() 触发成功 */
 
 			if (errno != EINTR)
 				exit_log_errno((
-					e, "select() failed in call_server()"));
+					e,
+					"select() failed in call_server()")); /* select() 返回错误 */
 
 			/* retry if terminated by signal */
 		}
@@ -664,9 +671,9 @@ void call_server(void)
 		DBG(DBG_CONTROL, DBG_log(BLANK_FORMAT));
 
 		/*
-	 * we log the time when we are about to do something so that
-	 * we know what time things happened, when not using syslog
-	 */
+		 * we log the time when we are about to do something so that
+		 * we know what time things happened, when not using syslog
+		 */
 		if (log_to_stderr_desired) {
 			time_t n;
 
@@ -721,6 +728,7 @@ void call_server(void)
 #endif
 
 			for (ifp = interfaces; ifp != NULL; ifp = ifp->next) {
+				/* 接口事件处理：数据包处理 */
 				if (OSW_FD_ISSET(ifp->fd, &readfds)) {
 					/* comm_handle will print DBG_CONTROL intro,
 		     * with more info than we have here.
@@ -734,6 +742,7 @@ void call_server(void)
 			}
 
 			if (OSW_FD_ISSET(ctl_fd, &readfds)) {
+				/* whack 事件处理 */
 				passert(ndes > 0);
 				DBG(DBG_CONTROL,
 				    DBG_log("*received whack message"));

@@ -314,6 +314,7 @@ void clear_IDhost_pair(struct connection *c)
 	}
 }
 
+/* 从主机对、ID对 链表中删除连接 */
 void clear_host_pairs(struct connection *c)
 {
 	clear_IPhost_pair(c);
@@ -345,6 +346,13 @@ struct connection *find_host_pair_connections(const char *func, bool exact,
 	return hp == NULL ? NULL : hp->connections;
 }
 
+/* 将连接插入到主机对的链中（头插法）
+ * 可以根据主机对快速找到连接
+ * 
+ * 链的头是 hp，由四元组+目的主机类型（IP、接口、any等等）生成
+ * 所有连接都使用属性 c->IPhost_pair 存储着链头 hp
+ * 链头只存储着链的首个连接：hp->connections
+ */
 void connect_to_IPhost_pair(struct connection *c)
 {
 	if (oriented(*c)) {
@@ -546,6 +554,13 @@ struct IDhost_pair *find_ID_host_pair(const struct id me, const struct id him)
 	return pbest;
 }
 
+/* 将连接插入到 ID对 的链中（头插法）
+ * 可以根据 ID对 快速找到连接
+ * 
+ * 链的头是 hp，由两端 ID 生成
+ * 所有连接都使用属性 c->IDhost_pair 存储着链头 hp
+ * 链头只存储着链的首个连接：hp->connections
+ */
 void connect_to_IDhost_pair(struct connection *c)
 {
 	struct IDhost_pair *hp =

@@ -87,6 +87,9 @@ struct connection *unoriented_connections = NULL;
  * Move the winner (if any) to the front.
  * If none is found, and strict, a diagnostic is logged to whack.
  */
+/* 通过隧道名查找连接
+ * 
+ */
 struct connection *con_by_name(const char *nm, bool strict)
 {
 	struct connection *p, *prev;
@@ -112,6 +115,7 @@ struct connection *con_by_name(const char *nm, bool strict)
 	return p;
 }
 
+/* 释放连接 */
 void release_connection(struct connection *c, bool relations)
 {
 	if (c->kind == CK_INSTANCE) {
@@ -119,10 +123,15 @@ void release_connection(struct connection *c, bool relations)
 	 * Note that we will be called recursively by delete_connection,
 	 * but kind will be CK_GOING_AWAY.
 	 */
+		/* 如果连接是实例化连接，删除该连接 */
 		delete_connection(c, relations, FALSE);
 	} else {
+		/* 清除连接相关状态 */
+		/* 丢弃所有待处理事务 */
 		flush_pending_by_connection(c);
+		/* 删除连接的状态 */
 		delete_states_by_connection(c, relations);
+		/* 删除所有策略路由 */
 		unroute_connection(c);
 	}
 }
@@ -201,16 +210,20 @@ void delete_sr(struct connection *c, struct spd_route *sr)
  * @force - force connections to delete. Don't allow any state to live on.
  *
  */
-
+/* 删除一条连接 */
 void delete_connection(struct connection *c, bool relations, bool force)
 {
 	struct spd_route *sr;
+	/* 备份系统当前连接，在删除操作完成后需要恢复 
+	 * 如果系统当前连接为待删除连接，则置备份为空
+	 */
 	struct connection *old_cur_connection =
 		cur_connection == c ? NULL : cur_connection;
 #ifdef DEBUG
 	lset_t old_cur_debugging = cur_debugging;
 #endif
 
+	/* 将待删除连接设置为系统当前连接 */
 	set_cur_connection(c);
 
 	/* Must be careful to avoid circularity:
@@ -224,6 +237,7 @@ void delete_connection(struct connection *c, bool relations, bool force)
 
 	passert(c->kind != CK_GOING_AWAY);
 	if (c->kind == CK_INSTANCE) {
+		/* 连接为实例化后的连接，设置连接类型为 GOING_AWAY，表示实例被删除 */
 		openswan_log(
 			"deleting connection \"%s\" [whackfd=%u] instance with peer %s {isakmp=#%lu/ipsec=#%lu}",
 			c->name, whack_sock, ip_str(&c->spd.that.host_addr),
@@ -232,6 +246,7 @@ void delete_connection(struct connection *c, bool relations, bool force)
 	} else {
 		openswan_log("deleting connection");
 	}
+	/* 释放连接 */
 	release_connection(c, relations); /* won't delete c */
 	if (force)
 		release_connection(
@@ -239,24 +254,31 @@ void delete_connection(struct connection *c, bool relations, bool force)
 			relations); /* Second time to force away ikeV2 delayed delete */
 
 	if (c->kind == CK_GROUP)
+		/* 释放组 */
 		delete_group(c);
 
 	/* free up any logging resources */
+	/* 关闭日志资源 */
 	perpeer_logfree(c);
 
 	/* find and delete c from connections list */
+	/* 从连接表中删除连接 */
 	list_rm(struct connection, ac_next, c, connections);
+	/* 恢复原来的系统连接 */
 	cur_connection = old_cur_connection;
 
 	/* find and delete c from the host pair list */
+	/* 从主机对、ID对 链表中删除连接 */
 	clear_host_pairs(c);
 
 	if (c->kind != CK_GOING_AWAY)
+		/* 释放虚拟 IP 资源 */
 		pfreeany(c->spd.that.virt);
 
 #ifdef DEBUG
 	set_debugging(old_cur_debugging);
 #endif
+	/* 释放连接名 */
 	pfreeany(c->name);
 #ifdef XAUTH
 	pfreeany(c->cisco_dns_info);
@@ -267,18 +289,23 @@ void delete_connection(struct connection *c, bool relations, bool force)
 	pfreeany(c->policy_label);
 #endif
 
+	/* 释放所有的 sp（安全策略） */
 	sr = &c->spd;
 	while (sr) {
 		delete_sr(c, sr);
 		sr = sr->next;
 	}
 
+	/* 释放 CA 信息 */
 	free_generalNames(c->ikev1_requested_ca_names, TRUE);
 	c->ikev1_requested_ca_names = NULL;
 
+	/* 减少网关使用计数 */
 	gw_delref(&c->gw_info);
+	/* 减少内核算法使用计数 */
 	alg_info_delref((struct alg_info **)&c->alg_info_esp);
 	alg_info_delref((struct alg_info **)&c->alg_info_ike);
+	/* 释放连接 */
 	pfree(c);
 }
 
@@ -308,20 +335,24 @@ static int delete_connection_wrap(struct connection *c, void *arg)
 }
 
 /* Delete connections with the specified name */
+/* 通过隧道名删除隧道 */
 void delete_connections_by_name(const char *name, bool strict)
 {
 	bool f = FALSE;
 	struct connection *c = con_by_name(name, strict);
 
 	if (c == NULL) {
+		/* 通过别名删除连接 */
 		(void)foreach_connection_by_alias(name, delete_connection_wrap,
 						  &f);
 	} else {
+		/* 删除所有同名连接 */
 		for (; c != NULL; c = con_by_name(name, FALSE))
 			delete_connection(c, FALSE, FALSE);
 	}
 }
 
+/* 删除所有连接 */
 void delete_every_connection(void)
 {
 	while (connections != NULL)
@@ -454,6 +485,7 @@ static void unshare_connection_end_strings(struct end *e)
 	}
 }
 
+/* 去共享化，将原来共享的参数重新分配空间保存，不再共享 */
 static void unshare_connection_strings(struct connection *c)
 {
 	struct spd_route *sr;
@@ -732,17 +764,19 @@ void setup_client_ports(struct spd_route *sr)
 	}
 }
 
+/* 检测隧道的端配置 */
 static bool check_connection_end(const struct whack_end *this,
 				 const struct whack_end *that,
 				 const struct whack_message *wm)
 {
+	/* 检测端地址族是否与配置的协商地址、下一跳地址一致 */
 	if ((this->host_type == KH_IPADDR || this->host_type == KH_IFACE) &&
 	    wm->end_addr_family != 0 &&
 	    (wm->end_addr_family != addrtypeof(&this->host_addr) ||
 	     wm->end_addr_family != addrtypeof(&this->host_nexthop))) {
 		/* this should have been diagnosed by whack, so we need not be clear
-	 * !!! overloaded use of RC_CLASH
-	 */
+		 * !!! overloaded use of RC_CLASH
+		 */
 		const struct af_info *addr, *nexthop;
 		addr = aftoinfo(addrtypeof(&this->host_addr));
 		nexthop = aftoinfo(addrtypeof(&this->host_nexthop));
@@ -757,28 +791,33 @@ static bool check_connection_end(const struct whack_end *this,
 		return FALSE;
 	}
 
+	/* 检测两端保护子网的地址族是否一致 */
 	if (this->host_type == KH_IPADDR && that->host_type == KH_IPADDR &&
 	    subnettypeof(&this->client) != subnettypeof(&that->client)) {
 		/* this should have been diagnosed by whack, so we need not be clear
-	 * !!! overloaded use of RC_CLASH
-	 */
+		 * !!! overloaded use of RC_CLASH
+		 */
 		loglog(RC_CLASH,
 		       "address family inconsistency in this/that connection");
 		return FALSE;
 	}
 
 	/* MAKE this more sane in the face of unresolved IP addresses */
+	/* 特殊 IP 配置处理，如 any、defaultroute ... 
+	 * 地址不固定，连接只作为模板，等有端点连接时才实例化
+	 * 此时要求所有能匹配到此条策略的主模式的连接的 IKE 策略保持一致
+	 */
 	if (that->host_type != KH_IPHOSTNAME &&
 	    KH_ISWILDCARD(that->host_type)) {
 		if (!NEVER_NEGOTIATE(wm->policy)) {
 			/* check that all main mode RW IKE policies agree because we must
-	     * implement them before the correct connection is known.
-	     * We cannot enforce this for other non-RW connections because
-	     * differentiation is possible when a command specifies which
-	     * to initiate.
-	     * aggressive mode IKE policies do not have to agree amongst
-	     * themselves as the ID is known from the outset.
-	     */
+			 * implement them before the correct connection is known.
+			 * We cannot enforce this for other non-RW connections because
+			 * differentiation is possible when a command specifies which
+			 * to initiate.
+			 * aggressive mode IKE policies do not have to agree amongst
+			 * themselves as the ID is known from the outset.
+			 */
 			const struct connection *c = NULL;
 
 			c = find_host_pair_connections(__FUNCTION__, ANY_MATCH,
@@ -882,6 +921,7 @@ void add_connection(const struct whack_message *wm)
 	alg_info_ike = NULL;
 
 	if (con_by_name(wm->name, FALSE) != NULL) {
+		/* 存在同名隧道，仅打印 log，继续处理 */
 		loglog(RC_DUPNAME, "attempt to redefine connection \"%s\"",
 		       wm->name);
 	}
@@ -904,6 +944,7 @@ void add_connection(const struct whack_message *wm)
 		 ((alg_info_ike = alg_info_ike_create_from_str(wm->ike,
 							       &ugh)) == NULL ||
 		  alg_info_ike->alg_info_cnt == 0)) {
+		/* 配置了 IKE 算法，但是 IKE 算法配置不正确 */
 		if (alg_info_ike != NULL && alg_info_ike->alg_info_cnt == 0) {
 			loglog(RC_NOALGO, "got 0 transforms for ike=\"%s\"",
 			       wm->ike);
@@ -916,7 +957,11 @@ void add_connection(const struct whack_message *wm)
 	} else if ((wm->ike == NULL || alg_info_ike != NULL) &&
 		   check_connection_end(&wm->right, &wm->left, wm) &&
 		   check_connection_end(&wm->left, &wm->right, wm)) {
+		/* 没有配置 IKE 算法，需要自动协商或者正确配置了 IKE 算法
+		 * 正确配置了两端 
+		 */ 
 		bool same_rightca, same_leftca;
+		/* 新建连接：申请内存 */
 		struct connection *c =
 			alloc_thing(struct connection, "struct connection");
 
@@ -954,7 +999,7 @@ void add_connection(const struct whack_message *wm)
 		}
 
 		/* check alg support */
-
+		/* 检查算法支持：内核是否支持压缩算法 */
 		if ((c->policy & POLICY_COMPRESS) && !can_do_IPcomp)
 			loglog(RC_COMMENT,
 			       "ignoring --compress in \"%s\" because KLIPS is not configured to do IPCOMP",
@@ -962,6 +1007,7 @@ void add_connection(const struct whack_message *wm)
 
 		c->alg_info_esp = NULL;
 		if (wm->esp) {
+			/* 解析 ESP 算法信息 */
 			DBG(DBG_CONTROL, DBG_log("from whack: got --esp=%s",
 						 wm->esp ? wm->esp : "NULL"));
 
@@ -1014,6 +1060,7 @@ void add_connection(const struct whack_message *wm)
 
 		c->alg_info_ike = NULL;
 		if (wm->ike) {
+			/* 解析 IKE 算法信息 */
 			c->alg_info_ike = alg_info_ike;
 
 			DBG(DBG_CRYPT | DBG_CONTROL, char buf[256];
@@ -1105,6 +1152,7 @@ void add_connection(const struct whack_message *wm)
 		c->ikev1_requested_ca_names = NULL;
 		c->ikev2_requested_ca_hashes = NULL;
 
+		/* 解析连接端点的地址信息 */
 		same_leftca = extract_end(c, &c->spd.this, &wm->left, "left");
 		same_rightca =
 			extract_end(c, &c->spd.that, &wm->right, "right");
@@ -1169,19 +1217,24 @@ void add_connection(const struct whack_message *wm)
 			c->spd.that.client.maskbits = 0;
 		}
 
+		/* 确定连接类型 */
 		if (c->policy & POLICY_GROUP) {
+			/* 组策略 */
 			c->kind = CK_GROUP;
 			add_group(c);
 		} else if (c->spd.that.has_client_wildcard) {
+			/* 模版连接：对端保护子网有通配符 */
 			DBG(DBG_CONTROL,
 			    DBG_log("based upon client_wildcard policy, the connection is a template."));
 			c->kind = CK_TEMPLATE;
 		} else if (c->spd.that.has_port_wildcard) {
+			/* 模板连接： */
 			DBG(DBG_CONTROL,
 			    DBG_log("based upon port_wildcard policy, the connection is a template."));
 			c->kind = CK_TEMPLATE;
 		} else if ((c->policy & POLICY_SHUNT_MASK) == 0 &&
 			   c->spd.that.id.has_wildcards) {
+			/* 模板连接： */
 			DBG(DBG_CONTROL,
 			    DBG_log("based upon ID_wildcard policy, the connection is a template."));
 			c->kind = CK_TEMPLATE;
@@ -1190,9 +1243,11 @@ void add_connection(const struct whack_message *wm)
 			/* If we have a subnet=vnet: needing instantiation so we can accept multiple subnets from the remote peer */
 			c->kind = CK_TEMPLATE;
 		} else {
+			/* 固定连接，双方连接地址固定 */
 			c->kind = CK_PERMANENT;
 		}
 
+		/* 设置连接优先级 */
 		set_policy_prio(c); /* must be after kind is set */
 
 #ifdef DEBUG
@@ -1202,6 +1257,7 @@ void add_connection(const struct whack_message *wm)
 		c->gw_info = NULL;
 
 		passert(!(wm->left.virt && wm->right.virt));
+		/* 虚拟 IP 参数设置 */
 		if (wm->left.virt || wm->right.virt) {
 			/*
 	     * This now happens with wildcards on non-instantiations,
@@ -1215,13 +1271,17 @@ void add_connection(const struct whack_message *wm)
 				c->spd.that.has_client = TRUE;
 		}
 
+		/* 参数去共享化：原本使用指针指向同一快内存的重新分配内存存储 */
 		unshare_connection_strings(c);
 
 		(void)orient(c, pluto_port500);
+		/* 将连接插入到主机对中，方便查找 */
 		connect_to_IPhost_pair(c);
+		/* 将连接插入到 ID 对中，方便查找 */
 		connect_to_IDhost_pair(c);
 
 		/* log all about this connection */
+		/* 将连接详细记录进日志 */
 		openswan_log("adding connection: \"%s\"", c->name);
 		DBG(DBG_CONTROL, char topo[CONN_BUF_LEN];
 

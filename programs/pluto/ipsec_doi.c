@@ -306,6 +306,7 @@ so_serial_t ipsecdoi_initiate(int whack_sock, struct state *old_parent_state,
 			return SOS_NOBODY;
 		}
 
+		/* 选择协商启动函数 */
 		initiator_function *initiator = pick_initiator(c, policy);
 
 		if (initiator) {

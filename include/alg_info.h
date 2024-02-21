@@ -45,14 +45,15 @@ struct esp_info {
 	struct pluto_sadb_alg *compress_info;
 };
 
+/* IKE 协商算法信息 */
 struct ike_info {
 	bool ike_default;
-	u_int16_t ike_ealg; /* encrytion algorithm - bit 15set for reserved*/
-	u_int8_t ike_halg; /* hash algorithm */
-	u_int8_t ike_prfalg; /* prf algorithm (IKEv2) */
-	size_t ike_eklen; /* how many bits (of key) required by encryption algo */
-	size_t ike_hklen; /* how many bits (of key) required by hash algo */
-	enum ikev2_trans_type_dh ike_modp; /* which modp group to use */
+	u_int16_t ike_ealg; /* 加密算法 */
+	u_int8_t ike_halg; /* 完整性算法 */
+	u_int8_t ike_prfalg; /* prf 算法 (IKEv2) */
+	size_t ike_eklen; /* 加密算法密钥长度 */
+	size_t ike_hklen; /* 完整性算法密钥长度 */
+	enum ikev2_trans_type_dh ike_modp; /* DH 组 */
 };
 
 #define ALG_INFO_COMMON          \

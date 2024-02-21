@@ -549,6 +549,7 @@ out:
 	return ike_info;
 }
 
+/* 从字符串参数（whack、配置文件）中解析出 IKE 算法信息并返回 */
 struct alg_info_ike *alg_info_ike_create_from_str(const char *alg_str,
 						  const char **err_p)
 {

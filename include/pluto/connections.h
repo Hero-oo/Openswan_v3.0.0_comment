@@ -108,6 +108,7 @@
  *   as the original policy, even though its subnets might be smaller.
  * - display format: n,m
  */
+/* 根据被保护子网掩码计算连接优先级 */
 typedef uint32_t policy_prio_t;
 #define BOTTOM_PRIO ((policy_prio_t)0) /* smaller than any real prio */
 #define set_policy_prio(c)                                                     \

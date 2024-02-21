@@ -476,12 +476,16 @@ extern const char *prettypolicy(lset_t policy);
  * a pluto policy is stored in a lset_t which is an unsigned long long,
  * so we should have 64 bits to play with
  */
+/** ISAKMP 认证策略属性，没有意味着不会协商
+ * 记录在一个 unsigned long long 里，有 64 bits 可用
+ */
 enum pluto_policy {
-	POLICY_PSK = LELEM(0),
-	POLICY_RSASIG = LELEM(1),
+	POLICY_PSK = LELEM(0), 	/* PSK 认证：1 */
+	POLICY_RSASIG = LELEM(1),	/* 数字证书认证：10 */
 #define POLICY_ISAKMP_SHIFT 0 /* log2(POLICY_PSK) */
 
 	/* policies that affect ID types that are acceptable - RSA, PSK, XAUTH */
+	/* 影响可接受的 ID 类型的策略：PSK、RSA、XAUTH：11 */
 	POLICY_ID_AUTH_MASK = LRANGES(POLICY_PSK, POLICY_RSASIG),
 
 /* policies that affect choices of proposal, note, does not include XAUTH */
@@ -489,11 +493,12 @@ enum pluto_policy {
 	(((x) & LRANGES(POLICY_PSK, POLICY_RSASIG)) + ((xs) * 4) + ((xc) * 8))
 
 	/* Quick Mode (IPSEC) attributes */
-	POLICY_ENCRYPT = LELEM(2), /* must be first of IPSEC policies */
-	POLICY_AUTHENTICATE = LELEM(3), /* must be second */
-	POLICY_COMPRESS = LELEM(4), /* must be third */
-	POLICY_TUNNEL = LELEM(5),
-	POLICY_PFS = LELEM(6),
+	/* 快速模式协商的（IPSEC）属性 */
+	POLICY_ENCRYPT = LELEM(2), /* 加密 must be first of IPSEC policies */
+	POLICY_AUTHENTICATE = LELEM(3), /* 认证 must be second */
+	POLICY_COMPRESS = LELEM(4), /* 压缩 must be third */
+	POLICY_TUNNEL = LELEM(5), /* 隧道模式 */
+	POLICY_PFS = LELEM(6), 
 	POLICY_DISABLEARRIVALCHECK =
 		LELEM(7), /* supress tunnel egress address checking */
 
@@ -520,8 +525,8 @@ enum pluto_policy {
 	POLICY_FAIL_REJECT = (3ul << POLICY_FAIL_SHIFT),
 
 	/* connection policy
-   * Other policies could vary per state object.  These live in connection.
-   */
+     * Other policies could vary per state object.  These live in connection.
+     */
 	POLICY_DONT_REKEY = LELEM(12), /* don't rekey state either Phase */
 	POLICY_OPPO = LELEM(13), /* is this opportunistic? */
 	POLICY_GROUP = LELEM(14), /* is this a group template? */
@@ -582,6 +587,10 @@ enum pluto_policy {
 #define IS_INVALID_CONFIG(p) ((p) & POLICY_INVALID_CONFIG)
 
 /* Don't allow negotiation? */
+/* 不会触发协商：
+ * - 非 PSK 认证、非数字证书认证、非野蛮模式 
+ * - 策略配置无效
+ */
 #define NEVER_NEGOTIATE(p)                                                 \
 	(LDISJOINT((p), POLICY_PSK | POLICY_RSASIG | POLICY_AGGRESSIVE) || \
 	 IS_INVALID_CONFIG(p) ||                                           \

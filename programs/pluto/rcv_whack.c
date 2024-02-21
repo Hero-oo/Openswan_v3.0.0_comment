@@ -346,6 +346,7 @@ void whack_process(int whackfd, struct whack_message msg)
 		delete_states_by_peer(&msg.whack_crash_peer);
 
 	if (msg.whack_connection)
+		/* 新建连接 */
 		add_connection(&msg);
 
 	/* process "listen" before any operation that could require it */
@@ -506,6 +507,7 @@ void whack_process(int whackfd, struct whack_message msg)
 		}
 	}
 
+	/* 启动连接 */
 	if (msg.whack_initiate) {
 		if (!listening)
 			whack_log(RC_DEAF, "need --listen before --initiate");
@@ -546,7 +548,7 @@ done:
 }
 
 /*
- * Handle a whack request.
+ * whack 事件主处理.
  */
 void whack_handle(int whackctlfd)
 {

@@ -307,6 +307,7 @@ void flush_pending_by_state(struct state *st)
 }
 
 /* a connection has been deleted; discard any related pending */
+/* 连接被删除，丢弃所有相关的待处理事务 */
 void flush_pending_by_connection(struct connection *c)
 {
 	struct pending **pp, *p;

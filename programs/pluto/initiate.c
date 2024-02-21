@@ -90,6 +90,7 @@ struct initiate_stuff {
 	enum crypto_importance importance;
 };
 
+/* 启动连接 */
 static int initiate_a_connection(struct connection *c, void *arg)
 {
 	struct initiate_stuff *is = (struct initiate_stuff *)arg;
@@ -98,21 +99,26 @@ static int initiate_a_connection(struct connection *c, void *arg)
 	enum crypto_importance importance = is->importance;
 	int success = 0;
 
+	/* 设置连接为当前系统连接 */
 	set_cur_connection(c);
 
 	/* turn on any extra debugging asked for */
 	c->extra_debugging |= moredebug;
 
 	if (!oriented(*c)) {
+		/* 没有确定方向的连接 */
 		loglog(RC_ORIENT,
 		       "We cannot identify ourselves with either end of this connection.");
 	} else if (IS_INVALID_CONFIG(c->policy)) {
+		/* 无效连接 */
 		loglog(RC_INITSHUNT,
 		       "cannot initiate connection due to invalid configuration");
 	} else if (NEVER_NEGOTIATE(c->policy)) {
+		/* 不会协商的连接 */
 		loglog(RC_INITSHUNT,
 		       "cannot initiate an authby=never connection");
 	} else if (c->kind != CK_PERMANENT) {
+		/* 非固定连接，不能启动 */
 		if (isanyaddr(&c->spd.that.host_addr)) {
 			if (c->spd.that.host_type == KH_IPHOSTNAME &&
 			    c->spd.that.host_address_list.address_list ==
@@ -133,11 +139,13 @@ static int initiate_a_connection(struct connection *c, void *arg)
 			       "cannot initiate connection with ID wildcards (kind=%s)",
 			       enum_show(&connection_kind_names, c->kind));
 	} else {
+		/* 固定连接，可以启动 */
 		/* We will only request an IPsec SA if policy isn't empty
-	 * (ignoring Main Mode items).
-	 * This is a fudge, but not yet important.
-	 * If we are to proceed asynchronously, whackfd will be NULL_FD.
-	 */
+		 * (ignoring Main Mode items).
+		 * This is a fudge, but not yet important.
+		 * If we are to proceed asynchronously, whackfd will be NULL_FD.
+		 */
+		/* 策略启动 */
 		c->policy |= POLICY_UP;
 
 		if (c->policy & (POLICY_ENCRYPT | POLICY_AUTHENTICATE)) {
@@ -157,6 +165,7 @@ static int initiate_a_connection(struct connection *c, void *arg)
 		}
 
 		{
+			/* 发起 IKE 协商 */
 			whackfd = dup(whackfd);
 			ipsecdoi_initiate(whackfd, NULL, NULL, c, c->policy, 1,
 					  SOS_NOBODY, importance, NULL_POLICY);
@@ -168,10 +177,12 @@ static int initiate_a_connection(struct connection *c, void *arg)
 	return success;
 }
 
+/* 启动连接 */
 void initiate_connection(const char *name, int whackfd, lset_t moredebug,
 			 enum crypto_importance importance)
 {
 	struct initiate_stuff is;
+	/* 通过连接名查找连接 */
 	struct connection *c = con_by_name(name, FALSE);
 	int count;
 
@@ -180,11 +191,13 @@ void initiate_connection(const char *name, int whackfd, lset_t moredebug,
 	is.importance = importance;
 
 	if (c != NULL) {
+		/* 启动连接 */
 		initiate_a_connection(c, &is);
 		close_any(is.whackfd);
 		return;
 	}
 
+	/* 通过连接名未找到连接，通过别名查找并启动 */
 	loglog(RC_COMMENT, "initiating all conns with alias='%s'\n", name);
 	count = foreach_connection_by_alias(name, initiate_a_connection, &is);
 

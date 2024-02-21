@@ -1,3 +1,7 @@
+/**
+ * Pluto 主程序
+ * 负责 pluto 的参数解析、初始化、监听等操作
+ */
 /* Pluto main program
  * Copyright (C) 1997      Angelos D. Keromytis.
  * Copyright (C) 1998-2001 D. Hugh Redelmeier.
@@ -95,6 +99,7 @@
 
 #include "oswcrypto.h"
 
+/* IPsec 配置文件位置 */
 #ifndef IPSECDIR
 #define IPSECDIR "/etc/ipsec.d"
 #endif
@@ -118,6 +123,7 @@
 #include "security_selinux.h"
 #endif
 
+/* openswan 组件间通信（域 sock）位置 */
 const char *ctlbase = "/var/run/pluto";
 char *pluto_listen = NULL;
 const char *progname = NULL;
@@ -126,7 +132,8 @@ const char *progname = NULL;
 openswan_passert_fail_t openswan_passert_fail = passert_fail;
 #endif
 
-/** usage - print help messages
+/** Pluto Help 信息
+ ** usage - print help messages
  *
  * @param mess String - alternate message to print
  */
@@ -233,10 +240,16 @@ static void usage(const char *mess)
  * - same basename as unix domain control socket
  * NOTE: will not take account of sharing LOCK_DIR with other systems.
  */
-
+/** 锁文件
+ * - 让脚本有简单的方式获得 pluto 的 pid
+ * - 防止 pluto 进程多次启动，监听同一端口
+ * - 作为 unix 域套接字的基本命名方式
+ * 默认位置 /var/run/pluto/pluto.pid，不会考虑与其他系统的共享
+ * */
 static char pluto_lock[sizeof(ctl_addr.sun_path)] = DEFAULT_CTLBASE LOCK_SUFFIX;
 static bool pluto_lock_created = FALSE;
 
+/* 用户自定义 sig 处理（预留） */
 static void pluto_sigusr1(int signum UNUSED)
 {
 	openswan_log("signal 1 received");
@@ -244,6 +257,7 @@ static void pluto_sigusr1(int signum UNUSED)
 }
 
 /** create lockfile, or die in the attempt */
+/** 创建锁文件，如果已经存在，则退出 */
 static int create_lock(void)
 {
 	int fd;
@@ -283,6 +297,7 @@ static int create_lock(void)
  * @param pid PID (pid_t struct) to be put into the lock file
  * @return bool True if successful
  */
+/** 将 pluto 的 pid 填充进 pluto.pid 中 */
 static bool fill_lock(int lockfd, pid_t pid)
 {
 	char buf[30]; /* holds "<pid>\n" */
@@ -296,6 +311,7 @@ static bool fill_lock(int lockfd, pid_t pid)
 /** delete_lock - Delete the lock file
  *
  */
+/** 去除锁文件，包括 pluto.ctl、pluto.pid */
 static void delete_lock(void)
 {
 	if (pluto_lock_created) {
@@ -305,15 +321,19 @@ static void delete_lock(void)
 }
 
 /** by default pluto sends certificate requests to its peers */
+/** pluto 是否向对端发送证书请求，默认不发送 */
 bool no_cr_send = FALSE;
 
 /** by default the CRL policy is lenient */
+/** crl 策略是否严格，默认不严格 */
 bool strict_crl_policy = FALSE;
 
 /** by default pluto does not check crls dynamically */
+/** pluto 动态检测 crl 的间隔，默认为 0，不检测 */
 long crl_check_interval = 0;
 
 /** by default pluto sends no cookies in ikev2 or ikev1 aggrmode */
+/** 默认情况下，pluto 在 ikev2 或 ikev1 aggrmode 中不发送 cookie */
 bool force_busy = FALSE;
 
 /* whether or not to use klips */
@@ -339,6 +359,7 @@ void init_secret(void)
 	event_schedule(EVENT_REINIT_SECRET, EVENT_REINIT_SECRET_DELAY, NULL);
 }
 
+/* Pluto 主函数 */
 int main(int argc, char **argv)
 {
 	bool fork_desired = TRUE;
@@ -1149,6 +1170,7 @@ int main(int argc, char **argv)
 #endif
 
 	daily_log_event();
+	/* 设置监听 */
 	call_server();
 	return -1; /* Shouldn't ever reach this */
 }
