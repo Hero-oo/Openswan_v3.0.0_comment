@@ -2171,6 +2171,7 @@ void ipsec_rsm(struct ipsec_rcv_state *irs)
 	KLIPS_DEC_USE; /* once less packet using the driver */
 }
 
+/* 安全通信阶段：使用 KLIPS 的内核接收包处理 */
 int ipsec_rcv(struct sk_buff *skb)
 {
 	struct ipsec_rcv_state *irs = NULL;
@@ -2192,6 +2193,7 @@ int ipsec_rcv(struct sk_buff *skb)
 		goto rcvleave;
 	}
 
+	/* 新建 IPsec 接收状态 irs */
 	irs = ipsec_rcv_state_new();
 	if (unlikely(!irs)) {
 		KLIPS_PRINT(debug_rcv,
@@ -2206,6 +2208,7 @@ int ipsec_rcv(struct sk_buff *skb)
 		struct sk_buff *nskb;
 		int udp_decap_ret = 0;
 
+		/* 解析 natt 信息：类型、长度、源端口、目的端口 */
 		nskb = ipsec_rcv_natt_decap(skb, irs, &udp_decap_ret);
 		if (nskb == NULL) {
 			/* return with non-zero, because UDP.c code
@@ -2229,11 +2232,13 @@ int ipsec_rcv(struct sk_buff *skb)
 	 * we hand off real early to the state machine because we just cannot
 	 * know how much processing it is off-loading
 	 */
+	/* 数据包进入接收状态机处理 */
 	ipsec_rsm(irs);
 
 	return (0);
 
 rcvleave:
+	/* 内存释放 */
 	if (irs) {
 		ipsec_rcv_state_delete(irs);
 	}
